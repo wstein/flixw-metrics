@@ -235,7 +235,13 @@ final class ReflectionEngine {
                 case "LocalDef" -> localDefs++;
                 // Each is one more path through the definition. A `match` with three rules is
                 // three branches, not one, which is why rules are counted and not the match.
-                case "IfThenElse", "MatchRule", "TypeMatchRule", "RestrictableChooseRule",
+                // Taken from the compiler's own rule types rather than from memory:
+                // CatchRule ExtMatchRule HandlerRule MatchRule RestrictableChooseRule
+                // SelectChannelRule. The first draft of this list named a TypeMatchRule that
+                // does not exist and omitted ExtMatchRule that does, which undercounted in
+                // silence -- the failure mode this whole approach is prone to, recorded here
+                // because a name is the only handle it has.
+                case "IfThenElse", "MatchRule", "ExtMatchRule", "RestrictableChooseRule",
                      "CatchRule", "HandlerRule", "SelectChannelRule" -> branches++;
                 default -> { }
             }
