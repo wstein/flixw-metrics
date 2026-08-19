@@ -1,10 +1,11 @@
 package dev.flixw.metrics.flix075
 
 import dev.flixw.metrics.sdk.CompilerModel
-import dev.flixw.metrics.sdk.CompilerModel.{DefInfo, Model, ModelFailure, ModuleInfo}
+import dev.flixw.metrics.sdk.CompilerModel.{DefInfo, LineInfo, Model, ModelFailure, ModuleInfo}
 
 import ca.uwaterloo.flix.api.{Bootstrap, Flix}
-import ca.uwaterloo.flix.language.ast.shared.Input
+import ca.uwaterloo.flix.language.ast.shared.{Input, Source}
+import ca.uwaterloo.flix.language.phase.Lexer
 import ca.uwaterloo.flix.language.ast.{SourceLocation, Symbol, Type, TypedAst}
 import ca.uwaterloo.flix.util.{Formatter, Options}
 
@@ -66,14 +67,66 @@ final class Flix075Adapter extends CompilerModel {
       defs.flatMap(references).toSet.filter(e => e._1 != e._2)
     val infos = defs.map(measureDef(_, projectRoot))
 
+    val sources = root.sources.keys.filter(src => projectSource(src, projectRoot)).toList
     new Model(
-      infos.asJava, modules(infos, edges).asJava,
+      infos.asJava, modules(infos, edges).asJava, lineInfo(sources),
       ofProject(root.traits.values, projectRoot)(_.loc).size,
       ofProject(root.instances.values, projectRoot)(_.loc).size,
       ofProject(root.enums.values, projectRoot)(_.loc).size,
       ofProject(root.structs.values, projectRoot)(_.loc).size,
       ofProject(root.effects.values, projectRoot)(_.loc).size,
       ofProject(root.typeAliases.values, projectRoot)(_.loc).size)
+  }
+
+  // ---- lines ----------------------------------------------------------------------------
+
+  /**
+   * Classifies every line of the project's own sources, using the compiler's lexer.
+   *
+   * Lexed here rather than read from `Root.tokens`: by the time `check` returns that map holds
+   * only what later phases still needed, so a file of any size arrives with a handful of tokens
+   * and every line after the first would be counted blank. This is the fork's finding, and it is
+   * the kind of thing only someone who tried the obvious way first would know.
+   *
+   * A line is code if any code token touches it, a comment if only comment tokens do, and blank
+   * otherwise -- so a line of code with a trailing comment is code, which is what a reader has to
+   * treat it as.
+   */
+  private def lineInfo(sources: List[Source]): LineInfo = {
+    var total = 0; var code = 0; var comment = 0; var doc = 0; var blank = 0
+    sources.foreach { src =>
+      val text = new String(src.data)
+      val split = if (text.isEmpty) Array.empty[String] else text.split("\n", -1)
+      // A trailing newline leaves a final empty element that is not a line of the file.
+      val count = if (split.nonEmpty && split.last.isEmpty) split.length - 1 else split.length
+      val codeLines = scala.collection.mutable.Set.empty[Int]
+      val commentLines = scala.collection.mutable.Set.empty[Int]
+      val docLines = scala.collection.mutable.Set.empty[Int]
+      val (tokens, _) = Lexer.lex(src)
+      tokens.foreach { t =>
+        if (t.kind != ca.uwaterloo.flix.language.ast.TokenKind.Eof) {
+          val target =
+            if (!t.kind.isComment) codeLines
+            else if (t.text.startsWith("///")) docLines
+            else commentLines
+          for (line <- t.start.lineOneIndexed to t.end.lineOneIndexed) target += line
+        }
+      }
+      total += count
+      for (line <- 1 to count) {
+        if (split(line - 1).trim.isEmpty) blank += 1
+        else if (codeLines.contains(line)) code += 1
+        else if (docLines.contains(line)) doc += 1
+        else if (commentLines.contains(line)) comment += 1
+        else blank += 1
+      }
+    }
+    new LineInfo(total, code, comment, doc, blank)
+  }
+
+  private def projectSource(src: Source, projectRoot: Path): Boolean = src.input match {
+    case Input.RealFile(path, _) => path.toAbsolutePath.normalize.startsWith(projectRoot)
+    case _ => false
   }
 
   // ---- one definition -------------------------------------------------------------------

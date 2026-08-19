@@ -115,7 +115,8 @@ child loader parented to the platform loader.
 | `effectfulDefinitions`, `purityPercent` | the *declared* effect on each signature |
 | `cognitive` | branches weighted by nesting, plus boolean operators and match guards |
 | `tests`, `docCoveragePercent` | `@Test` annotations and doc comments on the public surface |
-| `lines`, `longestLine`, `linesOverLimit` | the source text |
+| `lines`, `codeLines`, `commentLines`, `docCommentLines`, `blankLines` | the compiler's own lexer |
+| `longestLine`, `linesOverLimit` | the source text |
 | `smells` | thresholds over all of the above |
 
 ### Cognitive complexity is nesting-weighted
@@ -128,6 +129,21 @@ counted too; without them a long boolean chain reads as trivial.
 `cognitiveDensity` is that divided by lines, and it is the measure that separates length from
 difficulty: a hundred readable lines and five dense ones can score the same in total, and the
 second is the one worth opening.
+
+### Lines are classified by the compiler's lexer, not by scanning for `//`
+
+`Lexer.lex(Source)` and `TokenKind.isComment` are both in stock 0.75.3 — an earlier note here
+claimed otherwise and was simply wrong. A line holding code and a trailing comment counts as
+code, because it is a line you have to read as code; a line inside a block comment counts as a
+comment though nothing on it says so, which is exactly where a text scan goes wrong.
+
+Doc comments are counted separately from ordinary ones. "How much of this is explained" and
+"how much of this is commented out" are different questions, and lumping them answers neither.
+
+Lexed rather than read from `Root.tokens`: by the time `check` returns, that map holds only
+what later phases still needed, so a file of any size arrives with a handful of tokens and
+every line after the first would be counted blank. That is the fork's finding, and the sort of
+thing only someone who tried the obvious way first would know.
 
 ### Findings are reported, never enforced
 

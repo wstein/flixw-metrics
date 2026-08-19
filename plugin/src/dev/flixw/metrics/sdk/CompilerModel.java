@@ -120,9 +120,21 @@ public interface CompilerModel {
         }
     }
 
+    /**
+     * How the lines of the project divide up.
+     *
+     * <p>From the compiler's own lexer, not from a scan for {@code //}. A line holding code and a
+     * trailing comment is code -- it is a line you have to read as code -- and a line inside a
+     * block comment is a comment even though nothing on it says so, which is exactly where
+     * counting by hand goes wrong. Doc comments are separated from ordinary ones because they
+     * are the documentation, and "how much of this is explained" is a different question from
+     * "how much of this is commented out".
+     */
+    record LineInfo(int total, int code, int comment, int docComment, int blank) { }
+
     /** Everything an adapter reports. Counts that have no per-declaration detail stay counts. */
-    record Model(List<DefInfo> defs, List<ModuleInfo> modules, int traits, int instances,
-                 int enums, int structs, int effects, int typeAliases) { }
+    record Model(List<DefInfo> defs, List<ModuleInfo> modules, LineInfo lines, int traits,
+                 int instances, int enums, int structs, int effects, int typeAliases) { }
 
     /** A project this adapter could load but could not measure. */
     class ModelFailure extends Exception {
