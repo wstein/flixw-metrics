@@ -47,8 +47,9 @@ record SourceMetrics(int lines, int longestLine, int linesOverLimit, List<Smell>
                 if (length > LINE_LIMIT) {
                     over++;
                     smells.add(new Smell("line-too-long",
+                        projectRoot.relativize(source).toString() + ":" + (i + 1),
                         projectRoot.relativize(source).toString(), i + 1,
-                        length + " columns, over " + LINE_LIMIT));
+                        length, LINE_LIMIT, "", "columns"));
                 }
             }
         }
@@ -58,18 +59,76 @@ record SourceMetrics(int lines, int longestLine, int linesOverLimit, List<Smell>
     /**
      * One finding, in a shape a program can address.
      *
-     * <p>Rule name, file, line, and a human sentence -- deliberately the same four fields for
-     * every rule, so a consumer can render or filter findings it has never heard of. A rule
-     * added later must not require the reader to be updated first.
+     * <p>An earlier version carried only a rule, a location and an English sentence. That reads
+     * fine and is nearly useless to a consumer: sorting by severity, filtering by "more than
+     * twice the limit", or charting a number over time all require parsing prose back into
+     * figures somebody already had. So the measurement and the limit are fields, and the sentence
+     * is derived from them rather than written alongside them -- which also means the two cannot
+     * drift apart.
+     *
+     * @param subject what exceeded: a definition, a local, or a module
+     * @param actual the measurement, as a double because some measures are ratios
+     * @param limit what it was measured against
+     * @param note extra context that is not a number, such as which local owns a line. Empty for
+     *     most findings, and never load-bearing -- a consumer can ignore it entirely
      */
-    record Smell(String rule, String file, int line, String detail) {
+    record Smell(String rule, String subject, String file, int line, double actual, double limit,
+                 String note, String unit) {
+
+        /**
+         * How far over the limit, as a multiple.
+         *
+         * <p>A multiple rather than a difference, so findings of different kinds order against
+         * each other: 12 parameters against a limit of 5 and 180 lines against 60 are both 2.4x,
+         * and "how bad is this" means the same thing for both.
+         *
+         * <p>A finding with no unit is categorical -- something is absent, and there is no
+         * magnitude to be over by. Those score exactly 1: present in the list, ordered below
+         * everything that actually exceeded a limit. Reporting a missing doc comment as "0 over
+         * 1", which is what treating it as a magnitude produced, is both unreadable and sorts it
+         * as the *least* severe by an accident of arithmetic rather than by a decision.
+         */
+        double overBy() {
+            if (unit.isEmpty()) return 1.0;
+            return limit == 0 ? actual : actual / limit;
+        }
+
+        /** Where it is, as a person writes it. Empty when nothing locates it. */
+        String where() {
+            return file.isEmpty() ? "" : file + ":" + line;
+        }
+
+        /** The sentence, derived so it cannot disagree with the numbers beside it. */
+        String detail() {
+            // No unit means nothing was exceeded; the note is the whole finding.
+            if (unit.isEmpty()) return note;
+            String base = number(actual) + " " + unit + ", over " + number(limit);
+            return note.isEmpty() ? base : base + " (" + note + ")";
+        }
+
+        /** Whole numbers read as whole numbers; a ratio keeps one decimal. */
+        private static String number(double value) {
+            return value == Math.rint(value) ? String.valueOf((long) value)
+                                             : String.format("%.1f", value);
+        }
+
         String json() {
-            return "{\"rule\": " + quote(rule) + ", \"file\": " + quote(file)
-                 + ", \"line\": " + line + ", \"detail\": " + quote(detail) + "}";
+            return "{\"rule\": " + quote(rule)
+                 + ", \"subject\": " + quote(subject)
+                 + ", \"file\": " + quote(file)
+                 + ", \"line\": " + line
+                 + ", \"actual\": " + number(actual)
+                 + ", \"limit\": " + number(limit)
+                 + ", \"unit\": " + quote(unit)
+                 + ", \"overBy\": " + String.format("%.2f", overBy())
+                 + ", \"note\": " + quote(note)
+                 + ", \"detail\": " + quote(detail()) + "}";
         }
 
         String text() {
-            return "  " + file + ":" + line + "  " + rule + "  (" + detail + ")";
+            String at = where();
+            return "  " + (at.isEmpty() ? subject : at) + "  " + rule + "  (" + detail()
+                 + (at.isEmpty() ? "" : "  [" + subject + "]") + ")";
         }
 
         public static String quote(String value) {

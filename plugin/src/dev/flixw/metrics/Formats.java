@@ -28,14 +28,20 @@ final class Formats {
         if (r.smells().isEmpty()) {
             b.append("No findings.\n\n");
         } else {
-            // Grouped, and the biggest group first: ten instances of one rule is one decision to
-            // make, while ten separate rules is ten. An ungrouped list hides which it is.
+            // Grouped, because ten instances of one rule is one decision to make while ten
+            // separate rules is ten, and an ungrouped list hides which it is.
+            //
+            // Ordered by the worst instance in each group, not by how many there are: sixteen
+            // definitions one doc comment short is a chore, and one definition at four times the
+            // nesting limit is a problem. Counting alone puts the chore first every time.
             Map<String, List<SourceMetrics.Smell>> byRule = new LinkedHashMap<>();
             r.smells().stream()
                 .collect(java.util.stream.Collectors.groupingBy(SourceMetrics.Smell::rule))
                 .entrySet().stream()
-                .sorted((x, y) -> Integer.compare(y.getValue().size(), x.getValue().size()))
-                .forEach(e -> byRule.put(e.getKey(), e.getValue()));
+                .sorted((x, y) -> Double.compare(worst(y.getValue()), worst(x.getValue())))
+                .forEach(e -> byRule.put(e.getKey(),
+                    e.getValue().stream()
+                        .sorted((a, c) -> Double.compare(c.overBy(), a.overBy())).toList()));
 
             b.append("## Findings (").append(r.smells().size()).append(")\n\n");
             for (Map.Entry<String, List<SourceMetrics.Smell>> e : byRule.entrySet()) {
@@ -43,8 +49,13 @@ final class Formats {
                  .append(e.getValue().size()).append("\n\n");
                 b.append("_").append(advice(e.getKey())).append("_\n\n");
                 for (SourceMetrics.Smell s : e.getValue()) {
-                    b.append("- `").append(s.file()).append(':').append(s.line()).append("` — ")
-                     .append(s.detail()).append('\n');
+                    b.append("- ");
+                    if (!s.where().isEmpty()) b.append('`').append(s.where()).append("` ");
+                    b.append('`').append(s.subject()).append("` — ").append(s.detail());
+                    // The multiple, so a reader can see at a glance which of sixteen findings is
+                    // the one actually worth opening.
+                    if (s.overBy() > 1) b.append(String.format("  _(%.1fx)_", s.overBy()));
+                    b.append('\n');
                 }
                 b.append('\n');
             }
@@ -67,6 +78,11 @@ final class Formats {
             b.append("| ").append(pair[0]).append(" | ").append(pair[1]).append(" |\n");
         }
         return b.toString();
+    }
+
+    /** The worst instance in a group, which is what decides the group's place. */
+    private static double worst(List<SourceMetrics.Smell> smells) {
+        return smells.stream().mapToDouble(SourceMetrics.Smell::overBy).max().orElse(0);
     }
 
     /**
@@ -128,7 +144,8 @@ final class Formats {
             SourceMetrics.Smell s = r.smells().get(i);
             b.append("        {\"ruleId\": ").append(SourceMetrics.Smell.quote(s.rule()));
             b.append(", \"level\": \"note\"");
-            b.append(", \"message\": {\"text\": ").append(SourceMetrics.Smell.quote(s.detail()));
+            b.append(", \"message\": {\"text\": ")
+             .append(SourceMetrics.Smell.quote(s.subject() + ": " + s.detail()));
             b.append("}, \"locations\": [{\"physicalLocation\": {");
             b.append("\"artifactLocation\": {\"uri\": ").append(SourceMetrics.Smell.quote(s.file()));
             // A module-level finding has no file. SARIF requires a region's line to be >= 1, so

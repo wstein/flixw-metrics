@@ -163,6 +163,36 @@ Markdown puts findings first and totals last, grouped by rule with the largest g
 instances of one rule is one decision, ten separate rules is ten, and an ungrouped list hides
 which it is. Every rule carries a one-line action, because a finding without one is a complaint.
 
+### A finding is data, not a sentence
+
+```json
+{"rule": "too-many-parameters", "subject": "Json.decode", "file": "src/Json.flix", "line": 88,
+ "actual": 12, "limit": 5, "unit": "parameters", "overBy": 2.40,
+ "note": "widest is a local definition, not the signature",
+ "detail": "12 parameters, over 5 (widest is a local definition, not the signature)"}
+```
+
+An earlier version carried only a rule, a location and `detail`. That reads fine and is nearly
+useless to a consumer: sorting by severity, filtering on "more than twice the limit", or
+charting a number over time all mean parsing English back into figures somebody already had.
+So the measurement and the limit are fields, and **`detail` is derived from them** — which also
+means the two cannot drift apart.
+
+`overBy` is a **multiple**, so findings of different kinds order against each other: 12
+parameters against a limit of 5 and 180 lines against 60 are both 2.4x, and "how bad is this"
+means the same for both. The Markdown work plan uses it to order groups by their worst instance
+rather than by size — sixteen definitions one doc comment short is a chore; one definition at
+four times the nesting limit is a problem, and counting alone puts the chore first.
+
+A finding with **no unit is categorical**: something is absent, and there is no amount by which
+it is absent. Those score exactly 1 and sort below anything that actually exceeded a limit.
+Modelling one as a magnitude produced `"0 doc comments, over 1"` with `overBy: 0.0` — both
+unreadable and sorted least-severe by an accident of arithmetic rather than a decision.
+
+`subject` is separate from `file`/`line` on purpose: a crammed line is located at the line but
+*owned* by the local definition holding it, and a module-level finding has a subject and no
+location at all.
+
 ### Findings are reported, never enforced
 
 `Thresholds` is the single place a measurement becomes a finding, and nothing there fails a

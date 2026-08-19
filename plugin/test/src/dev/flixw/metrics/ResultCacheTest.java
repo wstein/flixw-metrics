@@ -70,8 +70,10 @@ public final class ResultCacheTest {
             // wrong answer this cache must never produce.
             Metrics.Report original = new Metrics.Report(1, 2, 3, 4, 5, 6, 7,
                 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26,
-                List.of(new SourceMetrics.Smell("line-too-long", "src/A.flix", 12, "133 columns"),
-                        new SourceMetrics.Smell("quoting", "src/\"odd\".flix", 1, "a \\ and a \" ")),
+                List.of(new SourceMetrics.Smell("line-too-long", "src/A.flix:12", "src/A.flix",
+                            12, 133, 100, "", "columns"),
+                        new SourceMetrics.Smell("quoting", "a \\ and a \" ", "src/\"odd\".flix",
+                            1, 2, 1, "a note with \" and \\", "things")),
                 List.of(new Rankings.Rank("longest", "Foo.bar", "src/A.flix", 7, "310 lines"),
                         new Rankings.Rank("most-coupled", "Foo", "", 0, "9 modules used")));
             ResultCache.write(pluginCache, base, original.render(Metrics.Format.JSON));

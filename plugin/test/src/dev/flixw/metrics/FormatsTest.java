@@ -15,8 +15,10 @@ public final class FormatsTest {
 
     public static void main(String[] args) {
         Metrics.Report report = report(List.of(
-            new SourceMetrics.Smell("deeply-nested", "src/A.flix", 12, "5 levels"),
-            new SourceMetrics.Smell("wide-coupling", "Wide", 0, "20 modules")));
+            new SourceMetrics.Smell("deeply-nested", "A.deep", "src/A.flix", 12, 5, 4, "",
+                "levels"),
+            new SourceMetrics.Smell("wide-coupling", "Wide", "", 0, 20, 12, "",
+                "modules depended on")));
 
         String sarif = report.render(Metrics.Format.SARIF);
         require(!sarif.contains("\"startLine\": 0"), "SARIF never emits a zero start line");
@@ -32,6 +34,10 @@ public final class FormatsTest {
         require(md.indexOf("## Findings") < md.indexOf("## Totals"),
             "findings come before totals: the reader arrived with a question, not a census");
         require(md.contains("_Invert a condition"), "each rule carries an action");
+        // 20/12 is 1.7x and 5/4 is 1.3x, so the worse group leads regardless of group size.
+        require(md.indexOf("wide-coupling") < md.indexOf("deeply-nested"),
+            "groups are ordered by their worst instance, not by how many they hold");
+        require(md.contains("1.7x"), "each finding shows how far over it is");
 
         Metrics.Report clean = report(List.of());
         require(clean.render(Metrics.Format.MARKDOWN).contains("No findings."),

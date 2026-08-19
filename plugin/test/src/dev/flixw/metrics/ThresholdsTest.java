@@ -23,6 +23,11 @@ public final class ThresholdsTest {
         DefInfo longDef = def("Foo.big", 400, 1, 0, 1, 0, true, false, true);
         require(has(Thresholds.apply(List.of(longDef), List.of()), "definition-too-long"),
             "a long definition is reported");
+        // 400 lines against a limit of 60 is 6.7x. The multiple is what lets findings of
+        // different kinds be ordered against each other at all.
+        require(Thresholds.apply(List.of(longDef), List.of()).stream()
+            .anyMatch(s -> Math.abs(s.overBy() - 400.0 / Thresholds.MAX_LINES) < 0.001),
+            "a finding knows how far over it is");
 
         // The point of measuring locals: the outer signature says two, the loop inside says nine.
         DefInfo wide = def("Foo.threads", 5, 2, 9, 1, 0, false, false, true);
@@ -52,9 +57,11 @@ public final class ThresholdsTest {
         DefInfo crammed = new DefInfo("Foo.outer", "Foo", "src/Foo.flix", 1, 90, 1, 0, 1, 1, 0,
             44, 57, "Foo.outer.loop", 0, 0, 1, false, false, true, List.of());
         List<SourceMetrics.Smell> found = Thresholds.apply(List.of(crammed), List.of());
+        // The owner is the *subject* now, not buried in prose: a consumer can group by it.
         require(found.stream().anyMatch(s -> s.rule().equals("crammed-line")
-            && s.line() == 57 && s.detail().contains("Foo.outer.loop")),
-            "a crammed line names the local that owns it, and its own line");
+            && s.line() == 57 && s.subject().equals("Foo.outer.loop")
+            && s.actual() == 44 && s.limit() == Thresholds.MAX_LINE_TOKENS),
+            "a crammed line names the local that owns it, its line, and both numbers");
 
         require(has(Thresholds.apply(List.of(),
             List.of(new ModuleInfo("Wide", 3, 40, 0, 99))), "wide-coupling"),

@@ -161,12 +161,16 @@ final class Metrics {
         private static List<SourceMetrics.Smell> smellsFromJson(String json) {
             List<SourceMetrics.Smell> out = new ArrayList<>();
             Matcher m = Pattern.compile(
-                "\\{\\s*\"rule\":\\s*\"((?:[^\"\\\\]|\\\\.)*)\",\\s*\"file\":\\s*\"((?:[^\"\\\\]|\\\\.)*)\","
-              + "\\s*\"line\":\\s*(\\d+),\\s*\"detail\":\\s*\"((?:[^\"\\\\]|\\\\.)*)\"\\s*\\}")
-                .matcher(json);
+                "\\{\\s*\"rule\":\\s*\"((?:[^\"\\\\]|\\\\.)*)\",\\s*\"subject\":\\s*\"((?:[^\"\\\\]|\\\\.)*)\","
+              + "\\s*\"file\":\\s*\"((?:[^\"\\\\]|\\\\.)*)\",\\s*\"line\":\\s*(\\d+),"
+              + "\\s*\"actual\":\\s*([0-9.]+),\\s*\"limit\":\\s*([0-9.]+),"
+              + "\\s*\"unit\":\\s*\"((?:[^\"\\\\]|\\\\.)*)\",\\s*\"overBy\":\\s*[0-9.]+,"
+              + "\\s*\"note\":\\s*\"((?:[^\"\\\\]|\\\\.)*)\"").matcher(json);
             while (m.find())
                 out.add(new SourceMetrics.Smell(unquote(m.group(1)), unquote(m.group(2)),
-                    Integer.parseInt(m.group(3)), unquote(m.group(4))));
+                    unquote(m.group(3)), Integer.parseInt(m.group(4)),
+                    Double.parseDouble(m.group(5)), Double.parseDouble(m.group(6)),
+                    unquote(m.group(8)), unquote(m.group(7))));
             return out;
         }
 

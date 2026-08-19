@@ -69,41 +69,45 @@ final class Thresholds {
         List<SourceMetrics.Smell> out = new ArrayList<>();
         for (DefInfo d : defs) {
             if (!d.isTest() && d.lines() > MAX_LINES)
-                out.add(smell("definition-too-long", d,
-                    d.lines() + " lines, over " + MAX_LINES));
+                out.add(at(d, "definition-too-long", d.lines(), MAX_LINES, "lines", ""));
             if (d.widestParameterList() > MAX_PARAMETERS)
-                out.add(smell("too-many-parameters", d,
-                    d.widestParameterList() + " parameters, over " + MAX_PARAMETERS
-                        + (d.maxLocalParameters() > d.parameters()
-                           ? " (widest is a local definition, not the signature)" : "")));
-            if (d.nesting() > MAX_NESTING)
-                out.add(smell("deeply-nested", d, d.nesting() + " levels, over " + MAX_NESTING));
-            if (d.cognitiveDensity() > MAX_COGNITIVE_DENSITY && d.lines() > 3)
-                out.add(smell("dense", d, String.format("%.1f complexity per line, over %.1f",
-                    d.cognitiveDensity(), MAX_COGNITIVE_DENSITY)));
-            // Against the local that owns the line, not the definition it sits in: a crammed
-            // line blamed on a long outer definition sends the reader to the wrong place.
-            if (d.maxLineTokens() > MAX_LINE_TOKENS)
-                out.add(new SourceMetrics.Smell("crammed-line", d.file(), d.maxLineTokensLine(),
-                    d.maxLineTokens() + " tokens on one line, over " + MAX_LINE_TOKENS
-                        + "  [" + d.maxLineTokensOwner() + "]"));
+                out.add(at(d, "too-many-parameters", d.widestParameterList(), MAX_PARAMETERS,
+                    "parameters",
+                    d.maxLocalParameters() > d.parameters()
+                        ? "widest is a local definition, not the signature" : ""));
             if (d.returnWidth() > MAX_RETURN_WIDTH)
-                out.add(smell("wide-return", d,
-                    d.returnWidth() + " parts returned, over " + MAX_RETURN_WIDTH));
+                out.add(at(d, "wide-return", d.returnWidth(), MAX_RETURN_WIDTH, "parts", ""));
+            if (d.nesting() > MAX_NESTING)
+                out.add(at(d, "deeply-nested", d.nesting(), MAX_NESTING, "levels", ""));
+            if (d.cognitiveDensity() > MAX_COGNITIVE_DENSITY && d.lines() > 3)
+                out.add(at(d, "dense", d.cognitiveDensity(), MAX_COGNITIVE_DENSITY,
+                    "complexity per line", ""));
+            // Against the local that owns the line, not the definition it sits in: a crammed
+            // line blamed on a long outer definition sends the reader to the wrong place. That
+            // is why the subject is the owner while the location is the line itself.
+            if (d.maxLineTokens() > MAX_LINE_TOKENS)
+                out.add(new SourceMetrics.Smell("crammed-line", d.maxLineTokensOwner(), d.file(),
+                    d.maxLineTokensLine(), d.maxLineTokens(), MAX_LINE_TOKENS, "", "tokens"));
             // Public, not a test, and nobody wrote down what it is for. The one finding here
             // that is about the reader rather than the writer.
+            //
+            // Categorical, not a magnitude: something is absent, and there is no amount by which
+            // it is absent. It carries no unit, which is how the schema says so.
             if (d.isPublic() && !d.isTest() && !d.hasDoc())
-                out.add(smell("undocumented-public", d, "public with no doc comment"));
+                out.add(at(d, "undocumented-public", 1, 1, "", "public with no doc comment"));
         }
         for (ModuleInfo m : modules) {
             if (m.fanOut() > MAX_FAN_OUT)
-                out.add(new SourceMetrics.Smell("wide-coupling", m.name(), 0,
-                    m.fanOut() + " modules depended on, over " + MAX_FAN_OUT));
+                // A module has no file of its own; it spans them by definition.
+                out.add(new SourceMetrics.Smell("wide-coupling", m.name(), "", 0,
+                    m.fanOut(), MAX_FAN_OUT, "", "modules depended on"));
         }
         return out;
     }
 
-    private static SourceMetrics.Smell smell(String rule, DefInfo d, String detail) {
-        return new SourceMetrics.Smell(rule, d.file(), d.line(), detail + "  [" + d.name() + "]");
+    private static SourceMetrics.Smell at(DefInfo d, String rule, double actual, double limit,
+                                          String unit, String note) {
+        return new SourceMetrics.Smell(rule, d.name(), d.file(), d.line(), actual, limit, note,
+            unit);
     }
 }
