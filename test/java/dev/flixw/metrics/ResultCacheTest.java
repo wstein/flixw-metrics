@@ -27,7 +27,8 @@ public final class ResultCacheTest {
             Path jar = work.resolve("compiler.jar");
             Files.writeString(jar, "pretend compiler\n");
 
-            Main.Context context = new Main.Context(project, jar, Path.of("java"), work);
+            Path pluginCache = work.resolve("plugin-cache");
+            Main.Context context = new Main.Context(project, jar, Path.of("java"), pluginCache);
             List<Path> sources = List.of(src.resolve("A.flix"));
             String base = ResultCache.key(context, sources, "1.0.0");
             require(base != null, "a key can be computed");
@@ -64,13 +65,13 @@ public final class ResultCacheTest {
             Files.delete(project.resolve("flix.toml"));
 
             // Round trip, including the shapes that must not be trusted.
-            ResultCache.write(work, base, new ReflectionEngine.Report(1, 2, 3, 4, 5, 6, 7, 8)
+            ResultCache.write(pluginCache, base, new ReflectionEngine.Report(1, 2, 3, 4, 5, 6, 7, 8)
                 .render(ReflectionEngine.Format.JSON));
             ReflectionEngine.Report back = ReflectionEngine.Report.fromJson(
-                ResultCache.read(work, base));
+                ResultCache.read(pluginCache, base));
             require(back != null && back.files() == 1 && back.definitions() == 2
                 && back.typeAliases() == 8, "a written entry reads back intact");
-            require(ResultCache.read(work, "0".repeat(64)) == null, "an absent entry is a miss");
+            require(ResultCache.read(pluginCache, "0".repeat(64)) == null, "an absent entry is a miss");
             require(ReflectionEngine.Report.fromJson("{\"schemaVersion\": 99}") == null,
                 "a future schema is a miss, not a wrong answer");
             require(ReflectionEngine.Report.fromJson("{\"schemaVersion\": 1, \"files\": 1}") == null,
@@ -78,9 +79,14 @@ public final class ResultCacheTest {
             require(ReflectionEngine.Report.fromJson("not json at all") == null,
                 "a corrupt entry is a miss");
 
-            // It must not write where flixw lists installed plugin versions.
-            require(!ResultCache.directory(work).startsWith(work.resolve("plugins")),
-                "the cache stays out of <cache>/plugins, which flixw enumerates as versions");
+            // The directory is flixw's to name. A wrapper too old to set FLIXW_PLUGIN_CACHE
+            // must leave the plugin uncached rather than have it invent a path flixw will
+            // never collect.
+            require(ResultCache.directory(context) == pluginCache, "flixw names the directory");
+            Main.Context noCache = new Main.Context(project, jar, Path.of("java"), null);
+            require(ResultCache.directory(noCache) == null, "an older wrapper means no cache");
+            require(ResultCache.read(null, base) == null, "reads are a miss without a directory");
+            ResultCache.write(null, base, "{}");
             System.out.println("ResultCacheTest: ok");
         } finally {
             delete(work);

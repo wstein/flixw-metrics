@@ -76,10 +76,13 @@ Keyed on everything that can change the answer, and nothing else:
 Paths as well as contents, so a **deleted** file invalidates: `files` is part of the report.
 Relative paths, so the same tree checked out at two locations is one entry rather than two.
 
-Entries live in `<FLIXW_CACHE_HOME>/plugin-cache/flixw-metrics/<key>.json`. Deliberately not
-under `<cache>/plugins/`: flixw lists the directories beneath `plugins/<name>/` as installed
-*versions*, so a `results/` directory there would appear in `./flixw plugin list` as a version
-that cannot be run.
+Entries live wherever `FLIXW_PLUGIN_CACHE` points — flixw's own answer to "where may a plugin
+keep derived data", which it deletes when this plugin is removed or purged. The directory is
+**not** chosen here. An earlier draft picked its own path under the cache; it worked, and it
+left bytes that nothing would ever clean up.
+
+A wrapper too old to set the variable leaves the plugin **uncached** rather than falling back
+to a guessed path, for the same reason: an uncollected directory is worse than a slow run.
 
 The rule the implementation follows everywhere: **every failure is a miss**. An unreadable
 entry, a truncated one, an unknown `schemaVersion`, a cache directory that cannot be written
@@ -88,10 +91,10 @@ is working; a cache that disagrees with the compiler is worse than no cache at a
 
 `FLIXW_CACHE_HOME` is optional. Without it the plugin runs uncached rather than failing.
 
-## What flixw does not yet collect
+## Lifecycle
 
-`./flixw wrapper --purge` knows about compilers, JDKs, plugins and companion assets. It does
-not know about `plugin-cache/`, so these entries are not age-collected today. They are a few
-hundred bytes each and content-addressed, so stale ones are harmless — but if the directory
-is ever expected to grow, the honest fix is for the plugin ABI to say where a plugin may keep
-derived data, rather than for each plugin to invent a corner of the cache.
+`./flixw plugin remove flixw-metrics` deletes these entries with the plugin. `./flixw wrapper
+--purge` collects them once the plugin is no longer installed, without consulting a usage
+marker — the marker belonged to the plugin and went with it, so the age rule would otherwise
+retain them for ever as "never seen used". While the plugin *is* installed, flixw does not
+touch them: that would be a cache invalidation this plugin could not know had happened.

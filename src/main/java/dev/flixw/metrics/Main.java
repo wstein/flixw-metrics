@@ -82,8 +82,8 @@ public final class Main {
             // phase inherits this process's stdout, so it never sees the report as a value --
             // and parsing it back out of a stream the compiler also writes to would be reading
             // our own output past whatever Flix chose to print alongside it.
-            if (context.cacheHome() != null)
-                ResultCache.write(context.cacheHome(),
+            if (context.pluginCache() != null)
+                ResultCache.write(context.pluginCache(),
                     ResultCache.key(context, sources, version()),
                     report.render(ReflectionEngine.Format.JSON));
             System.out.print(report.render(parseFormat(args)));
@@ -104,9 +104,9 @@ public final class Main {
      * the plugin faster, never make it disagree with the compiler.
      */
     private static ReflectionEngine.Report cached(Context context) throws IOException {
-        if (context.cacheHome() == null) return null;
+        if (context.pluginCache() == null) return null;
         List<Path> sources = ReflectionEngine.projectFiles(context.projectRoot());
-        String json = ResultCache.read(context.cacheHome(),
+        String json = ResultCache.read(context.pluginCache(),
             ResultCache.key(context, sources, version()));
         return json == null ? null : ReflectionEngine.Report.fromJson(json);
     }
@@ -171,13 +171,14 @@ public final class Main {
             + "manifest, the pinned compiler or this plugin change.");
     }
 
-    record Context(Path projectRoot, Path compilerJar, Path java, Path cacheHome) {
+    record Context(Path projectRoot, Path compilerJar, Path java, Path pluginCache) {
         static Context read() {
             if (!"1".equals(System.getenv("FLIXW_ABI_VERSION")))
                 throw new Usage("requires flixw ABI version 1");
-            // Optional, unlike the rest: the ABI provides it, but a report is still correct
-            // without a cache, so a missing value disables caching instead of failing the run.
-            String cache = System.getenv("FLIXW_CACHE_HOME");
+            // Optional, unlike the rest. It arrived after ABI 1 was first published, so a
+            // wrapper that predates it simply does not set it -- and a report is correct
+            // without a cache, so absence disables caching rather than failing the run.
+            String cache = System.getenv("FLIXW_PLUGIN_CACHE");
             return new Context(path("FLIXW_PROJECT_ROOT"), path("FLIXW_COMPILER_JAR"),
                 path("FLIXW_JAVA_HOME").resolve("bin").resolve("java"),
                 cache == null || cache.isBlank()
