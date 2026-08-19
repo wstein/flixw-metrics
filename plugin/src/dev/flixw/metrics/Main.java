@@ -60,9 +60,14 @@ public final class Main {
                         + "       missing: " + String.join(", ", capabilities.missing()));
             }
             Metrics.Format format = parseFormat(args);
-            Metrics.Report hit = cached(context);
+            List<Path> sources = Metrics.projectFiles(context.projectRoot());
+            CompilerModel.Model hit = cached(context, sources);
             if (hit != null) {
-                System.out.print(hit.render(format));
+                // Findings, rankings and formatting are recomputed from the cached
+                // measurements, so a changed threshold takes effect on the next run rather
+                // than on the next cache miss.
+                System.out.print(Metrics.of(sources.size(), hit,
+                    SourceMetrics.measure(context.projectRoot(), sources)).render(format));
                 return;
             }
             System.exit(spawnBridge(context, args));
@@ -87,16 +92,16 @@ public final class Main {
                 throw new Usage("no adapter links against the pinned compiler\n"
                     + "       this build supports: " + String.join(", ", Adapters.known()));
             CompilerModel.Model m = model.measure(context.projectRoot());
+            // The measurements, written before anything is derived from them.
+            if (context.pluginCache() != null)
+                ResultCache.write(context.pluginCache(),
+                    ResultCache.key(context, sources, version()), Wire.encode(m));
             SourceMetrics text = SourceMetrics.measure(context.projectRoot(), sources);
             Metrics.Report report = Metrics.of(sources.size(), m, text);
             // Written before rendering, and by this phase rather than the outer one. The outer
             // phase inherits this process's stdout, so it never sees the report as a value --
             // and parsing it back out of a stream the compiler also writes to would be reading
             // our own output past whatever Flix chose to print alongside it.
-            if (context.pluginCache() != null)
-                ResultCache.write(context.pluginCache(),
-                    ResultCache.key(context, sources, version()),
-                    report.render(Metrics.Format.JSON));
             System.out.print(report.render(parseFormat(args)));
         } catch (Usage | Metrics.Failure | CompilerModel.ModelFailure e) {
             System.err.println("flixw-metrics: " + e.getMessage());
@@ -108,18 +113,22 @@ public final class Main {
     }
 
     /**
-     * The cached report for these exact inputs, or null.
+     * The compiler's measurements for these exact inputs, or null.
      *
-     * <p>Every failure here returns null, which costs a recomputation and never a wrong
-     * answer. That asymmetry is the whole design rule for this cache: it may only ever make
-     * the plugin faster, never make it disagree with the compiler.
+     * <p>The <em>measurements</em> are cached, never the report: they are facts about the source
+     * and cannot go stale while the key holds. Findings and rankings are judgements about those
+     * facts, cost microseconds, and are recomputed every run -- so editing a threshold changes
+     * the next run rather than waiting for a cache miss.
+     *
+     * <p>Every failure returns null, which costs a recomputation and never a wrong answer. That
+     * asymmetry is the whole design rule here: this cache may only make the plugin faster, never
+     * make it disagree with the compiler.
      */
-    private static Metrics.Report cached(Context context) throws IOException {
+    private static CompilerModel.Model cached(Context context, List<Path> sources) {
         if (context.pluginCache() == null) return null;
-        List<Path> sources = Metrics.projectFiles(context.projectRoot());
-        String json = ResultCache.read(context.pluginCache(),
+        String text = ResultCache.read(context.pluginCache(),
             ResultCache.key(context, sources, version()));
-        return json == null ? null : Metrics.Report.fromJson(json);
+        return text == null ? null : Wire.decode(text);
     }
 
     /**

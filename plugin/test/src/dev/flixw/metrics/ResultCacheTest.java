@@ -65,37 +65,28 @@ public final class ResultCacheTest {
             Files.delete(project.resolve("flix.toml"));
 
             // Round trip, including the shapes that must not be trusted.
-            // Smells go through the same round trip as the counts. An entry that kept the
-            // numbers and lost the findings would render as a clean project, which is the one
-            // wrong answer this cache must never produce.
-            Metrics.Report original = new Metrics.Report(1, 2, 3, 4, 5, 6, 7,
-                8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26,
-                List.of(new SourceMetrics.Smell("line-too-long", "src/A.flix:12", "src/A.flix",
-                            12, 133, 100, "", "columns"),
-                        new SourceMetrics.Smell("quoting", "a \\ and a \" ", "src/\"odd\".flix",
-                            1, 2, 1, "a note with \" and \\", "things")),
-                List.of(new Rankings.Rank("longest", "Foo.bar", "src/A.flix", 7, "310 lines"),
-                        new Rankings.Rank("most-coupled", "Foo", "", 0, "9 modules used")));
-            ResultCache.write(pluginCache, base, original.render(Metrics.Format.JSON));
-            Metrics.Report back = Metrics.Report.fromJson(
-                ResultCache.read(pluginCache, base));
-            require(back != null && back.files() == 1 && back.definitions() == 3
-                && back.linesOverLimit() == 20 && back.purityPercent() == 26,
-                "a written entry reads back intact");
-            require(back.smells().size() == 2, "smells survive the round trip");
-            require(back.smells().equals(original.smells()),
-                "including a file name and detail that need escaping");
-            // Rankings round-trip too, including a module entry whose file is empty -- one
-            // cache entry has to serve every format, and a format that ranks cannot be served
-            // by an entry that dropped the ranking.
-            require(back.ranks().equals(original.ranks()), "rankings survive the round trip");
+            // The cache holds the compiler's *measurements*, not the report, so this is what
+            // has to survive: a definition with everything set, and a symbol carrying the tab
+            // the format itself uses to separate fields.
+            var def = new dev.flixw.metrics.sdk.CompilerModel.DefInfo(
+                "Foo.od\td", "Foo", "src/A.flix", 3, 40, 2, 9, 1, 4, 12, 31, 7, "Foo.odd.loop",
+                2, 5, 6, true, false, true, List.of("IO", "Net"));
+            var mod = new dev.flixw.metrics.sdk.CompilerModel.ModuleInfo("Foo", 1, 40, 2, 3);
+            var model = new dev.flixw.metrics.sdk.CompilerModel.Model(List.of(def), List.of(mod),
+                new dev.flixw.metrics.sdk.CompilerModel.LineInfo(40, 30, 4, 3, 3), 1, 2, 3, 4, 5, 6);
+            ResultCache.write(pluginCache, base, Wire.encode(model));
+            var back = Wire.decode(ResultCache.read(pluginCache, base));
+            require(back != null, "a written entry reads back");
+            require(back.defs().equals(model.defs()),
+                "every definition field survives, including a tab inside a symbol");
+            require(back.modules().equals(model.modules()), "modules survive");
+            require(back.lines().equals(model.lines()), "line counts survive");
+            require(back.traits() == 1 && back.typeAliases() == 6, "the counts survive");
+            require(Wire.decode("v\t99\n") == null, "an unknown wire version is a miss");
+            require(Wire.decode("not a record at all") == null, "a corrupt entry is a miss");
+            require(Wire.decode("v\t" + Wire.VERSION + "\n") == null,
+                "an entry missing its required records is a miss, not a partial model");
             require(ResultCache.read(pluginCache, "0".repeat(64)) == null, "an absent entry is a miss");
-            require(Metrics.Report.fromJson("{\"schemaVersion\": 99}") == null,
-                "a future schema is a miss, not a wrong answer");
-            require(Metrics.Report.fromJson("{\"schemaVersion\": 1, \"files\": 1}") == null,
-                "a truncated entry is a miss, not a partial report");
-            require(Metrics.Report.fromJson("not json at all") == null,
-                "a corrupt entry is a miss");
 
             // The directory is flixw's to name. A wrapper too old to set FLIXW_PLUGIN_CACHE
             // must leave the plugin uncached rather than have it invent a path flixw will

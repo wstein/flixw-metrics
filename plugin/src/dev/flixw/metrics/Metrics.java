@@ -8,8 +8,6 @@ import java.util.ArrayList;
 import dev.flixw.metrics.sdk.CompilerModel;
 
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /** A deliberately small semantic metrics engine over Flix's runtime-checked typed root. */
 final class Metrics {
@@ -40,9 +38,16 @@ final class Metrics {
                   int commentLines, int docCommentLines, int blankLines, int commentPercent,
                   int longestLine, int linesOverLimit, int datalogRules, int datalogFacts,
                   int widestReturn, int tests, int docCoveragePercent,
-                  int purityPercent, List<SourceMetrics.Smell> smells, List<Rankings.Rank> ranks) {
+                  int purityPercent, List<SourceMetrics.Smell> smells, List<Rankings.Rank> ranks,
+                  List<CompilerModel.DefInfo> defs, List<CompilerModel.ModuleInfo> modulesList) {
 
-        static final int SCHEMA = 8;
+        /**
+         * The output schema, for consumers. It is deliberately not what the cache checks:
+         * nothing reads this report back, so a schema change is a promise to a consumer rather
+         * than a compatibility question for us. {@link Wire#VERSION} is the cache's own guard.
+         */
+        static final int SCHEMA = 9;
+
 
         String render(Format format) {
             return switch (format) {
@@ -51,6 +56,52 @@ final class Metrics {
                 case SARIF -> Formats.sarif(this);
                 case TEXT -> text();
             };
+        }
+
+        /**
+         * One definition, in full.
+         *
+         * <p>The aggregates say what a project is like and the rankings say where to start; this
+         * is for the consumer that wants to ask its own question -- chart complexity per module,
+         * diff two revisions, find every effectful definition without a doc comment. None of
+         * those can be recovered from a total, and inventing a flag for each is a worse answer
+         * than handing over what was measured.
+         */
+        private static String defJson(CompilerModel.DefInfo d) {
+            StringBuilder e = new StringBuilder("[");
+            for (int i = 0; i < d.effects().size(); i++) {
+                if (i > 0) e.append(", ");
+                e.append(SourceMetrics.Smell.quote(d.effects().get(i)));
+            }
+            return "{\"name\": " + SourceMetrics.Smell.quote(d.name())
+                 + ", \"module\": " + SourceMetrics.Smell.quote(d.module())
+                 + ", \"file\": " + SourceMetrics.Smell.quote(d.file())
+                 + ", \"line\": " + d.line() + ", \"lines\": " + d.lines()
+                 + ", \"parameters\": " + d.parameters()
+                 + ", \"maxLocalParameters\": " + d.maxLocalParameters()
+                 + ", \"localDefinitions\": " + d.localDefs()
+                 + ", \"nesting\": " + d.nesting()
+                 + ", \"cognitive\": " + d.cognitive()
+                 + ", \"cognitiveDensity\": " + String.format("%.3f", d.cognitiveDensity())
+                 + ", \"maxLineTokens\": " + d.maxLineTokens()
+                 + ", \"maxLineTokensLine\": " + d.maxLineTokensLine()
+                 + ", \"maxLineTokensOwner\": " + SourceMetrics.Smell.quote(d.maxLineTokensOwner())
+                 + ", \"datalogRules\": " + d.datalogRules()
+                 + ", \"datalogFacts\": " + d.datalogFacts()
+                 + ", \"returnWidth\": " + d.returnWidth()
+                 + ", \"isPublic\": " + d.isPublic()
+                 + ", \"isTest\": " + d.isTest()
+                 + ", \"hasDoc\": " + d.hasDoc()
+                 + ", \"effects\": " + e.append(']') + "}";
+        }
+
+        private static String moduleJson(CompilerModel.ModuleInfo m) {
+            return "{\"name\": " + SourceMetrics.Smell.quote(m.name())
+                 + ", \"definitions\": " + m.definitions()
+                 + ", \"lines\": " + m.lines()
+                 + ", \"fanIn\": " + m.fanIn()
+                 + ", \"fanOut\": " + m.fanOut()
+                 + ", \"instability\": " + String.format("%.3f", m.instability()) + "}";
         }
 
         /** The same label/value pairs both renderers use; Markdown needs them too. */
@@ -63,6 +114,16 @@ final class Metrics {
             b.append("  \"schemaVersion\": ").append(SCHEMA).append(",\n");
             for (String[] pair : fields()) b.append("  \"").append(pair[0]).append("\": ")
                                             .append(pair[1]).append(",\n");
+            b.append("  \"definitions\": [");
+            for (int i = 0; i < defs.size(); i++) {
+                b.append(i == 0 ? "\n" : ",\n").append("    ").append(defJson(defs.get(i)));
+            }
+            b.append(defs.isEmpty() ? "],\n" : "\n  ],\n");
+            b.append("  \"modules\": [");
+            for (int i = 0; i < modulesList.size(); i++) {
+                b.append(i == 0 ? "\n" : ",\n").append("    ").append(moduleJson(modulesList.get(i)));
+            }
+            b.append(modulesList.isEmpty() ? "],\n" : "\n  ],\n");
             b.append("  \"rankings\": [");
             for (int i = 0; i < ranks.size(); i++) {
                 b.append(i == 0 ? "\n" : ",\n").append("    ").append(ranks.get(i).json());
@@ -108,86 +169,10 @@ final class Metrics {
             };
         }
 
-        /**
-         * Reads back what {@link #json} wrote, or null if it is not that.
-         *
-         * <p>This parses one fixed shape this class emitted itself, which is why scanning for
-         * {@code "name": <integer>} is enough and a JSON library would be a dependency bought
-         * for nothing. Null on anything unexpected -- a truncated file, a hand-edited entry, a
-         * {@code schemaVersion} this build does not know -- and the caller recomputes. A cache
-         * entry is an optimisation, so the only wrong answer here is a confident one.
-         *
-         * <p>Smells are not read back. They are derived from the same inputs as the counts, so
-         * an entry carrying counts without them would be a partial report; a cached entry is
-         * therefore only reusable in full, and {@link #smellsFromJson} rebuilds the list.
-         */
-        static Report fromJson(String json) {
-            Integer schema = field(json, "schemaVersion");
-            if (schema == null || schema != SCHEMA) return null;
-            int[] v = new int[26];
-            String[] names = {"files", "modules", "definitions", "localDefinitions",
-                "effectfulDefinitions", "cognitive", "traits", "instances", "enums", "structs",
-                "effects", "typeAliases", "lines", "codeLines", "commentLines",
-                "docCommentLines", "blankLines", "commentPercent", "longestLine",
-                "linesOverLimit", "datalogRules", "datalogFacts", "widestReturn", "tests",
-                "docCoveragePercent",
-                "purityPercent"};
-            for (int i = 0; i < names.length; i++) {
-                Integer n = field(json, names[i]);
-                if (n == null) return null;
-                v[i] = n;
-            }
-            List<SourceMetrics.Smell> smells = smellsFromJson(json);
-            if (smells == null) return null;
-            List<Rankings.Rank> ranks = ranksFromJson(json);
-            return new Report(v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7], v[8], v[9],
-                v[10], v[11], v[12], v[13], v[14], v[15], v[16], v[17], v[18], v[19], v[20],
-                v[21], v[22], v[23], v[24], v[25], smells, ranks);
-        }
 
-        /** Same fixed shape as the smells above, and read back the same deliberately dumb way. */
-        private static List<Rankings.Rank> ranksFromJson(String json) {
-            List<Rankings.Rank> out = new ArrayList<>();
-            Matcher m = Pattern.compile(
-                "\\{\\s*\"measure\":\\s*\"((?:[^\"\\\\]|\\\\.)*)\",\\s*\"subject\":\\s*\"((?:[^\"\\\\]|\\\\.)*)\","
-              + "\\s*\"file\":\\s*\"((?:[^\"\\\\]|\\\\.)*)\",\\s*\"line\":\\s*(\\d+),"
-              + "\\s*\"value\":\\s*\"((?:[^\"\\\\]|\\\\.)*)\"\\s*\\}").matcher(json);
-            while (m.find())
-                out.add(new Rankings.Rank(unquote(m.group(1)), unquote(m.group(2)),
-                    unquote(m.group(3)), Integer.parseInt(m.group(4)), unquote(m.group(5))));
-            return out;
-        }
 
-        private static List<SourceMetrics.Smell> smellsFromJson(String json) {
-            List<SourceMetrics.Smell> out = new ArrayList<>();
-            Matcher m = Pattern.compile(
-                "\\{\\s*\"rule\":\\s*\"((?:[^\"\\\\]|\\\\.)*)\",\\s*\"subject\":\\s*\"((?:[^\"\\\\]|\\\\.)*)\","
-              + "\\s*\"file\":\\s*\"((?:[^\"\\\\]|\\\\.)*)\",\\s*\"line\":\\s*(\\d+),"
-              + "\\s*\"actual\":\\s*([0-9.]+),\\s*\"limit\":\\s*([0-9.]+),"
-              + "\\s*\"unit\":\\s*\"((?:[^\"\\\\]|\\\\.)*)\",\\s*\"overBy\":\\s*[0-9.]+,"
-              + "\\s*\"note\":\\s*\"((?:[^\"\\\\]|\\\\.)*)\"").matcher(json);
-            while (m.find())
-                out.add(new SourceMetrics.Smell(unquote(m.group(1)), unquote(m.group(2)),
-                    unquote(m.group(3)), Integer.parseInt(m.group(4)),
-                    Double.parseDouble(m.group(5)), Double.parseDouble(m.group(6)),
-                    unquote(m.group(8)), unquote(m.group(7))));
-            return out;
-        }
 
-        private static String unquote(String s) {
-            return s.replace("\\n", "\n").replace("\\t", "\t").replace("\\r", "\r")
-                    .replace("\\\"", "\"").replace("\\\\", "\\");
-        }
 
-        private static Integer field(String json, String name) {
-            Matcher m = Pattern.compile("\"" + name + "\"\\s*:\\s*(-?\\d+)").matcher(json);
-            if (!m.find()) return null;
-            try {
-                return Integer.valueOf(m.group(1));
-            } catch (NumberFormatException e) {
-                return null;
-            }
-        }
     }
 
     /**
@@ -221,7 +206,7 @@ final class Metrics {
             (int) defs.stream().filter(CompilerModel.DefInfo::isTest).count(),
             percent(api.stream().filter(CompilerModel.DefInfo::hasDoc).count(), api.size()),
             percent(api.stream().filter(CompilerModel.DefInfo::isPure).count(), api.size()),
-            List.copyOf(smells), Rankings.of(defs, m.modules()));
+            List.copyOf(smells), Rankings.of(defs, m.modules()), defs, m.modules());
     }
 
     /**
