@@ -5,6 +5,8 @@ import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import dev.flixw.metrics.sdk.CompilerModel;
+
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -30,11 +32,12 @@ final class Metrics {
      * runs without knowing what the others mean.
      */
     record Report(int files, int modules, int definitions, int localDefinitions,
-                  int effectfulDefinitions, int branches, int traits, int instances, int enums,
+                  int effectfulDefinitions, int cognitive, int traits, int instances, int enums,
                   int structs, int effects, int typeAliases, int lines, int longestLine,
-                  int linesOverLimit, List<SourceMetrics.Smell> smells) {
+                  int linesOverLimit, int tests, int docCoveragePercent, int purityPercent,
+                  List<SourceMetrics.Smell> smells) {
 
-        static final int SCHEMA = 2;
+        static final int SCHEMA = 3;
 
         String render(Format format) {
             return format == Format.JSON ? json() : text();
@@ -66,11 +69,13 @@ final class Metrics {
             return new String[][] {
                 {"files", "" + files}, {"modules", "" + modules},
                 {"definitions", "" + definitions}, {"localDefinitions", "" + localDefinitions},
-                {"effectfulDefinitions", "" + effectfulDefinitions}, {"branches", "" + branches},
+                {"effectfulDefinitions", "" + effectfulDefinitions}, {"cognitive", "" + cognitive},
                 {"traits", "" + traits}, {"instances", "" + instances}, {"enums", "" + enums},
                 {"structs", "" + structs}, {"effects", "" + effects},
                 {"typeAliases", "" + typeAliases}, {"lines", "" + lines},
                 {"longestLine", "" + longestLine}, {"linesOverLimit", "" + linesOverLimit},
+                {"tests", "" + tests}, {"docCoveragePercent", "" + docCoveragePercent},
+                {"purityPercent", "" + purityPercent},
             };
         }
 
@@ -90,10 +95,11 @@ final class Metrics {
         static Report fromJson(String json) {
             Integer schema = field(json, "schemaVersion");
             if (schema == null || schema != SCHEMA) return null;
-            int[] v = new int[15];
+            int[] v = new int[18];
             String[] names = {"files", "modules", "definitions", "localDefinitions",
-                "effectfulDefinitions", "branches", "traits", "instances", "enums", "structs",
-                "effects", "typeAliases", "lines", "longestLine", "linesOverLimit"};
+                "effectfulDefinitions", "cognitive", "traits", "instances", "enums", "structs",
+                "effects", "typeAliases", "lines", "longestLine", "linesOverLimit", "tests",
+                "docCoveragePercent", "purityPercent"};
             for (int i = 0; i < names.length; i++) {
                 Integer n = field(json, names[i]);
                 if (n == null) return null;
@@ -102,7 +108,7 @@ final class Metrics {
             List<SourceMetrics.Smell> smells = smellsFromJson(json);
             if (smells == null) return null;
             return new Report(v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7], v[8], v[9],
-                v[10], v[11], v[12], v[13], v[14], smells);
+                v[10], v[11], v[12], v[13], v[14], v[15], v[16], v[17], smells);
         }
 
         private static List<SourceMetrics.Smell> smellsFromJson(String json) {
@@ -131,6 +137,44 @@ final class Metrics {
                 return null;
             }
         }
+    }
+
+    /**
+     * Builds the report from what the adapter measured and what the text said.
+     *
+     * <p>Every derivation lives here rather than in the adapter, and that is the SDK boundary
+     * doing its job: ratios, thresholds and findings are the same whichever compiler produced
+     * the declarations, so writing them once means a second adapter inherits all of it.
+     */
+    static Report of(int files, CompilerModel.Model m, SourceMetrics text) {
+        List<CompilerModel.DefInfo> defs = m.defs();
+        int localDefs = defs.stream().mapToInt(CompilerModel.DefInfo::localDefs).sum();
+        int effectful = (int) defs.stream().filter(d -> !d.isPure()).count();
+        int cognitive = defs.stream().mapToInt(CompilerModel.DefInfo::cognitive).sum();
+        List<CompilerModel.DefInfo> api = defs.stream()
+            .filter(d -> d.isPublic() && !d.isTest()).toList();
+        List<SourceMetrics.Smell> smells = new java.util.ArrayList<>(text.smells());
+        smells.addAll(Thresholds.apply(defs, m.modules()));
+        smells.sort(java.util.Comparator.comparing(SourceMetrics.Smell::file)
+            .thenComparingInt(SourceMetrics.Smell::line)
+            .thenComparing(SourceMetrics.Smell::rule));
+        return new Report(files, m.modules().size(), defs.size(), localDefs, effectful, cognitive,
+            m.traits(), m.instances(), m.enums(), m.structs(), m.effects(), m.typeAliases(),
+            text.lines(), text.longestLine(), text.linesOverLimit(),
+            (int) defs.stream().filter(CompilerModel.DefInfo::isTest).count(),
+            percent(api.stream().filter(CompilerModel.DefInfo::hasDoc).count(), api.size()),
+            percent(api.stream().filter(CompilerModel.DefInfo::isPure).count(), api.size()),
+            List.copyOf(smells));
+    }
+
+    /**
+     * A share as a whole percent, and 0 rather than undefined when there is nothing to divide.
+     *
+     * <p>Integer percent because the report is compared between runs, and a ratio printed to
+     * fifteen places turns every rounding difference into a change somebody has to read.
+     */
+    private static int percent(long part, int whole) {
+        return whole == 0 ? 0 : (int) Math.round(100.0 * part / whole);
     }
 
     /** The project's own sources. Package-visible: {@link ResultCache} keys on this exact

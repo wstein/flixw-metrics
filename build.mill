@@ -89,7 +89,8 @@ object plugin extends ScalaModule {
     def check() = Task.Command {
       val cp = (runClasspath() ++ Seq(compile().classes)).map(_.path).mkString(":")
       for (main <- Seq("dev.flixw.metrics.CompilerCapabilitiesTest",
-                       "dev.flixw.metrics.ResultCacheTest")) {
+                       "dev.flixw.metrics.ResultCacheTest",
+                       "dev.flixw.metrics.ThresholdsTest")) {
         os.proc("java", "-cp", cp, main).call(stdout = os.Inherit, stderr = os.Inherit)
       }
       ()

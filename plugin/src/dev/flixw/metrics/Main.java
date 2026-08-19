@@ -86,13 +86,9 @@ public final class Main {
             if (model == null)
                 throw new Usage("no adapter links against the pinned compiler\n"
                     + "       this build supports: " + String.join(", ", Adapters.known()));
-            CompilerModel.Counts counts = model.measure(context.projectRoot());
+            CompilerModel.Model m = model.measure(context.projectRoot());
             SourceMetrics text = SourceMetrics.measure(context.projectRoot(), sources);
-            Metrics.Report report = new Metrics.Report(sources.size(), counts.modules(),
-                counts.definitions(), counts.localDefinitions(), counts.effectfulDefinitions(),
-                counts.branches(), counts.traits(), counts.instances(), counts.enums(),
-                counts.structs(), counts.effects(), counts.typeAliases(),
-                text.lines(), text.longestLine(), text.linesOverLimit(), text.smells());
+            Metrics.Report report = Metrics.of(sources.size(), m, text);
             // Written before rendering, and by this phase rather than the outer one. The outer
             // phase inherits this process's stdout, so it never sees the report as a value --
             // and parsing it back out of a stream the compiler also writes to would be reading

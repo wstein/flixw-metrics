@@ -1,6 +1,7 @@
 package dev.flixw.metrics.sdk;
 
 import java.nio.file.Path;
+import java.util.List;
 
 /**
  * The stable ABI, because {@code flix.jar} does not have one.
@@ -11,15 +12,16 @@ import java.nio.file.Path;
  * new compiler becomes an edit in a dozen places.
  *
  * <p>So the instability is confined instead. This interface is the only thing the rest of the
- * plugin knows about a compiler, and it is <b>Java, and versionless on purpose</b>: what it
- * returns are counts and strings, not compiler types. One implementation per Flix generation
- * sits behind it, written against that generation's AST, and nothing outside those
- * implementations imports {@code ca.uwaterloo.flix}.
+ * plugin knows about a compiler, and it is <b>Java, and versionless on purpose</b>: everything
+ * crossing it is a string, a number or a boolean. One implementation per Flix generation sits
+ * behind it, written against that generation's AST, and nothing outside those implementations
+ * imports {@code ca.uwaterloo.flix}.
  *
- * <p>The practical consequence is the one worth stating. Supporting a new Flix means writing an
- * adapter and registering it. It does not mean touching the report, the smells, the formats,
- * the cache, or the CLI -- none of which have any reason to change because a compiler moved a
- * class.
+ * <p><b>Per declaration, not aggregate.</b> An earlier version returned totals, which was enough
+ * to print a summary and useless for anything else: a finding has to name a file and a line, a
+ * ranking has to compare definitions to each other, and "the worst three" cannot be recovered
+ * from a sum. Returning records costs nothing in coupling — none of them mention a compiler type
+ * — and is what lets every smell, format and ranking live outside the adapter.
  *
  * <h2>Implementing one</h2>
  *
@@ -56,26 +58,71 @@ public interface CompilerModel {
     /**
      * Measures one project, or throws.
      *
-     * @param projectRoot the root flixw resolved; only declarations under it are counted, since
+     * @param projectRoot the root flixw resolved; only declarations under it are described, since
      *     a typed root also holds the standard library and every dependency
      * @throws ModelFailure when the project cannot be typed, which is a fact about the project
      *     and not about this adapter
      */
-    Counts measure(Path projectRoot) throws ModelFailure;
+    Model measure(Path projectRoot) throws ModelFailure;
 
     /**
-     * Everything an adapter reports, as plain numbers.
+     * One definition, as the function it is.
      *
-     * <p>Deliberately flat and deliberately not a compiler type. A richer shape -- handing back
-     * declarations, or an AST cursor -- would put compiler concepts back into the callers, which
-     * is the coupling this whole interface exists to prevent.
-     *
-     * <p>Adding a field here is a breaking change for adapters and is meant to feel like one:
-     * every supported compiler has to be able to answer it, or say it cannot.
+     * @param module the namespace it is declared in, from its own symbol
+     * @param file relative to the project root, so a report does not carry someone's home
+     *     directory and two machines produce the same bytes
+     * @param lines how many lines the definition spans
+     * @param parameters what the outer signature declares
+     * @param maxLocalParameters the widest parameter list of any definition nested inside it --
+     *     a body threading eight accumulators through a local loop reads as taking two
+     * @param nesting how deeply its branches nest
+     * @param cognitive how hard it is to follow: each branch weighted by how many branches
+     *     enclose it, so five nested conditions cost more than five consecutive ones
+     * @param isTest whether it is annotated {@code @Test}, which changes what is a smell: an
+     *     undocumented test is not a gap in a public API
+     * @param effects the declared effects, empty when pure
      */
-    record Counts(int modules, int definitions, int localDefinitions, int effectfulDefinitions,
-                  int branches, int traits, int instances, int enums, int structs, int effects,
-                  int typeAliases) { }
+    record DefInfo(String name, String module, String file, int line, int lines, int parameters,
+                   int maxLocalParameters, int localDefs, int nesting, int cognitive,
+                   boolean isPublic, boolean isTest, boolean hasDoc, List<String> effects) {
+
+        /** Complexity per line: five dense lines and a hundred readable ones can score alike. */
+        public double cognitiveDensity() {
+            return lines == 0 ? 0.0 : (double) cognitive / lines;
+        }
+
+        public boolean isPure() {
+            return effects.isEmpty();
+        }
+
+        /** The widest parameter list anywhere inside, outer signature or local. */
+        public int widestParameterList() {
+            return Math.max(parameters, maxLocalParameters);
+        }
+    }
+
+    /**
+     * A module and what it depends on.
+     *
+     * @param fanIn how many modules depend on this one
+     * @param fanOut how many modules this one depends on
+     */
+    record ModuleInfo(String name, int definitions, int fanIn, int fanOut) {
+
+        /**
+         * Martin's instability: 0 is depended upon and depends on nothing, 1 is the reverse.
+         *
+         * <p>A module coupled to nothing has no instability to speak of and is reported as 0
+         * rather than as a division by zero.
+         */
+        public double instability() {
+            return fanIn + fanOut == 0 ? 0.0 : (double) fanOut / (fanIn + fanOut);
+        }
+    }
+
+    /** Everything an adapter reports. Counts that have no per-declaration detail stay counts. */
+    record Model(List<DefInfo> defs, List<ModuleInfo> modules, int traits, int instances,
+                 int enums, int structs, int effects, int typeAliases) { }
 
     /** A project this adapter could load but could not measure. */
     class ModelFailure extends Exception {

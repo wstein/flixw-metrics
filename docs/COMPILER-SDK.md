@@ -112,10 +112,35 @@ child loader parented to the platform loader.
 | `definitions`, `traits`, `instances`, `enums`, `structs`, `effects`, `typeAliases` | the typed root, filtered to this project |
 | `modules` | the namespaces the definitions' own symbols carry |
 | `localDefinitions` | `LocalDef` nodes — definitions the outer signature hides |
-| `effectfulDefinitions` | the *declared* effect on each signature |
-| `branches` | `IfThenElse` and each rule of a `match`/`typematch`/`catch`/`select` |
+| `effectfulDefinitions`, `purityPercent` | the *declared* effect on each signature |
+| `cognitive` | branches weighted by nesting, plus boolean operators and match guards |
+| `tests`, `docCoveragePercent` | `@Test` annotations and doc comments on the public surface |
 | `lines`, `longestLine`, `linesOverLimit` | the source text |
-| `smells` | thresholds over the above |
+| `smells` | thresholds over all of the above |
+
+### Cognitive complexity is nesting-weighted
+
+Each branch counts once for every branch enclosing it, so five nested conditions cost more
+than five consecutive ones — a flat count calls them equal, and they are not equal to read.
+Boolean `and`/`or` and match guards add a path without adding a branch construct, so they are
+counted too; without them a long boolean chain reads as trivial.
+
+`cognitiveDensity` is that divided by lines, and it is the measure that separates length from
+difficulty: a hundred readable lines and five dense ones can score the same in total, and the
+second is the one worth opening.
+
+### Findings are reported, never enforced
+
+`Thresholds` is the single place a measurement becomes a finding, and nothing there fails a
+build. The project that needs a 200-line definition exists and its author knows why.
+
+**Tests are judged differently, not exempted.** A long test is usually a table of cases, which
+is the clearest way to write it; an undocumented test is not a gap in a public API. Reporting
+those trains a reader to skim the whole list, and the finding that mattered goes with them.
+
+`too-many-parameters` counts the widest parameter list *anywhere inside* the definition, and
+says so when the widest one is a local: a body threading eight accumulators through a local
+loop reads as taking two, and the outer signature is exactly what hides it.
 
 Two rules decide which side of that table a number falls on. **Anything that needs meaning
 comes from the compiler**: counting `def` by scanning text gets comments, strings and local
