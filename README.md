@@ -7,9 +7,14 @@ The plugin is deliberately capability-gated. It opens the exact compiler JAR fli
 in an isolated class loader, and refuses to claim semantic metrics unless the expected
 compiler-side model is present. It never silently replaces compiler metrics with a text scan.
 
-The initial backend forwards to the compiler's native `metric` command when its metric model
-is present. The ongoing reflective backend will derive the report from the checked compiler
-model directly; it is version-gated because Flix internals are not a public plugin API.
+The reflective backend derives the report from the compiler's own typed root. It is gated on
+the exact members it reflects against, because Flix internals are not a public plugin API and
+a version string is not evidence — see [docs/REFLECTION.md](docs/REFLECTION.md).
+
+Reports are cached under `FLIXW_CACHE_HOME` and reused until the sources, `flix.toml`, the
+pinned compiler or this plugin change. That is worth roughly 28x on a warm run (~4.5s to
+~0.16s), because the compiler spends most of a cold run type-checking its own standard
+library before it reaches your code. Every cache failure is a miss, never a stale answer.
 
 ## Build
 

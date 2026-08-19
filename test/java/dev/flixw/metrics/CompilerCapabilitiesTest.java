@@ -16,8 +16,10 @@ public final class CompilerCapabilitiesTest {
         try {
             Path empty = work.resolve("empty.jar");
             jar(empty, work.resolve("none"));
-            CompilerCapabilities noApi = CompilerCapabilities.inspect(empty);
-            require(!noApi.hasFlixApi() && !noApi.hasNativeMetrics(), "empty jar has no capabilities");
+            CompilerCapabilities noApi = inspect(empty);
+            require(!noApi.hasFlixApi() && !noApi.hasReflectionApi() && !noApi.hasNativeMetrics(),
+                "empty jar has no capabilities");
+            require(!noApi.missing().isEmpty(), "an empty jar reports what it is missing");
 
             Path source = work.resolve("source");
             write(source, "ca/uwaterloo/flix/api/Flix.java",
@@ -33,10 +35,29 @@ public final class CompilerCapabilitiesTest {
             require(compiled == 0, "fixture compiler succeeds");
             Path metrics = work.resolve("metrics.jar");
             jar(metrics, classes);
-            CompilerCapabilities found = CompilerCapabilities.inspect(metrics);
-            require(found.hasFlixApi() && found.hasNativeMetrics(), "fixture exposes both capabilities");
+            CompilerCapabilities found = inspect(metrics);
+            require(found.hasFlixApi() && !found.hasReflectionApi() && found.hasNativeMetrics(),
+                "fixture distinguishes model presence from the reflection API");
+
+            // The gate must name the members the engine truly calls. A jar carrying a Flix
+            // class with the *old* gate's members and none of the engine's must still fail:
+            // that combination is exactly what used to pass and then die mid-run.
+            require(found.missing().stream().anyMatch(m -> m.contains("Bootstrap")),
+                "the gate requires Bootstrap, which the engine calls");
+            require(found.missing().stream().anyMatch(m -> m.contains("Options$")),
+                "the gate requires Options$, which the engine calls");
+            require(found.missing().stream().noneMatch(m -> m.contains("addFile")),
+                "the gate does not require addFile, which the engine never calls");
         } finally {
             delete(work);
+        }
+    }
+
+    /** Inspection needs a loader now; the gate never initialises through it. */
+    private static CompilerCapabilities inspect(Path jar) throws IOException {
+        try (java.net.URLClassLoader loader = new java.net.URLClassLoader(
+                new java.net.URL[] {jar.toUri().toURL()}, ClassLoader.getPlatformClassLoader())) {
+            return CompilerCapabilities.inspect(loader, jar);
         }
     }
 
