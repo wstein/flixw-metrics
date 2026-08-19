@@ -6,6 +6,9 @@ import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import dev.flixw.metrics.sdk.Adapters;
+import dev.flixw.metrics.sdk.CompilerModel;
+
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -56,14 +59,14 @@ public final class Main {
                         + "       jar: " + context.compilerJar() + "\n"
                         + "       missing: " + String.join(", ", capabilities.missing()));
             }
-            ReflectionEngine.Format format = parseFormat(args);
-            ReflectionEngine.Report hit = cached(context);
+            Metrics.Format format = parseFormat(args);
+            Metrics.Report hit = cached(context);
             if (hit != null) {
                 System.out.print(hit.render(format));
                 return;
             }
             System.exit(spawnBridge(context, args));
-        } catch (Usage | ReflectionEngine.Failure e) {
+        } catch (Usage | Metrics.Failure e) {
             System.err.println("flixw-metrics: " + e.getMessage());
             System.exit(2);
         } catch (IOException e) {
@@ -76,8 +79,20 @@ public final class Main {
     private static void bridge(String[] args) {
         try {
             Context context = Context.read();
-            List<Path> sources = ReflectionEngine.projectFiles(context.projectRoot());
-            ReflectionEngine.Report report = ReflectionEngine.measure(context, sources);
+            List<Path> sources = Metrics.projectFiles(context.projectRoot());
+            // Resolved here, in the only JVM that has a compiler on its class path. The
+            // adapter is what knows Flix's internals; nothing else in this plugin does.
+            CompilerModel model = Adapters.resolve();
+            if (model == null)
+                throw new Usage("no adapter links against the pinned compiler\n"
+                    + "       this build supports: " + String.join(", ", Adapters.known()));
+            CompilerModel.Counts counts = model.measure(context.projectRoot());
+            SourceMetrics text = SourceMetrics.measure(context.projectRoot(), sources);
+            Metrics.Report report = new Metrics.Report(sources.size(), counts.modules(),
+                counts.definitions(), counts.localDefinitions(), counts.effectfulDefinitions(),
+                counts.branches(), counts.traits(), counts.instances(), counts.enums(),
+                counts.structs(), counts.effects(), counts.typeAliases(),
+                text.lines(), text.longestLine(), text.linesOverLimit(), text.smells());
             // Written before rendering, and by this phase rather than the outer one. The outer
             // phase inherits this process's stdout, so it never sees the report as a value --
             // and parsing it back out of a stream the compiler also writes to would be reading
@@ -85,9 +100,9 @@ public final class Main {
             if (context.pluginCache() != null)
                 ResultCache.write(context.pluginCache(),
                     ResultCache.key(context, sources, version()),
-                    report.render(ReflectionEngine.Format.JSON));
+                    report.render(Metrics.Format.JSON));
             System.out.print(report.render(parseFormat(args)));
-        } catch (Usage | ReflectionEngine.Failure e) {
+        } catch (Usage | Metrics.Failure | CompilerModel.ModelFailure e) {
             System.err.println("flixw-metrics: " + e.getMessage());
             System.exit(2);
         } catch (IOException e) {
@@ -103,12 +118,12 @@ public final class Main {
      * answer. That asymmetry is the whole design rule for this cache: it may only ever make
      * the plugin faster, never make it disagree with the compiler.
      */
-    private static ReflectionEngine.Report cached(Context context) throws IOException {
+    private static Metrics.Report cached(Context context) throws IOException {
         if (context.pluginCache() == null) return null;
-        List<Path> sources = ReflectionEngine.projectFiles(context.projectRoot());
+        List<Path> sources = Metrics.projectFiles(context.projectRoot());
         String json = ResultCache.read(context.pluginCache(),
             ResultCache.key(context, sources, version()));
-        return json == null ? null : ReflectionEngine.Report.fromJson(json);
+        return json == null ? null : Metrics.Report.fromJson(json);
     }
 
     /**
@@ -154,12 +169,12 @@ public final class Main {
         return version == null ? "development" : version;
     }
 
-    private static ReflectionEngine.Format parseFormat(String[] args) {
+    private static Metrics.Format parseFormat(String[] args) {
         List<String> rest = Arrays.asList(args);
         if (!rest.isEmpty() && "report".equals(rest.get(0))) rest = rest.subList(1, rest.size());
-        if (rest.isEmpty()) return ReflectionEngine.Format.TEXT;
+        if (rest.isEmpty()) return Metrics.Format.TEXT;
         if (rest.size() == 2 && "--format".equals(rest.get(0)))
-            return ReflectionEngine.Format.parse(rest.get(1));
+            return Metrics.Format.parse(rest.get(1));
         throw new Usage("usage: ./flixw plugin flixw-metrics [report] [--format text|json]");
     }
 

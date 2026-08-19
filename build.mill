@@ -1,0 +1,98 @@
+package build
+
+import mill._, scalalib._
+
+/**
+ * The plugin is one module with Java and Scala sources side by side, and the split is
+ * deliberate rather than incidental.
+ *
+ * The Java half never touches the compiler's AST: it reads the ABI, gates on capabilities,
+ * measures the source text and caches results. It has to keep working when the pinned
+ * compiler is one this build has never seen, which is exactly when a Scala engine compiled
+ * against a different AST would not link.
+ *
+ * The Scala half is the engine, and it exists because pattern matching over Flix's sealed AST
+ * is checked: the compiler names every construct the engine does not classify. Reflection
+ * cannot do that, and the cost of it not doing that was a silent undercount of every
+ * extensible match.
+ */
+object plugin extends ScalaModule {
+
+  /**
+   * Matched to what the compiler jar bundles -- 2.13.18 in Flix 0.75.x -- rather than to the
+   * newest Scala. The engine's classes are loaded alongside the compiler's on one class path,
+   * so the two have to agree; 2.13 is binary compatible within its series, so this pins a
+   * series and not a patch.
+   */
+  def scalaVersion = "2.13.18"
+
+  def javacOptions = Seq("-Xlint:all", "-Werror", "--release", "21")
+
+  def scalacOptions = Seq(
+    "-deprecation",
+    "-feature",
+    // The reason this module is in Scala at all. A match over Flix's AST that forgets a
+    // construct is a metric that is quietly wrong, so an inexhaustive match is an error here
+    // and not a warning.
+    "-Xfatal-warnings",
+  )
+
+  /**
+   * The compiler jar, compile-time only.
+   *
+   * <p>Never bundled: at run time it is the jar flixw pinned and verified for the project,
+   * placed on the class path by the bridge phase. Bundling a copy would mean measuring one
+   * compiler while claiming to measure another.
+   *
+   * <p>`scripts/fetch-flix.sh` puts it in `lib/` and checks its digest, so a build either uses
+   * the Flix release this engine was written against or fails saying so.
+   */
+  def compilerJars = Task.Sources(moduleDir / "lib")
+
+  def flixJar = Task {
+    compilerJars()
+      .filter(ref => os.exists(ref.path))
+      .flatMap(ref => os.list(ref.path).filter(_.ext == "jar").map(PathRef(_)))
+  }
+
+  /**
+   * Compile-time only, and it has to be said in exactly this way.
+   *
+   * `unmanagedClasspath` was the obvious spelling and is wrong: mill packages it, so the
+   * plugin jar came out at 34MB with a whole Flix release inside it -- a build that measures
+   * one compiler while shipping another. Adding it to `compileClasspath` instead says what is
+   * true, that the engine is *written against* this release and *run against* whichever one
+   * flixw pinned.
+   */
+  def compileClasspath = Task { super.compileClasspath() ++ flixJar() }
+
+  /**
+   * Only this module's own classes.
+   *
+   * <p>Not an assembly. scala-library is on the class path at run time because the compiler
+   * jar bundles it, so shipping a second copy would put two scala-libraries on one flat class
+   * path and let ordering decide which one the engine links against.
+   */
+  def mainClass = Some("dev.flixw.metrics.Main")
+
+  /**
+   * Plain `main` methods, run in order, not a framework.
+   *
+   * A test dependency would be the plugin's first managed dependency, and this module ships a
+   * jar onto a class path it shares with a compiler -- the fewer things on it, the fewer ways
+   * two copies of something can meet. The assertions are `require`; a failure is a stack trace
+   * naming the sentence that did not hold.
+   */
+  object test extends ScalaTests {
+    def testFramework = "none"
+
+    def check() = Task.Command {
+      val cp = (runClasspath() ++ Seq(compile().classes)).map(_.path).mkString(":")
+      for (main <- Seq("dev.flixw.metrics.CompilerCapabilitiesTest",
+                       "dev.flixw.metrics.ResultCacheTest")) {
+        os.proc("java", "-cp", cp, main).call(stdout = os.Inherit, stderr = os.Inherit)
+      }
+      ()
+    }
+  }
+}

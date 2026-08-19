@@ -1,16 +1,74 @@
-# Reflection compatibility contract
+# Compiler compatibility contract
 
 `flixw-metrics` uses only the compiler JAR flixw selected and verified for the current
 project. It does not download a compiler, choose a version, or load an arbitrary JAR from a
 project setting.
 
-## The gate names what the engine calls
+## The SDK exists because flix.jar has no stable ABI
+
+`Bootstrap`, `TypedAst` and everything under them carry no compatibility promise, and are
+reorganised between releases. A plugin that spread knowledge of those types through its own
+code would inherit that instability everywhere, and every new Flix would be an edit in a dozen
+places.
+
+So it is confined to one file. `dev.flixw.metrics.sdk.CompilerModel` is the only thing the
+rest of the plugin knows about a compiler, it is plain Java, and it returns **counts and
+strings, not compiler types** — a richer interface handing back declarations or an AST cursor
+would put compiler concepts straight back into the callers it exists to protect.
+
+| layer | knows about Flix | language |
+|---|---|---|
+| `Main`, `Metrics`, `ResultCache`, `SourceMetrics` | nothing | Java |
+| `sdk.CompilerModel`, `sdk.Adapters` | nothing | Java |
+| `flix075.Flix075Adapter` | everything | Scala |
+
+Supporting another Flix generation is a class and a line in `Adapters.KNOWN`. It is explicitly
+*not* an edit to the report, the smells, the formats, the cache or the CLI.
+
+`SDK_VERSION` is declared and unused. The moment an adapter ships separately from this jar,
+the two need a way to say whether they agree; while every adapter is compiled in this module
+they cannot disagree, so nothing checks it. Today's scope is narrower on purpose: **Flix 0.75
+and up, one adapter, in-tree.**
+
+### Adapters are selected by linkage, not by version string
+
+`Adapters.resolve()` instantiates each known adapter and keeps the first that loads. Doing so
+forces the JVM to resolve the compiler types the adapter binds to, so an adapter written for an
+AST this compiler does not have fails in a controlled place rather than part-way through a
+measurement. A fork reporting an unfamiliar version may still link; a compiler reporting a
+familiar one may not. The JVM knows, and asking it is cheaper than maintaining a table of which
+versions are secretly compatible.
+
+`LinkageError` is caught alongside the reflective exceptions, deliberately: a missing AST type
+arrives as `NoClassDefFoundError`, which is an `Error` and not an `Exception`.
+
+## Why the engine is Scala
+
+Flix's AST is a sealed hierarchy, so a match over it is **checked**. Stock 0.75.3 has 76 `Expr`
+constructs; with `-Xfatal-warnings` the build names every one the engine does not classify.
+
+The reflective predecessor could not know that. It classified nodes by simple class name and
+ignored the rest in silence, which cost precisely what it sounds like: it named a
+`TypeMatchRule` that does not exist and missed the `ExtMatchRule` that does, so every extensible
+match was undercounted and nothing said so. That is not a bug that was fixed — it is a bug this
+build makes unrepresentable.
+
+Scala also caught, at compile time, that `Bootstrap.bootstrap` takes its formatter and stream as
+**implicit** parameters. Erasure makes an implicit parameter list look like any other, so the
+reflective version passed four arguments to a two-argument method and could not have known.
+
+The capability gate stays Java for the same reason the rest of the shell does: it has to load
+and answer on a machine where the adapter would not link at all.
+
+## The gate names what the engine links against
 
 The capability gate lists the exact members `ReflectionEngine` reflects against, and nothing
 else:
 
 | member | why |
 |---|---|
+| `TypedAst$Root`, `$Def`, `$Expr$IfThenElse`, `$Expr$LocalDef`, `$MatchRule`, `$ExtMatchRule` | the AST the adapter pattern-matches |
+| `Input$RealFile` | how a project file is told from the standard library |
 | `ca.uwaterloo.flix.api.Flix` + `check/0` + `setOptions/1` | the typed root comes from here |
 | `ca.uwaterloo.flix.api.Bootstrap` + `check/1` | loads the project and its dependencies |
 | `Bootstrap.bootstrap(Path, …, PrintStream)` | the static entry point, matched by shape |
@@ -87,54 +145,3 @@ this plugin does not require a Flix release on the class path. A metrics plugin 
 only be compiled against the compiler it inspects would be awkward to keep working across
 several of them.
 
-## Cost, and where it goes
-
-Measured against a two-definition project with Flix 0.75.3:
-
-| | |
-|---|---:|
-| full cold report | ~4.5s |
-| — the compiler typing **its own standard library** | ~3.4s |
-| — typing the project's own sources | ~0.5s |
-| — the second JVM (the bridge hop) | ~0.27s |
-| — JVM boot | ~0.19s |
-| cached report | **~0.16s** |
-
-The shape of that table is the whole reason the cache exists. Process architecture is under
-10% of the run; the standard library is 87%. Optimising the hops would have been optimising
-the wrong thing.
-
-## The cache
-
-Keyed on everything that can change the answer, and nothing else:
-
-- the compiler JAR's digest — it *contains* the standard library, so it decides typing
-- this plugin's version — a new build may count the same root differently
-- `flix.toml`'s digest, or its absence — it selects dependencies that participate in typing
-- every project source path **with** its digest, sorted, relative to the project root
-
-Paths as well as contents, so a **deleted** file invalidates: `files` is part of the report.
-Relative paths, so the same tree checked out at two locations is one entry rather than two.
-
-Entries live wherever `FLIXW_PLUGIN_CACHE` points — flixw's own answer to "where may a plugin
-keep derived data", which it deletes when this plugin is removed or purged. The directory is
-**not** chosen here. An earlier draft picked its own path under the cache; it worked, and it
-left bytes that nothing would ever clean up.
-
-A wrapper too old to set the variable leaves the plugin **uncached** rather than falling back
-to a guessed path, for the same reason: an uncollected directory is worse than a slow run.
-
-The rule the implementation follows everywhere: **every failure is a miss**. An unreadable
-entry, a truncated one, an unknown `schemaVersion`, a cache directory that cannot be written
-— each costs a recomputation and none can produce a wrong number. A cache that is merely slow
-is working; a cache that disagrees with the compiler is worse than no cache at all.
-
-`FLIXW_PLUGIN_CACHE` is optional. Without it the plugin runs uncached rather than failing.
-
-## Lifecycle
-
-`./flixw plugin remove flixw-metrics` deletes these entries with the plugin. `./flixw wrapper
---purge` collects them once the plugin is no longer installed, without consulting a usage
-marker — the marker belonged to the plugin and went with it, so the age rule would otherwise
-retain them for ever as "never seen used". While the plugin *is* installed, flixw does not
-touch them: that would be a cache invalidation this plugin could not know had happened.

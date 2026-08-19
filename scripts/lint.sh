@@ -1,7 +1,8 @@
 #!/bin/sh
+# Compile everything with warnings fatal. -Xfatal-warnings on the Scala side is the point of
+# this project's build: a match over Flix's AST that forgets a construct is a metric that is
+# quietly wrong, so it fails here rather than under-reporting in someone's terminal.
 set -eu
-
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd -P)
-work=$(mktemp -d)
-trap 'rm -rf "$work"' EXIT INT TERM
-find "$root/src/main/java" -name '*.java' -print0 | xargs -0 javac -Xlint:all -Werror -d "$work"
+sh "$root/scripts/fetch-flix.sh"
+(cd "$root" && mill plugin.compile)

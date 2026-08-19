@@ -3,13 +3,17 @@
 An experimental [flixw](https://github.com/wstein/flixw) plugin for compiler-driven Flix
 metrics. It runs as a Java 21 JAR and consumes flixw ABI version 1.
 
+Built with [mill](https://mill-build.org): `sh scripts/package.sh <version>`. The build fetches
+the pinned Flix release into `plugin/lib` and checks its digest, because the engine is compiled
+against one compiler's AST and "it built here" should mean something.
+
 The plugin is deliberately capability-gated. It opens the exact compiler JAR flixw pinned,
 in an isolated class loader, and refuses to claim semantic metrics unless the expected
 compiler-side model is present. It never silently replaces compiler metrics with a text scan.
 
 The reflective backend derives the report from the compiler's own typed root. It is gated on
 the exact members it reflects against, because Flix internals are not a public plugin API and
-a version string is not evidence — see [docs/REFLECTION.md](docs/REFLECTION.md).
+a version string is not evidence — see [docs/COMPILER-SDK.md](docs/COMPILER-SDK.md).
 
 Reports are cached under `FLIXW_CACHE_HOME` and reused until the sources, `flix.toml`, the
 pinned compiler or this plugin change. That is worth roughly 28x on a warm run (~4.5s to
@@ -36,7 +40,7 @@ capabilities with `./flixw plugin flixw-metrics capabilities`.
 
 It reports counts of definitions, modules, local definitions, effectful signatures and
 branches from the compiler's typed root, line metrics from the source text, and the smells
-those imply — see [docs/REFLECTION.md](docs/REFLECTION.md) for which number comes from where
+those imply — see [docs/COMPILER-SDK.md](docs/COMPILER-SDK.md) for which number comes from where
 and why.
 
 ## ABI and safety

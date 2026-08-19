@@ -11,14 +11,17 @@ record CompilerCapabilities(boolean hasFlixApi, boolean hasReflectionApi, boolea
                             List<String> missing) {
 
     /**
-     * The gate must name the members the engine actually reflects against.
+     * The gate must name what the engine actually links against.
      *
-     * <p>It previously checked {@code Flix.check()} and a two-argument {@code addFile} -- and
-     * {@link ReflectionEngine} calls neither {@code addFile} nor anything else on that list.
-     * A compiler that kept {@code addFile} while changing {@code Bootstrap.bootstrap} passed
-     * the gate and then died inside the engine with a reflection error, which is precisely the
-     * failure the gate exists to turn into a sentence. Every entry below is a member the
-     * engine calls; if the engine starts calling something else, it belongs here too.
+     * <p>Since the engine moved to Scala the gate matters more, not less. A reflective engine
+     * limped along and produced something; a linked one throws {@code NoSuchMethodError} from
+     * inside the JVM's verifier, with a message written for whoever wrote the JVM. Everything
+     * below is a type or member {@code MetricsEngine} binds to at compile time, so a compiler
+     * that fails this list is one the engine could not have run against -- and it is told so
+     * in a sentence instead.
+     *
+     * <p>This class stays Java for exactly that reason. It has to load and answer on a machine
+     * where {@code MetricsEngine} would not link at all.
      */
     static CompilerCapabilities inspect(ClassLoader compiler, Path compilerJar) {
         if (!Files.isRegularFile(compilerJar))
@@ -36,6 +39,19 @@ record CompilerCapabilities(boolean hasFlixApi, boolean hasReflectionApi, boolea
         requireMethod(compiler, missing, "ca.uwaterloo.flix.util.Options$", "Default", 0);
         requireMethod(compiler, missing, "ca.uwaterloo.flix.util.Formatter$", "getDefault", 0);
         requireBootstrapEntry(compiler, missing);
+        // The AST the engine pattern-matches on. These are what actually break when a compiler
+        // reorganises its internals, and none of them were checked while the engine reflected
+        // by name -- a missing type simply became a count of zero.
+        requireClass(compiler, missing, "ca.uwaterloo.flix.language.ast.TypedAst$Root");
+        requireClass(compiler, missing, "ca.uwaterloo.flix.language.ast.TypedAst$Def");
+        requireClass(compiler, missing, "ca.uwaterloo.flix.language.ast.TypedAst$Expr$IfThenElse");
+        requireClass(compiler, missing, "ca.uwaterloo.flix.language.ast.TypedAst$Expr$LocalDef");
+        requireClass(compiler, missing, "ca.uwaterloo.flix.language.ast.TypedAst$MatchRule");
+        requireClass(compiler, missing, "ca.uwaterloo.flix.language.ast.TypedAst$ExtMatchRule");
+        requireClass(compiler, missing, "ca.uwaterloo.flix.language.ast.shared.Input$RealFile");
+        requireMethod(compiler, missing, "ca.uwaterloo.flix.language.ast.TypedAst$Root", "defs", 0);
+        requireMethod(compiler, missing, "ca.uwaterloo.flix.language.ast.TypedAst$Def", "exp", 0);
+        requireMethod(compiler, missing, "ca.uwaterloo.flix.language.ast.TypedAst$Def", "sym", 0);
 
         return new CompilerCapabilities(flix, missing.isEmpty(),
             present(compiler, "ca.uwaterloo.flix.tools.Metrics$"), List.copyOf(missing));
