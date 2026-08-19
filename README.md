@@ -1,4 +1,4 @@
-# flix-metrics
+# flixw-metrics
 
 An experimental [flixw](https://github.com/wstein/flixw) plugin for compiler-driven Flix
 metrics. It runs as a Java 21 JAR and consumes flixw ABI version 1.
@@ -21,12 +21,12 @@ This writes `dist/plugin.jar` and `dist/SHA256SUMS`. Publish both as immutable r
 assets, then install the JAR explicitly from a tagged release:
 
 ```sh
-./flixw plugin install flix-metrics 0.1.0 \
-  https://github.com/wstein/flix-metrics/releases/download/v0.1.0/plugin.jar \
+./flixw plugin install flixw-metrics 0.1.0 \
+  https://github.com/wstein/flixw-metrics/releases/download/v0.1.0/plugin.jar \
   --sha256 "$(awk '/plugin.jar$/ { print $1 }' dist/SHA256SUMS)"
 ```
 
-Then run `./flixw plugin flix-metrics report --format json`, or inspect the compiler-side
+Then run `./flixw plugin flixw-metrics report --format json`, or inspect the compiler-side
 capabilities with `./flixw plugin flix-metrics capabilities`.
 
 ## ABI and safety

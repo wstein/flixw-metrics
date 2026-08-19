@@ -17,7 +17,7 @@ public final class Main {
         }
         if (args.length == 1 && "--version".equals(args[0])) {
             String version = Main.class.getPackage().getImplementationVersion();
-            System.out.println("flix-metrics " + (version == null ? "development" : version));
+            System.out.println("flixw-metrics " + (version == null ? "development" : version));
             return;
         }
         try {
@@ -37,10 +37,10 @@ public final class Main {
             if (!metricArgs.isEmpty() && "report".equals(metricArgs.get(0))) metricArgs.remove(0);
             System.exit(runNativeMetric(context, metricArgs));
         } catch (Usage e) {
-            System.err.println("flix-metrics: " + e.getMessage());
+            System.err.println("flixw-metrics: " + e.getMessage());
             System.exit(2);
         } catch (IOException e) {
-            System.err.println("flix-metrics: cannot run metric: " + e.getMessage());
+            System.err.println("flixw-metrics: cannot run metric: " + e.getMessage());
             System.exit(2);
         }
     }
@@ -63,8 +63,8 @@ public final class Main {
     }
 
     private static void usage() {
-        System.out.println("usage: ./flixw plugin flix-metrics [report] [metric options...]\n"
-            + "       ./flixw plugin flix-metrics capabilities\n\n"
+        System.out.println("usage: ./flixw plugin flixw-metrics [report] [metric options...]\n"
+            + "       ./flixw plugin flixw-metrics capabilities\n\n"
             + "Runs only against a compiler whose metric model this plugin recognizes.");
     }
 
