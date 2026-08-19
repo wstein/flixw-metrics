@@ -89,7 +89,7 @@ entry, a truncated one, an unknown `schemaVersion`, a cache directory that canno
 — each costs a recomputation and none can produce a wrong number. A cache that is merely slow
 is working; a cache that disagrees with the compiler is worse than no cache at all.
 
-`FLIXW_CACHE_HOME` is optional. Without it the plugin runs uncached rather than failing.
+`FLIXW_PLUGIN_CACHE` is optional. Without it the plugin runs uncached rather than failing.
 
 ## Lifecycle
 
