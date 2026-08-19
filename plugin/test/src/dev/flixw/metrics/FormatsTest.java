@@ -23,7 +23,7 @@ public final class FormatsTest {
         require(sarif.contains("\"startLine\": 12"), "SARIF keeps a real line");
         require(count(sarif, "\"ruleId\"") == 2, "every finding becomes a result");
         // Declared even when unfired, so a consumer's rule list does not change per run.
-        require(count(sarif, "\"id\": ") == 8, "every rule is declared, fired or not");
+        require(count(sarif, "\"id\": ") == 9, "every rule is declared, fired or not");
         require(sarif.trim().startsWith("{") && sarif.trim().endsWith("}"), "SARIF is one object");
 
         String md = report.render(Metrics.Format.MARKDOWN);
@@ -43,7 +43,7 @@ public final class FormatsTest {
 
     private static Metrics.Report report(List<SourceMetrics.Smell> smells) {
         return new Metrics.Report(1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            10, 8, 1, 1, 0, 10, 40, 0, 0, 0, 0, 100, 100, smells,
+            10, 8, 1, 1, 0, 10, 40, 0, 0, 0, 0, 1, 100, 100, smells,
             List.of(new Rankings.Rank("longest", "A.b", "src/A.flix", 3, "9 lines")));
     }
 

@@ -39,10 +39,10 @@ final class Metrics {
                   int structs, int effects, int typeAliases, int lines, int codeLines,
                   int commentLines, int docCommentLines, int blankLines, int commentPercent,
                   int longestLine, int linesOverLimit, int datalogRules, int datalogFacts,
-                  int tests, int docCoveragePercent,
+                  int widestReturn, int tests, int docCoveragePercent,
                   int purityPercent, List<SourceMetrics.Smell> smells, List<Rankings.Rank> ranks) {
 
-        static final int SCHEMA = 6;
+        static final int SCHEMA = 7;
 
         String render(Format format) {
             return switch (format) {
@@ -102,6 +102,7 @@ final class Metrics {
                 {"commentPercent", "" + commentPercent},
                 {"longestLine", "" + longestLine}, {"linesOverLimit", "" + linesOverLimit},
                 {"datalogRules", "" + datalogRules}, {"datalogFacts", "" + datalogFacts},
+                {"widestReturn", "" + widestReturn},
                 {"tests", "" + tests}, {"docCoveragePercent", "" + docCoveragePercent},
                 {"purityPercent", "" + purityPercent},
             };
@@ -123,12 +124,13 @@ final class Metrics {
         static Report fromJson(String json) {
             Integer schema = field(json, "schemaVersion");
             if (schema == null || schema != SCHEMA) return null;
-            int[] v = new int[25];
+            int[] v = new int[26];
             String[] names = {"files", "modules", "definitions", "localDefinitions",
                 "effectfulDefinitions", "cognitive", "traits", "instances", "enums", "structs",
                 "effects", "typeAliases", "lines", "codeLines", "commentLines",
                 "docCommentLines", "blankLines", "commentPercent", "longestLine",
-                "linesOverLimit", "datalogRules", "datalogFacts", "tests", "docCoveragePercent",
+                "linesOverLimit", "datalogRules", "datalogFacts", "widestReturn", "tests",
+                "docCoveragePercent",
                 "purityPercent"};
             for (int i = 0; i < names.length; i++) {
                 Integer n = field(json, names[i]);
@@ -140,7 +142,7 @@ final class Metrics {
             List<Rankings.Rank> ranks = ranksFromJson(json);
             return new Report(v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7], v[8], v[9],
                 v[10], v[11], v[12], v[13], v[14], v[15], v[16], v[17], v[18], v[19], v[20],
-                v[21], v[22], v[23], v[24], smells, ranks);
+                v[21], v[22], v[23], v[24], v[25], smells, ranks);
         }
 
         /** Same fixed shape as the smells above, and read back the same deliberately dumb way. */
@@ -198,6 +200,7 @@ final class Metrics {
         int cognitive = defs.stream().mapToInt(CompilerModel.DefInfo::cognitive).sum();
         int datalogRules = defs.stream().mapToInt(CompilerModel.DefInfo::datalogRules).sum();
         int datalogFacts = defs.stream().mapToInt(CompilerModel.DefInfo::datalogFacts).sum();
+        int widestReturn = defs.stream().mapToInt(CompilerModel.DefInfo::returnWidth).max().orElse(0);
         List<CompilerModel.DefInfo> api = defs.stream()
             .filter(d -> d.isPublic() && !d.isTest()).toList();
         List<SourceMetrics.Smell> smells = new java.util.ArrayList<>(text.smells());
@@ -210,7 +213,7 @@ final class Metrics {
             m.lines().total(), m.lines().code(), m.lines().comment(), m.lines().docComment(),
             m.lines().blank(), percent(m.lines().comment() + m.lines().docComment(),
                                        m.lines().total()),
-            text.longestLine(), text.linesOverLimit(), datalogRules, datalogFacts,
+            text.longestLine(), text.linesOverLimit(), datalogRules, datalogFacts, widestReturn,
             (int) defs.stream().filter(CompilerModel.DefInfo::isTest).count(),
             percent(api.stream().filter(CompilerModel.DefInfo::hasDoc).count(), api.size()),
             percent(api.stream().filter(CompilerModel.DefInfo::isPure).count(), api.size()),

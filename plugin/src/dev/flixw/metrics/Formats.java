@@ -79,6 +79,7 @@ final class Formats {
         return switch (rule) {
             case "definition-too-long" -> "Split it, or name the parts by extracting local definitions.";
             case "too-many-parameters" -> "Group related parameters into a record, or thread less state.";
+            case "wide-return" -> "Name the shape: a record with a type alias reads better than a wide tuple.";
             case "deeply-nested" -> "Invert a condition to return early, or lift a branch into its own definition.";
             case "dense" -> "Spread it out: this is complexity per line, so length is not the problem.";
             case "crammed-line" -> "Break the line where it reads, not at a column limit.";
@@ -109,8 +110,9 @@ final class Formats {
         b.append("          \"name\": \"flixw-metrics\",\n");
         b.append("          \"informationUri\": \"https://github.com/wstein/flixw\",\n");
         b.append("          \"rules\": [\n");
-        List<String> rules = List.of("definition-too-long", "too-many-parameters", "deeply-nested",
-            "dense", "crammed-line", "line-too-long", "undocumented-public", "wide-coupling");
+        List<String> rules = List.of("definition-too-long", "too-many-parameters", "wide-return",
+            "deeply-nested", "dense", "crammed-line", "line-too-long", "undocumented-public",
+            "wide-coupling");
         for (int i = 0; i < rules.size(); i++) {
             String rule = rules.get(i);
             b.append("            {\"id\": ").append(SourceMetrics.Smell.quote(rule));

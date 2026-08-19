@@ -6,7 +6,7 @@ import dev.flixw.metrics.sdk.CompilerModel.{DefInfo, LineInfo, Model, ModelFailu
 import ca.uwaterloo.flix.api.{Bootstrap, Flix}
 import ca.uwaterloo.flix.language.ast.shared.{Input, Source}
 import ca.uwaterloo.flix.language.phase.Lexer
-import ca.uwaterloo.flix.language.ast.{SourceLocation, Symbol, Type, TypedAst}
+import ca.uwaterloo.flix.language.ast.{SourceLocation, Symbol, Type, TypeConstructor, TypedAst}
 import ca.uwaterloo.flix.util.{Formatter, Options}
 
 import java.nio.file.Path
@@ -170,9 +170,34 @@ final class Flix075Adapter extends CompilerModel {
       d.loc.startLine, spannedLines(d.loc), declaredParameters(d.spec.fparams.toList),
       tally.widestLocalParams, tally.localDefs, deepestChain(tally.branches.toList),
       cognitive(tally), crammedTokens, crammedLine, owner,
-      tally.datalogRules, tally.datalogFacts,
+      tally.datalogRules, tally.datalogFacts, shapeWidth(d.spec.retTpe),
       d.spec.mod.isPublic, d.spec.ann.isTest, hasDoc(d),
       effectsOf(d.spec.eff).asJava)
+  }
+
+  /**
+   * How many parts the value a function returns has.
+   *
+   * A record of ten fields or a tuple of six is a parameter list in the other direction: wide for
+   * the same reason, read for the same reason, and nothing else measured here would notice it.
+   * A type that is neither is one part.
+   *
+   * Record fields are counted through the whole type rather than at the top: a record row is
+   * built from nested `RecordRowExtend` constructors, so the field count is the depth of that
+   * chain and not the arity of anything.
+   */
+  private def shapeWidth(tpe: Type): Int = {
+    def recordFields(t: Type): Int = t.typeConstructor match {
+      case Some(_: TypeConstructor.RecordRowExtend) => 1 + t.typeArguments.map(recordFields).sum
+      case _ => t.typeArguments.map(recordFields).sum
+    }
+
+    tpe.typeConstructor match {
+      case Some(TypeConstructor.Tuple(arity)) => arity
+      case _ =>
+        val fields = recordFields(tpe)
+        if (fields == 0) 1 else fields
+    }
   }
 
   /**

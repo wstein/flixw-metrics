@@ -56,6 +56,15 @@ final class Thresholds {
      */
     static final int MAX_LINE_TOKENS = 30;
 
+    /**
+     * Parts in a returned value, gated at the same number as parameters.
+     *
+     * <p>Deliberately the same: returning a six-field record and taking six parameters are the
+     * same amount to hold in the head, in opposite directions, and giving them different limits
+     * would say one of them is more forgivable than the other.
+     */
+    static final int MAX_RETURN_WIDTH = MAX_PARAMETERS;
+
     static List<SourceMetrics.Smell> apply(List<DefInfo> defs, List<ModuleInfo> modules) {
         List<SourceMetrics.Smell> out = new ArrayList<>();
         for (DefInfo d : defs) {
@@ -78,6 +87,9 @@ final class Thresholds {
                 out.add(new SourceMetrics.Smell("crammed-line", d.file(), d.maxLineTokensLine(),
                     d.maxLineTokens() + " tokens on one line, over " + MAX_LINE_TOKENS
                         + "  [" + d.maxLineTokensOwner() + "]"));
+            if (d.returnWidth() > MAX_RETURN_WIDTH)
+                out.add(smell("wide-return", d,
+                    d.returnWidth() + " parts returned, over " + MAX_RETURN_WIDTH));
             // Public, not a test, and nobody wrote down what it is for. The one finding here
             // that is about the reader rather than the writer.
             if (d.isPublic() && !d.isTest() && !d.hasDoc())

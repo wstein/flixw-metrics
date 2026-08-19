@@ -114,6 +114,8 @@ child loader parented to the platform loader.
 | `localDefinitions` | `LocalDef` nodes — definitions the outer signature hides |
 | `effectfulDefinitions`, `purityPercent` | the *declared* effect on each signature |
 | `cognitive` | branches weighted by nesting, plus boolean operators and match guards |
+| `returnWidth` | a tuple's arity, or a record's field count |
+| `datalogRules`, `datalogFacts` | constraints with and without a body |
 | `tests`, `docCoveragePercent` | `@Test` annotations and doc comments on the public surface |
 | `lines`, `codeLines`, `commentLines`, `docCommentLines`, `blankLines` | the compiler's own lexer |
 | `longestLine`, `linesOverLimit` | the source text |
@@ -186,6 +188,16 @@ through the definition, and counting the match would say one.
 
 `effectfulDefinitions` asks the declared effect rather than inferring from the body, because
 the declaration is the promise the definition makes to its callers.
+
+`returnWidth` is a parameter list in the other direction: a record of ten fields or a tuple of
+six is wide for the same reason, read for the same reason, and invisible to every other measure
+here. It is gated at the same number as parameters, deliberately — giving them different limits
+would say one is more forgivable than the other.
+
+`datalogFacts` are counted apart from rules because a constraint with no body is data written as
+code, and a thousand of them is a data file rather than a thousand things to understand. A
+`query … from P(x, y)` desugars into a constraint and counts as a rule: it derives a relation
+from others, which is what a rule is.
 
 ### The AST walk is generic
 

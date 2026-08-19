@@ -89,12 +89,16 @@ public interface CompilerModel {
      * @param datalogRules constraints with a body -- the ones that derive
      * @param datalogFacts constraints with an empty body, which are data written as code and are
      *     not complexity however many there are
+     * @param returnWidth how many parts the returned value has -- a tuple's arity, or a
+     *     record's field count. A record of ten fields is a parameter list in the other
+     *     direction: wide for the same reason, read for the same reason, and invisible to every
+     *     other measure here
      * @param effects the declared effects, empty when pure
      */
     record DefInfo(String name, String module, String file, int line, int lines, int parameters,
                    int maxLocalParameters, int localDefs, int nesting, int cognitive,
                    int maxLineTokens, int maxLineTokensLine, String maxLineTokensOwner,
-                   int datalogRules, int datalogFacts,
+                   int datalogRules, int datalogFacts, int returnWidth,
                    boolean isPublic, boolean isTest, boolean hasDoc, List<String> effects) {
 
         /** Complexity per line: five dense lines and a hundred readable ones can score alike. */

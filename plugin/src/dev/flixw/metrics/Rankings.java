@@ -64,6 +64,10 @@ final class Rankings {
         top(out, defs, "deepest", DefInfo::nesting, d -> d.nesting() + " levels nested");
         top(out, defs, "widest", DefInfo::widestParameterList,
             d -> d.widestParameterList() + " parameters");
+        // Only when it is more than one part; every definition returns something, and a ranking
+        // of "returns 1 thing" three times over is noise where a place to look should be.
+        top(out, defs, "widest-return", d -> d.returnWidth() > 1 ? d.returnWidth() : 0,
+            d -> d.returnWidth() + " parts returned");
         // Reported against the local that owns the line, not the definition it happens to sit in.
         for (DefInfo d : sortedBy(defs, DefInfo::maxLineTokens)) {
             out.add(new Rank("crammed-line", d.maxLineTokensOwner(), d.file(),
