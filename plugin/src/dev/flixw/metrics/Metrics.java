@@ -38,10 +38,11 @@ final class Metrics {
                   int effectfulDefinitions, int cognitive, int traits, int instances, int enums,
                   int structs, int effects, int typeAliases, int lines, int codeLines,
                   int commentLines, int docCommentLines, int blankLines, int commentPercent,
-                  int longestLine, int linesOverLimit, int tests, int docCoveragePercent,
+                  int longestLine, int linesOverLimit, int datalogRules, int datalogFacts,
+                  int tests, int docCoveragePercent,
                   int purityPercent, List<SourceMetrics.Smell> smells, List<Rankings.Rank> ranks) {
 
-        static final int SCHEMA = 5;
+        static final int SCHEMA = 6;
 
         String render(Format format) {
             return switch (format) {
@@ -100,6 +101,7 @@ final class Metrics {
                 {"docCommentLines", "" + docCommentLines}, {"blankLines", "" + blankLines},
                 {"commentPercent", "" + commentPercent},
                 {"longestLine", "" + longestLine}, {"linesOverLimit", "" + linesOverLimit},
+                {"datalogRules", "" + datalogRules}, {"datalogFacts", "" + datalogFacts},
                 {"tests", "" + tests}, {"docCoveragePercent", "" + docCoveragePercent},
                 {"purityPercent", "" + purityPercent},
             };
@@ -121,12 +123,13 @@ final class Metrics {
         static Report fromJson(String json) {
             Integer schema = field(json, "schemaVersion");
             if (schema == null || schema != SCHEMA) return null;
-            int[] v = new int[23];
+            int[] v = new int[25];
             String[] names = {"files", "modules", "definitions", "localDefinitions",
                 "effectfulDefinitions", "cognitive", "traits", "instances", "enums", "structs",
                 "effects", "typeAliases", "lines", "codeLines", "commentLines",
                 "docCommentLines", "blankLines", "commentPercent", "longestLine",
-                "linesOverLimit", "tests", "docCoveragePercent", "purityPercent"};
+                "linesOverLimit", "datalogRules", "datalogFacts", "tests", "docCoveragePercent",
+                "purityPercent"};
             for (int i = 0; i < names.length; i++) {
                 Integer n = field(json, names[i]);
                 if (n == null) return null;
@@ -137,7 +140,7 @@ final class Metrics {
             List<Rankings.Rank> ranks = ranksFromJson(json);
             return new Report(v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7], v[8], v[9],
                 v[10], v[11], v[12], v[13], v[14], v[15], v[16], v[17], v[18], v[19], v[20],
-                v[21], v[22], smells, ranks);
+                v[21], v[22], v[23], v[24], smells, ranks);
         }
 
         /** Same fixed shape as the smells above, and read back the same deliberately dumb way. */
@@ -193,6 +196,8 @@ final class Metrics {
         int localDefs = defs.stream().mapToInt(CompilerModel.DefInfo::localDefs).sum();
         int effectful = (int) defs.stream().filter(d -> !d.isPure()).count();
         int cognitive = defs.stream().mapToInt(CompilerModel.DefInfo::cognitive).sum();
+        int datalogRules = defs.stream().mapToInt(CompilerModel.DefInfo::datalogRules).sum();
+        int datalogFacts = defs.stream().mapToInt(CompilerModel.DefInfo::datalogFacts).sum();
         List<CompilerModel.DefInfo> api = defs.stream()
             .filter(d -> d.isPublic() && !d.isTest()).toList();
         List<SourceMetrics.Smell> smells = new java.util.ArrayList<>(text.smells());
@@ -205,7 +210,7 @@ final class Metrics {
             m.lines().total(), m.lines().code(), m.lines().comment(), m.lines().docComment(),
             m.lines().blank(), percent(m.lines().comment() + m.lines().docComment(),
                                        m.lines().total()),
-            text.longestLine(), text.linesOverLimit(),
+            text.longestLine(), text.linesOverLimit(), datalogRules, datalogFacts,
             (int) defs.stream().filter(CompilerModel.DefInfo::isTest).count(),
             percent(api.stream().filter(CompilerModel.DefInfo::hasDoc).count(), api.size()),
             percent(api.stream().filter(CompilerModel.DefInfo::isPure).count(), api.size()),

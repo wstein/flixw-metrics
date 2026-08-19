@@ -43,7 +43,7 @@ public final class FormatsTest {
 
     private static Metrics.Report report(List<SourceMetrics.Smell> smells) {
         return new Metrics.Report(1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            10, 8, 1, 1, 0, 10, 40, 0, 0, 100, 100, smells,
+            10, 8, 1, 1, 0, 10, 40, 0, 0, 0, 0, 100, 100, smells,
             List.of(new Rankings.Rank("longest", "A.b", "src/A.flix", 3, "9 lines")));
     }
 

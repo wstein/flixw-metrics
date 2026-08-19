@@ -170,6 +170,7 @@ final class Flix075Adapter extends CompilerModel {
       d.loc.startLine, spannedLines(d.loc), declaredParameters(d.spec.fparams.toList),
       tally.widestLocalParams, tally.localDefs, deepestChain(tally.branches.toList),
       cognitive(tally), crammedTokens, crammedLine, owner,
+      tally.datalogRules, tally.datalogFacts,
       d.spec.mod.isPublic, d.spec.ann.isTest, hasDoc(d),
       effectsOf(d.spec.eff).asJava)
   }
@@ -217,6 +218,8 @@ final class Flix075Adapter extends CompilerModel {
     var widestLocalParams = 0
     var booleans = 0
     var guards = 0
+    var datalogRules = 0
+    var datalogFacts = 0
   }
 
   /**
@@ -268,6 +271,18 @@ final class Flix075Adapter extends CompilerModel {
         tally.widestLocalParams = tally.widestLocalParams.max(declaredParameters(e.fparams.toList))
       // `and`/`or` add a path through the code without adding a branch construct, which is why
       // a plain branch count reads a long boolean chain as trivial.
+      // A constraint with no body is a fact: data written as code. A thousand facts is a data
+      // file, not a thousand things to understand, so the two are counted apart.
+      // A constraint with no body is a fact: data written as code, and a thousand of them is a
+      // data file rather than a thousand things to understand. So the two are counted apart.
+      //
+      // `query db select .. from P(x, y)` desugars into a constraint and is counted as a rule.
+      // That is deliberate rather than overlooked: a query derives a relation from others, which
+      // is what a rule is. Filtering it out was tried -- its location is real, not synthetic, so
+      // there is nothing to filter on, and inventing a way would be counting the *syntax*
+      // someone used rather than the logic they wrote.
+      case c: TypedAst.Constraint =>
+        if (c.body.isEmpty) tally.datalogFacts += 1 else tally.datalogRules += 1
       case e: TypedAst.Expr.Binary
         if e.sop == ca.uwaterloo.flix.language.ast.SemanticOp.BoolOp.And
           || e.sop == ca.uwaterloo.flix.language.ast.SemanticOp.BoolOp.Or => tally.booleans += 1
@@ -320,7 +335,7 @@ final class Flix075Adapter extends CompilerModel {
 
   private def modules(defs: List[DefInfo], edges: Set[(String, String)]): List[ModuleInfo] =
     defs.groupBy(_.module).toList.sortBy(_._1).map { case (name, members) =>
-      new ModuleInfo(name, members.size,
+      new ModuleInfo(name, members.size, members.map(_.lines).sum,
         edges.count { case (_, to) => to == name },
         edges.count { case (from, _) => from == name })
     }

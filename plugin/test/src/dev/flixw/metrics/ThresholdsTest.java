@@ -50,16 +50,16 @@ public final class ThresholdsTest {
         // Reported against the local, not the definition it sits in -- the whole point of
         // measuring which local owns the line.
         DefInfo crammed = new DefInfo("Foo.outer", "Foo", "src/Foo.flix", 1, 90, 1, 0, 1, 1, 0,
-            44, 57, "Foo.outer.loop", false, false, true, List.of());
+            44, 57, "Foo.outer.loop", 0, 0, false, false, true, List.of());
         List<SourceMetrics.Smell> found = Thresholds.apply(List.of(crammed), List.of());
         require(found.stream().anyMatch(s -> s.rule().equals("crammed-line")
             && s.line() == 57 && s.detail().contains("Foo.outer.loop")),
             "a crammed line names the local that owns it, and its own line");
 
         require(has(Thresholds.apply(List.of(),
-            List.of(new ModuleInfo("Wide", 3, 0, 99))), "wide-coupling"),
+            List.of(new ModuleInfo("Wide", 3, 40, 0, 99))), "wide-coupling"),
             "a module depending on many others is reported");
-        require(Thresholds.apply(List.of(), List.of(new ModuleInfo("Narrow", 3, 40, 1))).isEmpty(),
+        require(Thresholds.apply(List.of(), List.of(new ModuleInfo("Narrow", 3, 40, 40, 1))).isEmpty(),
             "being depended upon is not a finding");
         System.out.println("ThresholdsTest: ok");
     }
@@ -67,7 +67,7 @@ public final class ThresholdsTest {
     private static DefInfo def(String name, int lines, int params, int localParams, int nesting,
                                int cognitive, boolean isPublic, boolean isTest, boolean hasDoc) {
         return new DefInfo(name, "Foo", "src/Foo.flix", 1, lines, params, localParams, 0, nesting,
-            cognitive, 0, 1, name, isPublic, isTest, hasDoc, List.of());
+            cognitive, 0, 1, name, 0, 0, isPublic, isTest, hasDoc, List.of());
     }
 
     private static boolean has(List<SourceMetrics.Smell> smells, String rule) {

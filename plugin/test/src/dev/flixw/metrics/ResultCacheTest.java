@@ -69,7 +69,7 @@ public final class ResultCacheTest {
             // numbers and lost the findings would render as a clean project, which is the one
             // wrong answer this cache must never produce.
             Metrics.Report original = new Metrics.Report(1, 2, 3, 4, 5, 6, 7,
-                8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
+                8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25,
                 List.of(new SourceMetrics.Smell("line-too-long", "src/A.flix", 12, "133 columns"),
                         new SourceMetrics.Smell("quoting", "src/\"odd\".flix", 1, "a \\ and a \" ")),
                 List.of(new Rankings.Rank("longest", "Foo.bar", "src/A.flix", 7, "310 lines"),
@@ -78,7 +78,7 @@ public final class ResultCacheTest {
             Metrics.Report back = Metrics.Report.fromJson(
                 ResultCache.read(pluginCache, base));
             require(back != null && back.files() == 1 && back.definitions() == 3
-                && back.linesOverLimit() == 20 && back.purityPercent() == 23,
+                && back.linesOverLimit() == 20 && back.purityPercent() == 25,
                 "a written entry reads back intact");
             require(back.smells().size() == 2, "smells survive the round trip");
             require(back.smells().equals(original.smells()),

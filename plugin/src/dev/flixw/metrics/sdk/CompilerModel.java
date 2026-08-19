@@ -86,11 +86,15 @@ public interface CompilerModel {
      * @param maxLineTokensOwner the innermost local definition containing that line, or this
      *     definition's own name. A crammed line reported against a 300-line outer definition
      *     sends the reader to the wrong place; the local holding it is where the work is
+     * @param datalogRules constraints with a body -- the ones that derive
+     * @param datalogFacts constraints with an empty body, which are data written as code and are
+     *     not complexity however many there are
      * @param effects the declared effects, empty when pure
      */
     record DefInfo(String name, String module, String file, int line, int lines, int parameters,
                    int maxLocalParameters, int localDefs, int nesting, int cognitive,
                    int maxLineTokens, int maxLineTokensLine, String maxLineTokensOwner,
+                   int datalogRules, int datalogFacts,
                    boolean isPublic, boolean isTest, boolean hasDoc, List<String> effects) {
 
         /** Complexity per line: five dense lines and a hundred readable ones can score alike. */
@@ -114,7 +118,7 @@ public interface CompilerModel {
      * @param fanIn how many modules depend on this one
      * @param fanOut how many modules this one depends on
      */
-    record ModuleInfo(String name, int definitions, int fanIn, int fanOut) {
+    record ModuleInfo(String name, int definitions, int lines, int fanIn, int fanOut) {
 
         /**
          * Martin's instability: 0 is depended upon and depends on nothing, 1 is the reverse.
