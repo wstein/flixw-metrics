@@ -16,13 +16,16 @@ final class Metrics {
     private Metrics() { }
 
     enum Format {
-        TEXT, JSON;
+        TEXT, JSON, MARKDOWN, SARIF;
 
         static Format parse(String value) {
             return switch (value) {
                 case "text" -> TEXT;
                 case "json" -> JSON;
-                default -> throw new Main.Usage("unknown format " + value + " (expected text or json)");
+                case "md", "markdown" -> MARKDOWN;
+                case "sarif" -> SARIF;
+                default -> throw new Main.Usage("unknown format " + value
+                    + " (expected text, json, md or sarif)");
             };
         }
     }
@@ -41,7 +44,17 @@ final class Metrics {
         static final int SCHEMA = 5;
 
         String render(Format format) {
-            return format == Format.JSON ? json() : text();
+            return switch (format) {
+                case JSON -> json();
+                case MARKDOWN -> Formats.markdown(this);
+                case SARIF -> Formats.sarif(this);
+                case TEXT -> text();
+            };
+        }
+
+        /** The same label/value pairs both renderers use; Markdown needs them too. */
+        String[][] fieldsForRender() {
+            return fields();
         }
 
         private String json() {

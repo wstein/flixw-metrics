@@ -145,6 +145,22 @@ what later phases still needed, so a file of any size arrives with a handful of 
 every line after the first would be counted blank. That is the fork's finding, and the sort of
 thing only someone who tried the obvious way first would know.
 
+### Four renderings, one cached run
+
+`text` for a terminal, `json` for a program, `md` for a pull request, `sarif` for a
+code-scanning tab. All four are derived from the same `Report`, which is why it carries its
+rankings and findings as **data** rather than as text: a cached run must be able to serve a
+format it was not originally asked for.
+
+SARIF declares every rule whether or not it fired, so a consumer that builds its UI from the
+tool descriptor does not see a different rule set on every run. Module-level findings have no
+file and no line, and SARIF requires a region line of at least 1 — those are emitted without a
+region rather than with a fabricated line 0.
+
+Markdown puts findings first and totals last, grouped by rule with the largest group first: ten
+instances of one rule is one decision, ten separate rules is ten, and an ungrouped list hides
+which it is. Every rule carries a one-line action, because a finding without one is a complaint.
+
 ### Findings are reported, never enforced
 
 `Thresholds` is the single place a measurement becomes a finding, and nothing there fails a

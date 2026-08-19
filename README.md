@@ -35,7 +35,7 @@ assets, then install the JAR explicitly from a tagged release:
   --sha256 "$(awk '/plugin.jar$/ { print $1 }' dist/SHA256SUMS)"
 ```
 
-Then run `./flixw plugin flixw-metrics report --format json`, or inspect the compiler-side
+Then run `./flixw plugin flixw-metrics report --format text|json|md|sarif`, or inspect the compiler-side
 capabilities with `./flixw plugin flixw-metrics capabilities`.
 
 It reports counts of definitions, modules, local definitions, effectful signatures and
