@@ -42,7 +42,7 @@ final class Metrics {
                   int widestReturn, int tests, int docCoveragePercent,
                   int purityPercent, List<SourceMetrics.Smell> smells, List<Rankings.Rank> ranks) {
 
-        static final int SCHEMA = 7;
+        static final int SCHEMA = 8;
 
         String render(Format format) {
             return switch (format) {
