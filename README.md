@@ -32,7 +32,12 @@ assets, then install the JAR explicitly from a tagged release:
 ```
 
 Then run `./flixw plugin flixw-metrics report --format json`, or inspect the compiler-side
-capabilities with `./flixw plugin flix-metrics capabilities`.
+capabilities with `./flixw plugin flixw-metrics capabilities`.
+
+It reports counts of definitions, modules, local definitions, effectful signatures and
+branches from the compiler's typed root, line metrics from the source text, and the smells
+those imply — see [docs/REFLECTION.md](docs/REFLECTION.md) for which number comes from where
+and why.
 
 ## ABI and safety
 

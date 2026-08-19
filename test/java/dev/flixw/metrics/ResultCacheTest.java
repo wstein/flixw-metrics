@@ -65,12 +65,21 @@ public final class ResultCacheTest {
             Files.delete(project.resolve("flix.toml"));
 
             // Round trip, including the shapes that must not be trusted.
-            ResultCache.write(pluginCache, base, new ReflectionEngine.Report(1, 2, 3, 4, 5, 6, 7, 8)
-                .render(ReflectionEngine.Format.JSON));
+            // Smells go through the same round trip as the counts. An entry that kept the
+            // numbers and lost the findings would render as a clean project, which is the one
+            // wrong answer this cache must never produce.
+            ReflectionEngine.Report original = new ReflectionEngine.Report(1, 2, 3, 4, 5, 6, 7,
+                8, 9, 10, 11, 12, 13, 14, 15,
+                List.of(new SourceMetrics.Smell("line-too-long", "src/A.flix", 12, "133 columns"),
+                        new SourceMetrics.Smell("quoting", "src/\"odd\".flix", 1, "a \\ and a \" ")));
+            ResultCache.write(pluginCache, base, original.render(ReflectionEngine.Format.JSON));
             ReflectionEngine.Report back = ReflectionEngine.Report.fromJson(
                 ResultCache.read(pluginCache, base));
-            require(back != null && back.files() == 1 && back.definitions() == 2
-                && back.typeAliases() == 8, "a written entry reads back intact");
+            require(back != null && back.files() == 1 && back.definitions() == 3
+                && back.linesOverLimit() == 15, "a written entry reads back intact");
+            require(back.smells().size() == 2, "smells survive the round trip");
+            require(back.smells().equals(original.smells()),
+                "including a file name and detail that need escaping");
             require(ResultCache.read(pluginCache, "0".repeat(64)) == null, "an absent entry is a miss");
             require(ReflectionEngine.Report.fromJson("{\"schemaVersion\": 99}") == null,
                 "a future schema is a miss, not a wrong answer");

@@ -25,43 +25,101 @@ final class ReflectionEngine {
         }
     }
 
-    record Report(int files, int definitions, int traits, int instances, int enums, int structs,
-                  int effects, int typeAliases) {
+    /**
+     * One report. Flat on purpose: every field is a count a consumer can compare between two
+     * runs without knowing what the others mean.
+     */
+    record Report(int files, int modules, int definitions, int localDefinitions,
+                  int effectfulDefinitions, int branches, int traits, int instances, int enums,
+                  int structs, int effects, int typeAliases, int lines, int longestLine,
+                  int linesOverLimit, List<SourceMetrics.Smell> smells) {
+
+        static final int SCHEMA = 2;
+
         String render(Format format) {
-            if (format == Format.JSON) return "{\n"
-                + "  \"schemaVersion\": 1,\n"
-                + "  \"files\": " + files + ",\n"
-                + "  \"definitions\": " + definitions + ",\n"
-                + "  \"traits\": " + traits + ",\n"
-                + "  \"instances\": " + instances + ",\n"
-                + "  \"enums\": " + enums + ",\n"
-                + "  \"structs\": " + structs + ",\n"
-                + "  \"effects\": " + effects + ",\n"
-                + "  \"typeAliases\": " + typeAliases + "\n}\n";
-            return "files: " + files + "\ndefinitions: " + definitions + "\ntraits: " + traits
-                + "\ninstances: " + instances + "\nenums: " + enums + "\nstructs: " + structs
-                + "\neffects: " + effects + "\ntype aliases: " + typeAliases + "\n";
+            return format == Format.JSON ? json() : text();
+        }
+
+        private String json() {
+            StringBuilder b = new StringBuilder("{\n");
+            b.append("  \"schemaVersion\": ").append(SCHEMA).append(",\n");
+            for (String[] pair : fields()) b.append("  \"").append(pair[0]).append("\": ")
+                                            .append(pair[1]).append(",\n");
+            b.append("  \"smells\": [");
+            for (int i = 0; i < smells.size(); i++) {
+                b.append(i == 0 ? "\n" : ",\n").append("    ").append(smells.get(i).json());
+            }
+            b.append(smells.isEmpty() ? "]\n}\n" : "\n  ]\n}\n");
+            return b.toString();
+        }
+
+        private String text() {
+            StringBuilder b = new StringBuilder();
+            for (String[] pair : fields()) b.append(pair[0]).append(": ").append(pair[1]).append('\n');
+            b.append("smells: ").append(smells.size()).append('\n');
+            for (SourceMetrics.Smell smell : smells) b.append(smell.text()).append('\n');
+            return b.toString();
+        }
+
+        /** The order the two renderers share, so they cannot drift apart field by field. */
+        private String[][] fields() {
+            return new String[][] {
+                {"files", "" + files}, {"modules", "" + modules},
+                {"definitions", "" + definitions}, {"localDefinitions", "" + localDefinitions},
+                {"effectfulDefinitions", "" + effectfulDefinitions}, {"branches", "" + branches},
+                {"traits", "" + traits}, {"instances", "" + instances}, {"enums", "" + enums},
+                {"structs", "" + structs}, {"effects", "" + effects},
+                {"typeAliases", "" + typeAliases}, {"lines", "" + lines},
+                {"longestLine", "" + longestLine}, {"linesOverLimit", "" + linesOverLimit},
+            };
         }
 
         /**
-         * Reads back what {@link #render} wrote, or null if it is not that.
+         * Reads back what {@link #json} wrote, or null if it is not that.
          *
          * <p>This parses one fixed shape this class emitted itself, which is why scanning for
          * {@code "name": <integer>} is enough and a JSON library would be a dependency bought
-         * for nothing. Null on anything unexpected -- a truncated file, a hand-edited entry,
-         * a {@code schemaVersion} this build does not know -- and the caller recomputes. A
-         * cache entry is an optimisation, so the only wrong answer here is a confident one.
+         * for nothing. Null on anything unexpected -- a truncated file, a hand-edited entry, a
+         * {@code schemaVersion} this build does not know -- and the caller recomputes. A cache
+         * entry is an optimisation, so the only wrong answer here is a confident one.
+         *
+         * <p>Smells are not read back. They are derived from the same inputs as the counts, so
+         * an entry carrying counts without them would be a partial report; a cached entry is
+         * therefore only reusable in full, and {@link #smellsFromJson} rebuilds the list.
          */
         static Report fromJson(String json) {
             Integer schema = field(json, "schemaVersion");
-            if (schema == null || schema != 1) return null;
-            Integer f = field(json, "files"), d = field(json, "definitions");
-            Integer t = field(json, "traits"), i = field(json, "instances");
-            Integer e = field(json, "enums"), st = field(json, "structs");
-            Integer ef = field(json, "effects"), ta = field(json, "typeAliases");
-            if (f == null || d == null || t == null || i == null
-                || e == null || st == null || ef == null || ta == null) return null;
-            return new Report(f, d, t, i, e, st, ef, ta);
+            if (schema == null || schema != SCHEMA) return null;
+            int[] v = new int[15];
+            String[] names = {"files", "modules", "definitions", "localDefinitions",
+                "effectfulDefinitions", "branches", "traits", "instances", "enums", "structs",
+                "effects", "typeAliases", "lines", "longestLine", "linesOverLimit"};
+            for (int i = 0; i < names.length; i++) {
+                Integer n = field(json, names[i]);
+                if (n == null) return null;
+                v[i] = n;
+            }
+            List<SourceMetrics.Smell> smells = smellsFromJson(json);
+            if (smells == null) return null;
+            return new Report(v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7], v[8], v[9],
+                v[10], v[11], v[12], v[13], v[14], smells);
+        }
+
+        private static List<SourceMetrics.Smell> smellsFromJson(String json) {
+            List<SourceMetrics.Smell> out = new ArrayList<>();
+            Matcher m = Pattern.compile(
+                "\\{\\s*\"rule\":\\s*\"((?:[^\"\\\\]|\\\\.)*)\",\\s*\"file\":\\s*\"((?:[^\"\\\\]|\\\\.)*)\","
+              + "\\s*\"line\":\\s*(\\d+),\\s*\"detail\":\\s*\"((?:[^\"\\\\]|\\\\.)*)\"\\s*\\}")
+                .matcher(json);
+            while (m.find())
+                out.add(new SourceMetrics.Smell(unquote(m.group(1)), unquote(m.group(2)),
+                    Integer.parseInt(m.group(3)), unquote(m.group(4))));
+            return out;
+        }
+
+        private static String unquote(String s) {
+            return s.replace("\\n", "\n").replace("\\t", "\t").replace("\\r", "\r")
+                    .replace("\\\"", "\"").replace("\\\\", "\\");
         }
 
         private static Integer field(String json, String name) {
@@ -75,24 +133,6 @@ final class ReflectionEngine {
         }
     }
 
-    /**
-     * Measures through the system class loader, which is why this runs in its own JVM.
-     *
-     * <p><b>An isolated {@code URLClassLoader} does not work here, and it is worth recording
-     * why so nobody tries it again.</b> The Flix standard library imports Java classes that
-     * live inside {@code flix.jar} itself -- {@code dev.flix.runtime.Global} among them -- and
-     * the compiler's resolver looks those up through the <em>application</em> class path, not
-     * through the loader that defined the compiler. Load Flix from a child loader and its own
-     * standard library fails to resolve with four {@code E1803 Undefined Java class} errors
-     * before a single line of the project is typed. Setting the thread context class loader
-     * does not help either; both were measured, not assumed.
-     *
-     * <p>So {@code flix.jar} must be flat on {@code -cp}, and the only way to have that while
-     * the plugin is launched as its own JAR is a second JVM. That costs a measured 270ms and
-     * it is not optional. The consequence to live with is that the compiler's bundled ASM,
-     * JLine, gson and json4s are visible to this plugin: any dependency added here must be
-     * shaded, because on a flat class path the winner is decided by ordering.
-     */
     static Report measure(Main.Context context, List<Path> sources) {
         try {
             ClassLoader loader = ClassLoader.getSystemClassLoader();
@@ -107,14 +147,132 @@ final class ReflectionEngine {
             call(loaded, "unsafeGet");
             Object result = find(flixClass, "check", 0).invoke(flix);
             Object root = optionGet(call(result, "_1"));
-            if (root == null) throw new Failure("the compiler produced no typed root; fix compilation errors first");
-            return new Report(sources.size(), countProject(root, "defs", context.projectRoot()),
-                countProject(root, "traits", context.projectRoot()), countProject(root, "instances", context.projectRoot()),
-                countProject(root, "enums", context.projectRoot()), countProject(root, "structs", context.projectRoot()),
-                countProject(root, "effects", context.projectRoot()), countProject(root, "typeAliases", context.projectRoot()));
-        } catch (ReflectiveOperationException e) {
+            if (root == null)
+                throw new Failure("the compiler produced no typed root; fix compilation errors first");
+
+            Path projectRoot = context.projectRoot();
+            List<Object> defs = projectValues(root, "defs", projectRoot);
+            Walk walk = new Walk();
+            for (Object def : defs) walk.visit(call(def, "exp"));
+            SourceMetrics text = SourceMetrics.measure(projectRoot, sources);
+
+            return new Report(sources.size(), modules(defs), defs.size(), walk.localDefs,
+                effectful(defs), walk.branches,
+                projectValues(root, "traits", projectRoot).size(),
+                projectValues(root, "instances", projectRoot).size(),
+                projectValues(root, "enums", projectRoot).size(),
+                projectValues(root, "structs", projectRoot).size(),
+                projectValues(root, "effects", projectRoot).size(),
+                projectValues(root, "typeAliases", projectRoot).size(),
+                text.lines(), text.longestLine(), text.linesOverLimit(), text.smells());
+        } catch (ReflectiveOperationException | java.io.IOException e) {
             throw new Failure("cannot read the pinned compiler's typed root: " + cause(e));
         }
+    }
+
+    /**
+     * How many namespaces the project declares, from the symbols rather than the directory
+     * layout: a file may hold several modules and a module may span files, so counting either
+     * files or directories would answer a different question than the one asked.
+     */
+    private static int modules(List<Object> defs) throws ReflectiveOperationException {
+        java.util.Set<String> namespaces = new java.util.TreeSet<>();
+        for (Object def : defs) {
+            String sym = call(def, "sym").toString();
+            int dot = sym.lastIndexOf('.');
+            namespaces.add(dot < 0 ? "" : sym.substring(0, dot));
+        }
+        return namespaces.size();
+    }
+
+    /**
+     * Definitions whose signature admits an effect.
+     *
+     * <p>Asked of the declared effect rather than inferred from the body, because the declared
+     * one is the promise the definition makes to its callers -- which is the thing worth
+     * counting. "Pure" is matched by name: the type's own printed form is the only stable
+     * handle reflection has on it, and a fork renaming Pure would rather under-report than
+     * make this class refuse to run.
+     */
+    private static int effectful(List<Object> defs) throws ReflectiveOperationException {
+        int count = 0;
+        for (Object def : defs) {
+            Object eff = call(call(def, "spec"), "eff");
+            if (!"Pure".equals(eff.toString())) count++;
+        }
+        return count;
+    }
+
+    /**
+     * Counts constructs by walking every node as a Scala {@code Product}.
+     *
+     * <p>Generic on purpose. Naming AST classes to cast to would couple this to a class list
+     * that changes with the compiler; every Flix AST node is a case class, so
+     * {@code productArity}/{@code productElement} reaches all of them and an unfamiliar node is
+     * simply traversed rather than fatal. What is matched is the simple class name, which is
+     * the most stable handle available -- and being wrong about one name loses a count, not the
+     * run.
+     *
+     * <p>{@code LocalDef} is the one the outer signature hides: a definition nested inside
+     * another is invisible to anything counting top-level symbols, and is exactly where
+     * complexity accumulates unnoticed.
+     */
+    private static final class Walk {
+        int localDefs;
+        int branches;
+        private final java.util.IdentityHashMap<Object, Boolean> seen = new java.util.IdentityHashMap<>();
+
+        void visit(Object node) {
+            visit(node, 0);
+        }
+
+        private void visit(Object node, int depth) {
+            // Types are cyclic through their own constructors and the AST is deep. The bound
+            // and the identity set are both belt: a metrics run that never returns would be
+            // worse than one that undercounts.
+            if (node == null || depth > 200 || seen.put(node, Boolean.TRUE) != null) return;
+            switch (node.getClass().getSimpleName()) {
+                case "LocalDef" -> localDefs++;
+                // Each is one more path through the definition. A `match` with three rules is
+                // three branches, not one, which is why rules are counted and not the match.
+                case "IfThenElse", "MatchRule", "TypeMatchRule", "RestrictableChooseRule",
+                     "CatchRule", "HandlerRule", "SelectChannelRule" -> branches++;
+                default -> { }
+            }
+            // Reflectively, because this plugin compiles without the compiler on its class
+            // path -- and should keep doing so. Naming scala.Product here would make building
+            // the plugin require a Flix release, which is a dependency on the thing it is
+            // supposed to be able to inspect several versions of.
+            try {
+                if (hasMethod(node.getClass(), "productArity")) {
+                    int arity = (Integer) call(node, "productArity");
+                    Method element = node.getClass().getMethod("productElement", int.class);
+                    for (int i = 0; i < arity; i++) visit(element.invoke(node, i), depth + 1);
+                    return;
+                }
+                if (hasMethod(node.getClass(), "iterator")) {
+                    Object it = call(node, "iterator");
+                    if (!hasMethod(it.getClass(), "hasNext")) return;
+                    while ((Boolean) call(it, "hasNext")) visit(call(it, "next"), depth + 1);
+                }
+            } catch (ReflectiveOperationException | RuntimeException e) {
+                // One unreadable node costs its subtree, never the report.
+            }
+        }
+    }
+
+    /** Every value of a root map that belongs to this project rather than to the library. */
+    private static List<Object> projectValues(Object root, String field, Path projectRoot)
+            throws ReflectiveOperationException {
+        Object map = call(root, field);
+        Object iterable = hasMethod(map.getClass(), "values") ? call(map, "values") : map;
+        Object iterator = call(iterable, "iterator");
+        List<Object> out = new ArrayList<>();
+        while ((Boolean) call(iterator, "hasNext")) {
+            Object value = call(iterator, "next");
+            if (isProjectValue(value, projectRoot)) out.add(value);
+        }
+        return out;
     }
 
     /** The project's own sources. Package-visible: {@link ResultCache} keys on this exact
@@ -144,16 +302,6 @@ final class ReflectionEngine {
         return call(result, "unsafeGet");
     }
 
-    private static int countProject(Object root, String field, Path projectRoot) throws ReflectiveOperationException {
-        Object map = call(root, field);
-        Object iterable = hasMethod(map.getClass(), "values") ? call(map, "values") : map;
-        Object iterator = call(iterable, "iterator");
-        int count = 0;
-        while ((Boolean) call(iterator, "hasNext")) {
-            if (isProjectValue(call(iterator, "next"), projectRoot)) count++;
-        }
-        return count;
-    }
 
     private static boolean isProjectValue(Object value, Path projectRoot) throws ReflectiveOperationException {
         Object source = call(call(value, "loc"), "source");

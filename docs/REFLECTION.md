@@ -47,6 +47,46 @@ Class loading *for inspection* is a different question and is still isolated: th
 `Class.forName(name, false, loader)`, which never runs compiler code, so it can afford a
 child loader parented to the platform loader.
 
+## What is measured, and from where
+
+| metric | source |
+|---|---|
+| `definitions`, `traits`, `instances`, `enums`, `structs`, `effects`, `typeAliases` | the typed root, filtered to this project |
+| `modules` | the namespaces the definitions' own symbols carry |
+| `localDefinitions` | `LocalDef` nodes — definitions the outer signature hides |
+| `effectfulDefinitions` | the *declared* effect on each signature |
+| `branches` | `IfThenElse` and each rule of a `match`/`typematch`/`catch`/`select` |
+| `lines`, `longestLine`, `linesOverLimit` | the source text |
+| `smells` | thresholds over the above |
+
+Two rules decide which side of that table a number falls on. **Anything that needs meaning
+comes from the compiler**: counting `def` by scanning text gets comments, strings and local
+definitions wrong, which is the whole reason this plugin exists. **Anything that is a property
+of the text is taken from the text**: a line's length is not made truer by type-checking it,
+and taking it from the file means it still works when the project does not compile — which is
+when someone is most likely to be looking.
+
+`branches` counts *rules*, not `match` expressions: a match with three cases is three paths
+through the definition, and counting the match would say one.
+
+`effectfulDefinitions` asks the declared effect rather than inferring from the body, because
+the declaration is the promise the definition makes to its callers.
+
+### The AST walk is generic
+
+Every Flix AST node is a Scala case class, so the walk uses `productArity`/`productElement`
+and reaches all of them without naming a single AST type. An unfamiliar node is traversed
+rather than fatal, so a compiler that adds a construct still measures — it simply is not
+classified until this plugin learns the name.
+
+Node *simple names* are the classification handle because they are the most stable one
+reflection has. Being wrong about a name loses a count, not the run.
+
+The walk is done reflectively rather than against `scala.Product` directly, so that building
+this plugin does not require a Flix release on the class path. A metrics plugin that could
+only be compiled against the compiler it inspects would be awkward to keep working across
+several of them.
+
 ## Cost, and where it goes
 
 Measured against a two-definition project with Flix 0.75.3:
