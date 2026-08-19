@@ -72,7 +72,7 @@ record SourceMetrics(int lines, int longestLine, int linesOverLimit, List<Smell>
             return "  " + file + ":" + line + "  " + rule + "  (" + detail + ")";
         }
 
-        static String quote(String value) {
+        public static String quote(String value) {
             StringBuilder b = new StringBuilder("\"");
             for (int i = 0; i < value.length(); i++) {
                 char c = value.charAt(i);

@@ -36,9 +36,9 @@ final class Metrics {
                   int structs, int effects, int typeAliases, int lines, int codeLines,
                   int commentLines, int docCommentLines, int blankLines, int commentPercent,
                   int longestLine, int linesOverLimit, int tests, int docCoveragePercent,
-                  int purityPercent, List<SourceMetrics.Smell> smells) {
+                  int purityPercent, List<SourceMetrics.Smell> smells, List<Rankings.Rank> ranks) {
 
-        static final int SCHEMA = 4;
+        static final int SCHEMA = 5;
 
         String render(Format format) {
             return format == Format.JSON ? json() : text();
@@ -49,6 +49,11 @@ final class Metrics {
             b.append("  \"schemaVersion\": ").append(SCHEMA).append(",\n");
             for (String[] pair : fields()) b.append("  \"").append(pair[0]).append("\": ")
                                             .append(pair[1]).append(",\n");
+            b.append("  \"rankings\": [");
+            for (int i = 0; i < ranks.size(); i++) {
+                b.append(i == 0 ? "\n" : ",\n").append("    ").append(ranks.get(i).json());
+            }
+            b.append(ranks.isEmpty() ? "],\n" : "\n  ],\n");
             b.append("  \"smells\": [");
             for (int i = 0; i < smells.size(); i++) {
                 b.append(i == 0 ? "\n" : ",\n").append("    ").append(smells.get(i).json());
@@ -60,7 +65,11 @@ final class Metrics {
         private String text() {
             StringBuilder b = new StringBuilder();
             for (String[] pair : fields()) b.append(pair[0]).append(": ").append(pair[1]).append('\n');
-            b.append("smells: ").append(smells.size()).append('\n');
+            if (!ranks.isEmpty()) {
+                b.append('\n').append("where to look first\n");
+                for (Rankings.Rank r : ranks) b.append(r.text()).append('\n');
+            }
+            b.append('\n').append("smells: ").append(smells.size()).append('\n');
             for (SourceMetrics.Smell smell : smells) b.append(smell.text()).append('\n');
             return b.toString();
         }
@@ -112,9 +121,23 @@ final class Metrics {
             }
             List<SourceMetrics.Smell> smells = smellsFromJson(json);
             if (smells == null) return null;
+            List<Rankings.Rank> ranks = ranksFromJson(json);
             return new Report(v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7], v[8], v[9],
                 v[10], v[11], v[12], v[13], v[14], v[15], v[16], v[17], v[18], v[19], v[20],
-                v[21], v[22], smells);
+                v[21], v[22], smells, ranks);
+        }
+
+        /** Same fixed shape as the smells above, and read back the same deliberately dumb way. */
+        private static List<Rankings.Rank> ranksFromJson(String json) {
+            List<Rankings.Rank> out = new ArrayList<>();
+            Matcher m = Pattern.compile(
+                "\\{\\s*\"measure\":\\s*\"((?:[^\"\\\\]|\\\\.)*)\",\\s*\"subject\":\\s*\"((?:[^\"\\\\]|\\\\.)*)\","
+              + "\\s*\"file\":\\s*\"((?:[^\"\\\\]|\\\\.)*)\",\\s*\"line\":\\s*(\\d+),"
+              + "\\s*\"value\":\\s*\"((?:[^\"\\\\]|\\\\.)*)\"\\s*\\}").matcher(json);
+            while (m.find())
+                out.add(new Rankings.Rank(unquote(m.group(1)), unquote(m.group(2)),
+                    unquote(m.group(3)), Integer.parseInt(m.group(4)), unquote(m.group(5))));
+            return out;
         }
 
         private static List<SourceMetrics.Smell> smellsFromJson(String json) {
@@ -173,7 +196,7 @@ final class Metrics {
             (int) defs.stream().filter(CompilerModel.DefInfo::isTest).count(),
             percent(api.stream().filter(CompilerModel.DefInfo::hasDoc).count(), api.size()),
             percent(api.stream().filter(CompilerModel.DefInfo::isPure).count(), api.size()),
-            List.copyOf(smells));
+            List.copyOf(smells), Rankings.of(defs, m.modules()));
     }
 
     /**

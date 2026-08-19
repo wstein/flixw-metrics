@@ -80,10 +80,17 @@ public interface CompilerModel {
      *     enclose it, so five nested conditions cost more than five consecutive ones
      * @param isTest whether it is annotated {@code @Test}, which changes what is a smell: an
      *     undocumented test is not a gap in a public API
+     * @param maxLineTokens the most tokens on any one line this definition spans -- density the
+     *     line's <em>length</em> can hide, since a short line of punctuation-heavy code can carry
+     *     more to read than a long line of prose-like names
+     * @param maxLineTokensOwner the innermost local definition containing that line, or this
+     *     definition's own name. A crammed line reported against a 300-line outer definition
+     *     sends the reader to the wrong place; the local holding it is where the work is
      * @param effects the declared effects, empty when pure
      */
     record DefInfo(String name, String module, String file, int line, int lines, int parameters,
                    int maxLocalParameters, int localDefs, int nesting, int cognitive,
+                   int maxLineTokens, int maxLineTokensLine, String maxLineTokensOwner,
                    boolean isPublic, boolean isTest, boolean hasDoc, List<String> effects) {
 
         /** Complexity per line: five dense lines and a hundred readable ones can score alike. */

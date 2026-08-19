@@ -47,6 +47,15 @@ final class Thresholds {
     /** A module depending on this many others is hard to move and hard to test. */
     static final int MAX_FAN_OUT = 12;
 
+    /**
+     * Tokens on one line, which catches what a column count cannot.
+     *
+     * <p>A line of 90 columns made of long descriptive names is easier to read than one of 70
+     * made of punctuation and one-letter binders. Length measures how far the eye travels;
+     * this measures how much there is to take in.
+     */
+    static final int MAX_LINE_TOKENS = 30;
+
     static List<SourceMetrics.Smell> apply(List<DefInfo> defs, List<ModuleInfo> modules) {
         List<SourceMetrics.Smell> out = new ArrayList<>();
         for (DefInfo d : defs) {
@@ -63,6 +72,12 @@ final class Thresholds {
             if (d.cognitiveDensity() > MAX_COGNITIVE_DENSITY && d.lines() > 3)
                 out.add(smell("dense", d, String.format("%.1f complexity per line, over %.1f",
                     d.cognitiveDensity(), MAX_COGNITIVE_DENSITY)));
+            // Against the local that owns the line, not the definition it sits in: a crammed
+            // line blamed on a long outer definition sends the reader to the wrong place.
+            if (d.maxLineTokens() > MAX_LINE_TOKENS)
+                out.add(new SourceMetrics.Smell("crammed-line", d.file(), d.maxLineTokensLine(),
+                    d.maxLineTokens() + " tokens on one line, over " + MAX_LINE_TOKENS
+                        + "  [" + d.maxLineTokensOwner() + "]"));
             // Public, not a test, and nobody wrote down what it is for. The one finding here
             // that is about the reader rather than the writer.
             if (d.isPublic() && !d.isTest() && !d.hasDoc())

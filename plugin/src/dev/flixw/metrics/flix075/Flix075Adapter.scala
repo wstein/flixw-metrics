@@ -65,9 +65,10 @@ final class Flix075Adapter extends CompilerModel {
     // Self-edges dropped: a module calling itself is not coupling.
     val edges: Set[(String, String)] =
       defs.flatMap(references).toSet.filter(e => e._1 != e._2)
-    val infos = defs.map(measureDef(_, projectRoot))
-
     val sources = root.sources.keys.filter(src => projectSource(src, projectRoot)).toList
+    val tokens = tokensPerLine(sources)
+    val infos = defs.map(measureDef(_, projectRoot, tokens))
+
     new Model(
       infos.asJava, modules(infos, edges).asJava, lineInfo(sources),
       ofProject(root.traits.values, projectRoot)(_.loc).size,
@@ -92,6 +93,22 @@ final class Flix075Adapter extends CompilerModel {
    * otherwise -- so a line of code with a trailing comment is code, which is what a reader has to
    * treat it as.
    */
+  /** Tokens per line, per file, from the same lex that classifies lines. */
+  private def tokensPerLine(sources: List[Source]): Map[String, Map[Int, Int]] =
+    sources.map { src =>
+      val counts = scala.collection.mutable.Map.empty[Int, Int]
+      val (tokens, _) = Lexer.lex(src)
+      tokens.foreach { t =>
+        if (t.kind != ca.uwaterloo.flix.language.ast.TokenKind.Eof && !t.kind.isComment) {
+          // Counted against the line it starts on. A token spanning lines is one token to read,
+          // and charging every line it touches would make a long string literal look like the
+          // densest code in the file.
+          counts.update(t.start.lineOneIndexed, counts.getOrElse(t.start.lineOneIndexed, 0) + 1)
+        }
+      }
+      src.name -> counts.toMap
+    }.toMap
+
   private def lineInfo(sources: List[Source]): LineInfo = {
     var total = 0; var code = 0; var comment = 0; var doc = 0; var blank = 0
     sources.foreach { src =>
@@ -131,14 +148,29 @@ final class Flix075Adapter extends CompilerModel {
 
   // ---- one definition -------------------------------------------------------------------
 
-  private def measureDef(d: TypedAst.Def, projectRoot: Path): DefInfo = {
+  private def measureDef(d: TypedAst.Def, projectRoot: Path,
+                         tokens: Map[String, Map[Int, Int]]): DefInfo = {
     val tally = new Tally
     walk(d.exp, tally)
+    val onLines = tokens.getOrElse(d.loc.source.name, Map.empty)
+    // The densest line this definition spans, and who actually owns it.
+    val (crammedLine, crammedTokens) =
+      (d.loc.startLine to d.loc.endLine)
+        .map(line => (line, onLines.getOrElse(line, 0)))
+        .maxByOption(_._2).getOrElse((d.loc.startLine, 0))
+    val owner = tally.locals
+      .filter { case (_, loc) => loc.startLine <= crammedLine && crammedLine <= loc.endLine }
+      // Innermost wins: nested locals all contain the line, and the smallest span is the one
+      // whose body a reader would actually be looking at.
+      .minByOption { case (_, loc) => loc.endLine - loc.startLine }
+      .map { case (name, _) => d.sym.toString + "." + name }
+      .getOrElse(d.sym.toString)
     new DefInfo(
       d.sym.toString, moduleOf(d.sym), relativise(d.loc, projectRoot),
       d.loc.startLine, spannedLines(d.loc), declaredParameters(d.spec.fparams.toList),
       tally.widestLocalParams, tally.localDefs, deepestChain(tally.branches.toList),
-      cognitive(tally), d.spec.mod.isPublic, d.spec.ann.isTest, hasDoc(d),
+      cognitive(tally), crammedTokens, crammedLine, owner,
+      d.spec.mod.isPublic, d.spec.ann.isTest, hasDoc(d),
       effectsOf(d.spec.eff).asJava)
   }
 
@@ -179,6 +211,8 @@ final class Flix075Adapter extends CompilerModel {
   /** What one pass over a definition yields. */
   private final class Tally {
     val branches = scala.collection.mutable.ListBuffer.empty[SourceLocation]
+    /** Name and span of each local definition, for attributing a crammed line to the right one. */
+    val locals = scala.collection.mutable.ListBuffer.empty[(String, SourceLocation)]
     var localDefs = 0
     var widestLocalParams = 0
     var booleans = 0
@@ -228,6 +262,9 @@ final class Flix075Adapter extends CompilerModel {
       case r: TypedAst.SelectChannelRule => tally.branches += r.exp.loc
       case e: TypedAst.Expr.LocalDef =>
         tally.localDefs += 1
+        // exp1 is the local's own body; e.loc also covers the continuation after it, so
+        // attributing by e.loc would blame a local for lines written past its own end.
+        tally.locals += ((e.bnd.sym.text, e.exp1.loc))
         tally.widestLocalParams = tally.widestLocalParams.max(declaredParameters(e.fparams.toList))
       // `and`/`or` add a path through the code without adding a branch construct, which is why
       // a plain branch count reads a long boolean chain as trivial.
