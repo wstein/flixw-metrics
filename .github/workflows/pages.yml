@@ -1,0 +1,58 @@
+name: pages
+
+# Publishes the API docs for both halves of this plugin.
+#
+# One doc set, not two. The module is Java and Scala side by side, and scaladoc reads both --
+# `CompilerModel` and `Adapters` (Java) come out alongside `Flix075Adapter` (Scala). Running
+# javadoc separately would split the SDK from its only implementation, which is exactly the
+# boundary a reader is trying to follow.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deployment at a time, and never cancel one that is mid-flight: a half-published doc
+# site is worse than a slightly stale one.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      # docJar compiles first, so this also proves the tree builds -- and it needs the pinned
+      # Flix release, which scripts/fetch-flix.sh downloads and digest-checks. Without it the
+      # Scala half does not compile at all, since it links against that release's AST.
+      - name: Fetch the pinned Flix release
+        run: sh scripts/fetch-flix.sh
+
+      - name: Build the API docs
+        run: ./mill plugin.docJar
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: out/plugin/docJar.dest/docs
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4
