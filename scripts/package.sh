@@ -43,7 +43,7 @@ rm -rf "$work/META-INF"
 
 # What build.mill declares must survive packaging, or the release is a jar that does not say
 # what it is. Checked on the built artifact, because that is the thing that ships.
-for attr in Main-Class Flixw-Plugin-Description Implementation-Version; do
+for attr in Main-Class Flixw-Plugin-Description Flixw-Plugin-Command Implementation-Version; do
   unzip -p "$dist/plugin.jar" META-INF/MANIFEST.MF | tr -d '\r' | grep -q "^$attr:" || {
     echo "package: $attr missing from the packaged manifest" >&2; exit 1; }
 done
