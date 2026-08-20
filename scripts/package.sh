@@ -26,13 +26,27 @@ built=$(cd "$root" && "$mill" show plugin.jar 2>/dev/null | tr -d '"' | sed 's|^
 
 # The version is stamped here rather than in build.mill so a release is one argument, not an
 # edit; mill's own jar carries no Implementation-Version of its own.
+#
+# Added to mill's manifest rather than replacing it. This used to write a fresh one naming
+# only Main-Class, which silently dropped everything build.mill declares -- including
+# Flixw-Plugin-Description, the attribute flixw reads to say what this plugin is for. The
+# released jar had it in the build and not in the artifact.
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT INT TERM
 (cd "$work" && unzip -qo "$built")
-printf 'Main-Class: dev.flixw.metrics.Main\nImplementation-Version: %s\n' "$version" \
-  > "$work/manifest.txt"
+# Only the main section: a blank line ends it, and an attribute appended past one would land
+# in a per-entry section, where nothing looks for it.
+tr -d '\r' < "$work/META-INF/MANIFEST.MF" | awk 'NF==0{exit} {print}' > "$work/manifest.txt"
+printf 'Implementation-Version: %s\n' "$version" >> "$work/manifest.txt"
 rm -rf "$work/META-INF"
 (cd "$work" && jar --create --file "$dist/plugin.jar" --manifest manifest.txt .)
+
+# What build.mill declares must survive packaging, or the release is a jar that does not say
+# what it is. Checked on the built artifact, because that is the thing that ships.
+for attr in Main-Class Flixw-Plugin-Description Implementation-Version; do
+  unzip -p "$dist/plugin.jar" META-INF/MANIFEST.MF | tr -d '\r' | grep -q "^$attr:" || {
+    echo "package: $attr missing from the packaged manifest" >&2; exit 1; }
+done
 
 (cd "$dist" && shasum -a 256 plugin.jar > SHA256SUMS)
 printf 'built %s/plugin.jar (%s)\n' "$dist" "$version"
