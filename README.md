@@ -10,15 +10,15 @@ your code with the exact compiler your project already pinned.
 ## Install
 
 ```console
-./flixw plugin install flixw-metrics 0.1.0 \
-  https://github.com/wstein/flixw-metrics/releases/download/v0.1.0/plugin.jar \
-  --sha256 330f069f2a8adda787f6d248d3d252d55b2e8e3bbbba0eda9877465a66c475a1
+./flixw plugin install flixw-metrics 0.1.2 \
+  https://github.com/wstein/flixw-metrics/releases/download/v0.1.2/plugin.jar \
+  --sha256 657fcd2324f8d29b96691214a8f917a235f8284eb5972bf77e2c621f6e7c3dff
 ```
 
 That digest is published here, not taken from the download, which is the point of passing
 it: flixw re-checks those exact bytes on **every** run, not only at install.
 
-Needs flixw 0.25.3 or newer, and a project with a pinned compiler.
+Needs flixw 0.25.6 or newer, and a project with a pinned compiler.
 
 ## Run it
 
@@ -168,7 +168,7 @@ or a stack trace. Supporting another Flix generation is one adapter class — se
 
 ```console
 sh scripts/test.sh                 # lint, build, tests
-sh scripts/package.sh 0.1.0        # dist/plugin.jar and dist/SHA256SUMS
+sh scripts/package.sh 0.1.2        # dist/plugin.jar and dist/SHA256SUMS
 ```
 
 `./mill` bootstraps the pinned build tool, and `scripts/fetch-flix.sh` downloads the Flix
