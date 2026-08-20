@@ -5,4 +5,6 @@
 set -eu
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd -P)
 sh "$root/scripts/fetch-flix.sh"
-(cd "$root" && mill plugin.compile)
+mill=$root/mill
+[ -x "$mill" ] || mill=mill
+(cd "$root" && "$mill" plugin.compile)

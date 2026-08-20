@@ -13,10 +13,15 @@ dist=$root/dist
 sh "$root/scripts/fetch-flix.sh"
 
 mkdir -p "$dist"
-(cd "$root" && mill plugin.jar >/dev/null)
+# ./mill over a system mill: the wrapper downloads the version pinned in .mill-version, so a
+# release built on a CI runner and one built here are the same build. A system mill is
+# whatever that machine happens to have.
+mill=$root/mill
+[ -x "$mill" ] || mill=mill
+(cd "$root" && "$mill" plugin.jar >/dev/null)
 
 # `mill show` prints `<content-hash>:<path>`; the path is everything from the first slash.
-built=$(cd "$root" && mill show plugin.jar 2>/dev/null | tr -d '"' | sed 's|^[^/]*||')
+built=$(cd "$root" && "$mill" show plugin.jar 2>/dev/null | tr -d '"' | sed 's|^[^/]*||')
 [ -f "$built" ] || { echo "package: mill produced no jar at $built" >&2; exit 1; }
 
 # The version is stamped here rather than in build.mill so a release is one argument, not an

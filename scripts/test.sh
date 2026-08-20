@@ -7,4 +7,6 @@ java -jar "$root/dist/plugin.jar" --help | grep -q 'plugin flixw-metrics'
 # The outer phase must run with no Scala on its class path at all: it is what answers when the
 # engine could not link, so a scala-library it cannot find would defeat the whole split.
 java -jar "$root/dist/plugin.jar" --version | grep -q 'flixw-metrics'
-(cd "$root" && mill plugin.test.check)
+mill=$root/mill
+[ -x "$mill" ] || mill=mill
+(cd "$root" && "$mill" plugin.test.check)
