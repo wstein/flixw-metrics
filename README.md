@@ -10,20 +10,25 @@ your code with the exact compiler your project already pinned.
 ## Install
 
 ```console
-./flixw plugin install flixw-metrics 0.1.2 \
-  https://github.com/wstein/flixw-metrics/releases/download/v0.1.2/plugin.jar \
-  --sha256 657fcd2324f8d29b96691214a8f917a235f8284eb5972bf77e2c621f6e7c3dff
+./flixw plugin install flixw-metrics 0.1.3 \
+  https://github.com/wstein/flixw-metrics/releases/download/v0.1.3/plugin.jar \
+  --sha256 f3ee665910a1953a1aa8a387155c43babac79246f0d5d31c0a8a2b559f53faea
 ```
 
 That digest is published here, not taken from the download, which is the point of passing
 it: flixw re-checks those exact bytes on **every** run, not only at install.
 
-Needs flixw 0.25.6 or newer, and a project with a pinned compiler.
+Needs flixw 0.25.7 or newer, and a project with a pinned compiler.
+
+The plugin declares the verb `metrics` in its jar manifest, which flixw records in your
+`lock.toml` at install, so `./flixw metrics` works afterwards. `./flixw plugin
+flixw-metrics` is the long form and always works — use it if your pinned compiler happens
+to implement `metrics` itself, since the compiler always wins.
 
 ## Run it
 
 ```console
-$ ./flixw plugin flixw-metrics
+$ ./flixw metrics
 files: 3
 modules: 2
 definitions: 5
@@ -83,8 +88,8 @@ Four output formats:
 | `--format sarif` | GitHub code scanning, so findings land inline on the diff |
 
 ```console
-./flixw plugin flixw-metrics report --format md
-./flixw plugin flixw-metrics report --format sarif > metrics.sarif
+./flixw metrics report --format md
+./flixw metrics report --format sarif > metrics.sarif
 ```
 
 Only the report goes to stdout — the compiler's own dependency-resolution chatter goes to
@@ -150,7 +155,7 @@ compatibility promise, so it is compiled against one release and checks what is 
 front of it before running:
 
 ```console
-$ ./flixw plugin flixw-metrics capabilities
+$ ./flixw metrics capabilities
 {
   "compilerJar": "/Users/you/Library/Caches/flixw/compilers/flix-0.75.3-bf123cdb....jar",
   "hasFlixApi": true,
@@ -168,7 +173,7 @@ or a stack trace. Supporting another Flix generation is one adapter class — se
 
 ```console
 sh scripts/test.sh                 # lint, build, tests
-sh scripts/package.sh 0.1.2        # dist/plugin.jar and dist/SHA256SUMS
+sh scripts/package.sh 0.1.3        # dist/plugin.jar and dist/SHA256SUMS
 ```
 
 `./mill` bootstraps the pinned build tool, and `scripts/fetch-flix.sh` downloads the Flix
