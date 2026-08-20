@@ -76,6 +76,20 @@ object plugin extends ScalaModule {
   def mainClass = Some("dev.flixw.metrics.Main")
 
   /**
+   * What flixw's help screen says this plugin is for.
+   *
+   * <p>Declared here because the alternative is flixw running the plugin to ask, and flixw
+   * refuses to execute unaudited third-party code to render a help screen. `plugin install`
+   * reads this attribute as data -- the zip's central directory, never a class load -- and
+   * records it in the project's lock.toml. One line: it lands in a table beside every other
+   * command.
+   */
+  def manifest = Task {
+    super.manifest().add(
+      "Flixw-Plugin-Description" -> "code metrics, counted by the compiler not by reading text")
+  }
+
+  /**
    * Plain `main` methods, run in order, not a framework.
    *
    * A test dependency would be the plugin's first managed dependency, and this module ships a
