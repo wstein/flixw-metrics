@@ -28,6 +28,12 @@ public final class FormatsTest {
         require(count(sarif, "\"id\": ") == 9, "every rule is declared, fired or not");
         require(sarif.trim().startsWith("{") && sarif.trim().endsWith("}"), "SARIF is one object");
 
+        // Two totals share a name with a list -- `definitions` and `modules`. A flat object
+        // emitted both, and JSON parsers keep the last, so the count was silently replaced.
+        String json = report.render(Metrics.Format.JSON);
+        require(count(json, "\"definitions\":") == 2 && json.contains("\"summary\": {"),
+            "totals are nested, so a total cannot collide with a list of the same name");
+
         String md = report.render(Metrics.Format.MARKDOWN);
         require(md.startsWith("# Flix metrics"), "markdown has a title");
         require(md.contains("## Findings (2)"), "markdown counts the findings");

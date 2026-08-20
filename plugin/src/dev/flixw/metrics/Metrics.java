@@ -46,7 +46,7 @@ final class Metrics {
          * nothing reads this report back, so a schema change is a promise to a consumer rather
          * than a compatibility question for us. {@link Wire#VERSION} is the cache's own guard.
          */
-        static final int SCHEMA = 9;
+        static final int SCHEMA = 10;
 
 
         String render(Format format) {
@@ -112,8 +112,18 @@ final class Metrics {
         private String json() {
             StringBuilder b = new StringBuilder("{\n");
             b.append("  \"schemaVersion\": ").append(SCHEMA).append(",\n");
-            for (String[] pair : fields()) b.append("  \"").append(pair[0]).append("\": ")
-                                            .append(pair[1]).append(",\n");
+            // Nested, because two of the totals are named for things that also have lists --
+            // `definitions` and `modules` -- and a flat object emitted both. JSON allows a
+            // duplicate key and parsers keep the last, so the count was silently replaced by
+            // the list and every consumer would have seen whichever the writer happened to
+            // emit second. A summary object makes the collision impossible rather than
+            // renaming one side and hoping the next field does not collide too.
+            b.append("  \"summary\": {\n");
+            for (int i = 0; i < fields().length; i++) {
+                b.append("    \"").append(fields()[i][0]).append("\": ")
+                 .append(fields()[i][1]).append(i == fields().length - 1 ? "\n" : ",\n");
+            }
+            b.append("  },\n");
             b.append("  \"definitions\": [");
             for (int i = 0; i < defs.size(); i++) {
                 b.append(i == 0 ? "\n" : ",\n").append("    ").append(defJson(defs.get(i)));
