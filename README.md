@@ -10,9 +10,9 @@ your code with the exact compiler your project already pinned.
 ## Install
 
 ```console
-./flixw plugin install metrics 0.1.5 \
-  https://github.com/wstein/flixw-metrics/releases/download/v0.1.5/plugin.jar \
-  --sha256 d647f1030e28e6b21730fd7de0894d949543fe5603ed532e5591c58f5ea260eb
+./flixw plugin install metrics 0.1.6 \
+  https://github.com/wstein/flixw-metrics/releases/download/v0.1.6/plugin.jar \
+  --sha256 bab36f46969af687cf4a207a597b4164b423cdb517b488c14fd463c3a4ebb123
 ```
 
 That digest is published here, not taken from the download, which is the point of passing
@@ -177,7 +177,7 @@ or a stack trace. Supporting another Flix generation is one adapter class — se
 
 ```console
 sh scripts/test.sh                 # lint, build, tests
-sh scripts/package.sh 0.1.5        # dist/plugin.jar and dist/SHA256SUMS
+sh scripts/package.sh 0.1.6        # dist/plugin.jar and dist/SHA256SUMS
 ```
 
 `./mill` bootstraps the pinned build tool, and `scripts/fetch-flix.sh` downloads the Flix
