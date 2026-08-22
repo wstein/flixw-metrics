@@ -1,6 +1,6 @@
 # Compiler compatibility contract
 
-`flixw-metrics` uses only the compiler JAR flixw selected and verified for the current
+`metrics` uses only the compiler JAR flixw selected and verified for the current
 project. It does not download a compiler, choose a version, or load an arbitrary JAR from a
 project setting.
 

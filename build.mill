@@ -88,7 +88,7 @@ object plugin extends ScalaModule {
     super.manifest().add(
       "Flixw-Plugin-Description" -> "code metrics, counted by the compiler not by reading text",
       // The bare verb this plugin answers, so `./flixw metrics` works and
-      // `./flixw plugin flixw-metrics` stays as the always-unambiguous long form. Plural:
+      // `./flixw metrics` stays as the always-unambiguous long form. Plural:
       // singular `metric` is a compiler verb in flix-fork, and dispatch is compiler-first,
       // so declaring that word would make this plugin unreachable wherever the fork is
       // pinned -- and would silently change owner the day the fork drops it.

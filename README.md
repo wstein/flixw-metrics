@@ -1,7 +1,7 @@
-# flixw-metrics
+# metrics
 
 Code metrics for [Flix](https://flix.dev) projects, counted by the compiler rather than by
-reading the text. It is a plugin for [flixw](https://github.com/wstein/flixw) and measures
+reading the text. It installs as `metrics` and is a plugin for [flixw](https://github.com/wstein/flixw), measuring
 your code with the exact compiler your project already pinned.
 
 > **Experimental, third-party, unaffiliated** with the Flix project. A plugin is ordinary

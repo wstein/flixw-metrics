@@ -123,8 +123,8 @@ final class Formats {
         b.append("{\n  \"$schema\": \"https://json.schemastore.org/sarif-2.1.0.json\",\n");
         b.append("  \"version\": \"2.1.0\",\n  \"runs\": [\n    {\n");
         b.append("      \"tool\": {\n        \"driver\": {\n");
-        b.append("          \"name\": \"flixw-metrics\",\n");
-        b.append("          \"informationUri\": \"https://github.com/wstein/flixw\",\n");
+        b.append("          \"name\": \"metrics\",\n");
+        b.append("          \"informationUri\": \"https://github.com/wstein/flixw-metrics\",\n");
         b.append("          \"rules\": [\n");
         List<String> rules = List.of("definition-too-long", "too-many-parameters", "wide-return",
             "deeply-nested", "dense", "crammed-line", "line-too-long", "undocumented-public",

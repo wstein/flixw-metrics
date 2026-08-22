@@ -39,7 +39,7 @@ public final class Main {
             return;
         }
         if (args.length == 1 && "--version".equals(args[0])) {
-            System.out.println("flixw-metrics " + version());
+            System.out.println("metrics " + version());
             return;
         }
         try {
@@ -72,10 +72,10 @@ public final class Main {
             }
             System.exit(spawnBridge(context, args));
         } catch (Usage | Metrics.Failure e) {
-            System.err.println("flixw-metrics: " + e.getMessage());
+            System.err.println("metrics: " + e.getMessage());
             System.exit(2);
         } catch (IOException e) {
-            System.err.println("flixw-metrics: " + e.getMessage());
+            System.err.println("metrics: " + e.getMessage());
             System.exit(2);
         }
     }
@@ -104,10 +104,10 @@ public final class Main {
             // our own output past whatever Flix chose to print alongside it.
             System.out.print(report.render(parseFormat(args)));
         } catch (Usage | Metrics.Failure | CompilerModel.ModelFailure e) {
-            System.err.println("flixw-metrics: " + e.getMessage());
+            System.err.println("metrics: " + e.getMessage());
             System.exit(2);
         } catch (IOException e) {
-            System.err.println("flixw-metrics: " + e.getMessage());
+            System.err.println("metrics: " + e.getMessage());
             System.exit(2);
         }
     }
@@ -180,12 +180,12 @@ public final class Main {
         if (rest.isEmpty()) return Metrics.Format.TEXT;
         if (rest.size() == 2 && "--format".equals(rest.get(0)))
             return Metrics.Format.parse(rest.get(1));
-        throw new Usage("usage: ./flixw plugin flixw-metrics [report] [--format text|json]");
+        throw new Usage("usage: ./flixw metrics [report] [--format text|json]");
     }
 
     private static void usage() {
-        System.out.println("usage: ./flixw plugin flixw-metrics [report] [--format text|json]\n"
-            + "       ./flixw plugin flixw-metrics capabilities\n\n"
+        System.out.println("usage: ./flixw metrics [report] [--format text|json]\n"
+            + "       ./flixw metrics capabilities\n\n"
             + "Reads typed compiler data through a supported reflective API; formats are text or json.\n"
             + "Results are cached under FLIXW_CACHE_HOME and reused until the sources, the\n"
             + "manifest, the pinned compiler or this plugin change.");
