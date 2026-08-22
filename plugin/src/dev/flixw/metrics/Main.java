@@ -103,6 +103,14 @@ public final class Main {
             // and parsing it back out of a stream the compiler also writes to would be reading
             // our own output past whatever Flix chose to print alongside it.
             System.out.print(report.render(parseFormat(args)));
+        } catch (LinkageError e) {
+            // The promise is a sentence, never a stack trace, and the capability probe cannot
+            // enumerate every member the adapter touches. Whatever it misses arrives here: the
+            // JVM resolves a call site against a compiler this build was not compiled for.
+            System.err.println("metrics: this compiler is not the one this build supports");
+            System.err.println("       " + e);
+            System.err.println("       run: ./flixw metrics capabilities");
+            System.exit(2);
         } catch (Usage | Metrics.Failure | CompilerModel.ModelFailure e) {
             System.err.println("metrics: " + e.getMessage());
             System.exit(2);

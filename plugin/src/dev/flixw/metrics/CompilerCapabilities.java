@@ -52,6 +52,19 @@ record CompilerCapabilities(boolean hasFlixApi, boolean hasReflectionApi, boolea
         requireMethod(compiler, missing, "ca.uwaterloo.flix.language.ast.TypedAst$Root", "defs", 0);
         requireMethod(compiler, missing, "ca.uwaterloo.flix.language.ast.TypedAst$Def", "exp", 0);
         requireMethod(compiler, missing, "ca.uwaterloo.flix.language.ast.TypedAst$Def", "sym", 0);
+        // Return types, not just names. An accessor can keep its name and arity and change
+        // what it hands back, which the loop above cannot see and the JVM resolves at the
+        // call site: a fork whose Spec.fparams returns Nel rather than List passed every
+        // check here and then died with NoSuchMethodError mid-measurement.
+        // Measured against plugin/lib/flix.jar, the release this engine is compiled against,
+        // rather than guessed: stock 0.75.3 hands back Nel here and a fork that kept List
+        // passes every name-and-arity check before dying at the call site.
+        requireReturn(compiler, missing, "ca.uwaterloo.flix.language.ast.TypedAst$Spec",
+                      "fparams", "ca.uwaterloo.flix.util.collection.Nel");
+        requireReturn(compiler, missing, "ca.uwaterloo.flix.language.ast.TypedAst$Root",
+                      "defs", "scala.collection.immutable.Map");
+        requireReturn(compiler, missing, "ca.uwaterloo.flix.language.ast.TypedAst$Def",
+                      "exp", "ca.uwaterloo.flix.language.ast.TypedAst$Expr");
 
         return new CompilerCapabilities(flix, missing.isEmpty(),
             present(compiler, "ca.uwaterloo.flix.tools.Metrics$"), List.copyOf(missing));
@@ -81,6 +94,31 @@ record CompilerCapabilities(boolean hasFlixApi, boolean hasReflectionApi, boolea
 
     private static void requireClass(ClassLoader loader, List<String> missing, String name) {
         if (!present(loader, name)) missing.add("class " + name);
+    }
+
+    /**
+     * A method that must exist *and* hand back what the engine expects.
+     *
+     * <p>Reported as `owner.name: want, got` rather than as merely missing, because the
+     * difference matters to whoever reads it: a name that is gone means a compiler
+     * reorganised, and a return type that moved means this build was compiled against a
+     * different one.
+     */
+    private static void requireReturn(ClassLoader loader, List<String> missing, String owner,
+                                      String name, String wantReturn) {
+        try {
+            Class<?> type = Class.forName(owner, false, loader);
+            for (var method : type.getMethods()) {
+                if (!method.getName().equals(name) || method.getParameterCount() != 0) continue;
+                String got = method.getReturnType().getName();
+                if (got.equals(wantReturn)) return;
+                missing.add(owner + "." + name + ": expected " + wantReturn + ", found " + got);
+                return;
+            }
+            missing.add(owner + "." + name + "/0");
+        } catch (ClassNotFoundException e) {
+            missing.add(owner);
+        }
     }
 
     private static void requireMethod(ClassLoader loader, List<String> missing, String owner,
