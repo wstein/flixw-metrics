@@ -10,20 +10,24 @@ your code with the exact compiler your project already pinned.
 ## Install
 
 ```console
-./flixw plugin install flixw-metrics 0.1.3 \
-  https://github.com/wstein/flixw-metrics/releases/download/v0.1.3/plugin.jar \
+./flixw plugin install metrics 0.1.4 \
+  https://github.com/wstein/flixw-metrics/releases/download/v0.1.4/plugin.jar \
   --sha256 f3ee665910a1953a1aa8a387155c43babac79246f0d5d31c0a8a2b559f53faea
 ```
 
 That digest is published here, not taken from the download, which is the point of passing
 it: flixw re-checks those exact bytes on **every** run, not only at install.
 
-Needs flixw 0.25.7 or newer, and a project with a pinned compiler.
+Needs flixw 0.25.10 or newer, and a project with a pinned compiler.
 
-The plugin declares the verb `metrics` in its jar manifest, which flixw records in your
-`lock.toml` at install, so `./flixw metrics` works afterwards. `./flixw plugin
-flixw-metrics` is the long form and always works — use it if your pinned compiler happens
-to implement `metrics` itself, since the compiler always wins.
+It installs as `metrics`, and declares the verb `metrics` in its jar manifest — so
+`./flixw metrics` works afterwards, in any project on the machine. `./flixw plugin metrics`
+is the long form and always works; use it if your pinned compiler implements `metrics`
+itself, since the compiler always wins.
+
+Installing is enough to run it. A `[plugins.metrics]` entry in a project's `lock.toml` —
+which `plugin install` writes — pins the version, which is what you want for CI and for a
+colleague's clone.
 
 ## Run it
 
@@ -173,7 +177,7 @@ or a stack trace. Supporting another Flix generation is one adapter class — se
 
 ```console
 sh scripts/test.sh                 # lint, build, tests
-sh scripts/package.sh 0.1.3        # dist/plugin.jar and dist/SHA256SUMS
+sh scripts/package.sh 0.1.4        # dist/plugin.jar and dist/SHA256SUMS
 ```
 
 `./mill` bootstraps the pinned build tool, and `scripts/fetch-flix.sh` downloads the Flix
