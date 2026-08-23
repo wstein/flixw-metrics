@@ -49,10 +49,12 @@ final class Metrics {
         static final int SCHEMA = 10;
 
 
-        String render(Format format) {
+        String render(Format format) { return render(format, null); }
+
+        String render(Format format, Provenance p) {
             return switch (format) {
                 case JSON -> json();
-                case MARKDOWN -> Formats.markdown(this);
+                case MARKDOWN -> Formats.markdown(this, p);
                 case SARIF -> Formats.sarif(this);
                 case TEXT -> text();
             };

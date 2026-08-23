@@ -102,7 +102,8 @@ public final class Main {
             // phase inherits this process's stdout, so it never sees the report as a value --
             // and parsing it back out of a stream the compiler also writes to would be reading
             // our own output past whatever Flix chose to print alongside it.
-            System.out.print(report.render(parseFormat(args)));
+            System.out.print(report.render(parseFormat(args),
+                                           Provenance.of(context.projectRoot(), version())));
         } catch (LinkageError e) {
             // The promise is a sentence, never a stack trace, and the capability probe cannot
             // enumerate every member the adapter touches. Whatever it misses arrives here: the

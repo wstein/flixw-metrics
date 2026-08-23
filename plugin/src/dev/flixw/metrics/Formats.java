@@ -22,8 +22,25 @@ final class Formats {
      * should I do", not "how many definitions are there". The totals go last, where they read as
      * context for the findings instead of as a wall to get past before reaching them.
      */
-    static String markdown(Metrics.Report r) {
+    /** How many of one rule's findings are listed before the rest become a count. */
+    private static final int SHOWN_PER_RULE = 10;
+
+    static String markdown(Metrics.Report r, Provenance p) {
         StringBuilder b = new StringBuilder("# Flix metrics\n\n");
+        if (p != null) {
+            b.append("| | |\n|---|---|\n");
+            b.append("| commit | `").append(p.commit()).append(p.dirty() ? "` **+ uncommitted changes**" : "`").append(" |\n");
+            b.append("| analyzer | metrics ").append(p.version()).append(" |\n");
+            b.append("| measured | ").append(p.when()).append(" |\n");
+            b.append("| thresholds | lines ").append(Thresholds.MAX_LINES)
+             .append(", params ").append(Thresholds.MAX_PARAMETERS)
+             .append(", nesting ").append(Thresholds.MAX_NESTING)
+             .append(", fan-out ").append(Thresholds.MAX_FAN_OUT)
+             .append(", tokens/line ").append(Thresholds.MAX_LINE_TOKENS).append(" |\n\n");
+            if (p.dirty())
+                b.append("> Measured over a working tree with uncommitted changes, so this"
+                       + " describes a state no commit contains. Not a baseline.\n\n");
+        }
 
         if (r.smells().isEmpty()) {
             b.append("No findings.\n\n");
@@ -43,28 +60,29 @@ final class Formats {
                     e.getValue().stream()
                         .sorted((a, c) -> Double.compare(c.overBy(), a.overBy())).toList()));
 
+            // Production first and tests second, in their own sections rather than
+            // interleaved. Test code is written to different rules -- a table of cases is
+            // long on purpose -- so letting it compete for the top of one list buries the
+            // findings someone is actually going to act on.
             b.append("## Findings (").append(r.smells().size()).append(")\n\n");
-            for (Map.Entry<String, List<SourceMetrics.Smell>> e : byRule.entrySet()) {
-                b.append("### `").append(e.getKey()).append("` — ")
-                 .append(e.getValue().size()).append("\n\n");
-                b.append("_").append(advice(e.getKey())).append("_\n\n");
-                for (SourceMetrics.Smell s : e.getValue()) {
-                    b.append("- ");
-                    if (!s.where().isEmpty()) b.append('`').append(s.where()).append("` ");
-                    b.append('`').append(s.subject()).append("` — ").append(s.detail());
-                    // The multiple, so a reader can see at a glance which of sixteen findings is
-                    // the one actually worth opening.
-                    if (s.overBy() > 1) b.append(String.format("  _(%.1fx)_", s.overBy()));
-                    b.append('\n');
-                }
-                b.append('\n');
-            }
+            findings(b, byRule, false);
+            findings(b, byRule, true);
         }
 
         if (!r.ranks().isEmpty()) {
-            b.append("## Where to look first\n\n| measure | subject | value | at |\n");
+            // Production only. This table is the one thing in the report that says what to do
+            // next, and a test ranking above a renderer because a table of cases is long is
+            // not a suggestion anyone should follow. The test entries are in `--format json`.
+            List<Rankings.Rank> shown = r.ranks().stream()
+                .filter(k -> !k.file().startsWith("test/") && !k.file().contains("/test/")).toList();
+            int hidden = r.ranks().size() - shown.size();
+            b.append("## Where to look first\n\n");
+            if (hidden > 0)
+                b.append("_Production code only; ").append(hidden)
+                 .append(" test entries omitted and kept in `--format json`._\n\n");
+            b.append("| measure | subject | value | at |\n");
             b.append("|---|---|---|---|\n");
-            for (Rankings.Rank k : r.ranks()) {
+            for (Rankings.Rank k : shown) {
                 b.append("| ").append(k.measure()).append(" | `").append(k.subject())
                  .append("` | ").append(k.value()).append(" | ")
                  .append(k.file().isEmpty() ? "—" : "`" + k.file() + ":" + k.line() + "`")
@@ -118,6 +136,47 @@ final class Formats {
      * that builds its UI from the tool's descriptor does not show a different set of rules on
      * every run depending on what happened to fire.
      */
+    /** Is this finding in test code? By path, which is the only thing a finding carries. */
+    private static boolean isTest(SourceMetrics.Smell s) {
+        String w = s.where();
+        return w.startsWith("test/") || w.startsWith("test\\") || w.contains("/test/");
+    }
+
+    /**
+     * One half of the findings, grouped by rule.
+     *
+     * <p>Capped per rule, because 179 line-length warnings is not 179 decisions -- it is one,
+     * about a threshold, and printing them all buries every other rule. The count stays exact
+     * and the full list stays in `--format json`, which is where a tool would read it anyway.
+     */
+    private static void findings(StringBuilder b,
+                                 Map<String, List<SourceMetrics.Smell>> byRule, boolean tests) {
+        boolean any = byRule.values().stream().flatMap(List::stream)
+                            .anyMatch(s -> isTest(s) == tests);
+        if (!any) return;
+        b.append("## ").append(tests ? "In tests" : "In production code").append("\n\n");
+        for (Map.Entry<String, List<SourceMetrics.Smell>> e : byRule.entrySet()) {
+            List<SourceMetrics.Smell> half =
+                e.getValue().stream().filter(s -> isTest(s) == tests).toList();
+            if (half.isEmpty()) continue;
+            b.append("### `").append(e.getKey()).append("` — ").append(half.size()).append("\n\n");
+            b.append("_").append(advice(e.getKey())).append("_\n\n");
+            for (SourceMetrics.Smell s : half.subList(0, Math.min(SHOWN_PER_RULE, half.size()))) {
+                b.append("- ");
+                if (!s.where().isEmpty()) b.append('`').append(s.where()).append("` ");
+                b.append('`').append(s.subject()).append("` — ").append(s.detail());
+                // The multiple, so a reader can see at a glance which of sixteen findings is
+                // the one actually worth opening.
+                if (s.overBy() > 1) b.append(String.format("  _(%.1fx)_", s.overBy()));
+                b.append('\n');
+            }
+            if (half.size() > SHOWN_PER_RULE)
+                b.append("- _… and ").append(half.size() - SHOWN_PER_RULE)
+                 .append(" more; `--format json` has every one_\n");
+            b.append('\n');
+        }
+    }
+
     static String sarif(Metrics.Report r) {
         StringBuilder b = new StringBuilder();
         b.append("{\n  \"$schema\": \"https://json.schemastore.org/sarif-2.1.0.json\",\n");

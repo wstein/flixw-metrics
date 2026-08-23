@@ -230,7 +230,17 @@ final class Flix075Adapter extends CompilerModel {
 
   private def spannedLines(loc: SourceLocation): Int = loc.endLine - loc.startLine + 1
 
-  private def moduleOf(sym: Symbol.DefnSym): String = sym.namespace.mkString(".")
+  /**
+    * The module a definition belongs to, or a name for the one that has none.
+    *
+    * A definition outside any `mod` block has an empty namespace, and joining that gave the
+    * empty string -- which reached the report as a blank row that was nonetheless the most
+    * coupled module in the project. A reader cannot act on a finding about "". It is a real
+    * module with real fan-out; it just has no name of its own, so it is given one that
+    * cannot be mistaken for a namespace.
+    */
+  private def moduleOf(sym: Symbol.DefnSym): String =
+    if (sym.namespace.isEmpty) "(root)" else sym.namespace.mkString(".")
 
   // ---- the walk -------------------------------------------------------------------------
 
