@@ -1,5 +1,6 @@
 package dev.flixw.metrics;
 
+import dev.flixw.metrics.sdk.CompilerModel;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -68,6 +69,55 @@ final class Formats {
             findings(b, byRule, false);
             findings(b, byRule, true);
         }
+
+        // What is actually in the unnamed module. Naming it turned a blank row into a
+        // question; this answers it, because "the root module is the most coupled thing here"
+        // is only actionable once you can see whether that is entry-point glue or domain code
+        // that never got a `mod`.
+        // Production only, for the same reason the priority table is: a test is almost never
+        // inside a `mod`, so listing them all makes the root module look like a test problem
+        // and hides the domain code that is the actual question.
+        List<CompilerModel.DefInfo> rootAll = r.defs().stream()
+            .filter(d -> "(root)".equals(d.module())).toList();
+        List<CompilerModel.DefInfo> rootDefs = rootAll.stream()
+            .filter(d -> !Thresholds.inTests(d.file())).toList();
+        if (!rootDefs.isEmpty()) {
+            b.append("## The `(root)` module\n\n");
+            b.append(rootDefs.size()).append(rootDefs.size() == 1 ? " definition sits" : " definitions sit")
+             .append(" outside any `mod` block. Entry-point glue is fine here; domain code"
+                   + " belongs in a module.");
+            if (rootAll.size() > rootDefs.size())
+                b.append(" (").append(rootAll.size() - rootDefs.size())
+                 .append(" more are tests, which are rarely in one.)");
+            b.append("\n\n");
+            b.append("| definition | at |\n|---|---|\n");
+            for (CompilerModel.DefInfo d : rootDefs.stream()
+                    .sorted((x, y) -> Integer.compare(y.lines(), x.lines()))
+                    .limit(SHOWN_PER_RULE).toList())
+                b.append("| `").append(d.name()).append("` | `").append(d.file())
+                 .append(':').append(d.line()).append("` |\n");
+            if (rootDefs.size() > SHOWN_PER_RULE)
+                b.append("| _… and ").append(rootDefs.size() - SHOWN_PER_RULE)
+                 .append(" more_ | |\n");
+            b.append('\n');
+        }
+
+        // Every derived measure, with its formula and its direction. A number without one is
+        // not reviewable: "instability 0.97" tells a reader nothing about whether to act, and
+        // nobody should have to read the analyzer to find out.
+        b.append("## What the measures mean\n\n");
+        b.append("| measure | formula | direction |\n|---|---|---|\n");
+        b.append("| `cognitive` | +1 per branch, `match` rule, or loop, **times its nesting depth**"
+               + " | higher is worse |\n");
+        b.append("| `dense` | `cognitive / lines` of one definition | higher is worse;"
+               + " flagged over 1.0 |\n");
+        b.append("| `crammed` | most lexer tokens on any one line of a definition | higher is"
+               + " worse; flagged over ").append(Thresholds.MAX_LINE_TOKENS).append(" |\n");
+        b.append("| `instability` | `fan-out / (fan-out + fan-in)` of a module | 0 is depended"
+               + " upon and stable, 1 depends on others and is free to change |\n");
+        b.append("| `docCoveragePercent` | documented ÷ public definitions | higher is better;"
+               + " `@Test` functions and anything under `test/` are excluded |\n");
+        b.append("| `tests` | definitions carrying `@Test`, discovered — not executed |\n\n");
 
         if (!r.ranks().isEmpty()) {
             // Production only. This table is the one thing in the report that says what to do

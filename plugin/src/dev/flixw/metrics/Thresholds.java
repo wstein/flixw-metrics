@@ -22,6 +22,11 @@ import java.util.List;
 final class Thresholds {
     private Thresholds() { }
 
+    /** Test code, by path: the one thing a definition carries that says where it lives. */
+    static boolean inTests(String file) {
+        return file.startsWith("test/") || file.contains("/test/");
+    }
+
     /** Beyond this many lines a definition is hard to hold in the head at once. */
     static final int MAX_LINES = 60;
 
@@ -93,7 +98,11 @@ final class Thresholds {
             //
             // Categorical, not a magnitude: something is absent, and there is no amount by which
             // it is absent. It carries no unit, which is how the schema says so.
-            if (d.isPublic() && !d.isTest() && !d.hasDoc())
+            // Exempt by location as well as by annotation. `isTest` is the @Test annotation,
+            // so a `pub` helper in test/ -- public for visibility from the test that uses it,
+            // not because anyone outside will call it -- was reported as undocumented API and
+            // counted against documentation coverage. The scope is stated in the report.
+            if (d.isPublic() && !d.isTest() && !inTests(d.file()) && !d.hasDoc())
                 out.add(at(d, "undocumented-public", 1, 1, "", "public with no doc comment"));
         }
         for (ModuleInfo m : modules) {
