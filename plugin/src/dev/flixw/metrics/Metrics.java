@@ -153,7 +153,12 @@ final class Metrics {
             StringBuilder b = new StringBuilder();
             for (String[] pair : fields()) b.append(pair[0]).append(": ").append(pair[1]).append('\n');
             if (!ranks.isEmpty()) {
-                b.append('\n').append("where to look first\n");
+                // Same reasoning as the Markdown heading (see Formats): a ranking is not a
+                // finding, so the heading names what the table is rather than telling the
+                // reader to act, and the note only appears when there is nothing else to act on.
+                b.append('\n').append("where each measure peaks\n");
+                if (smells.isEmpty())
+                    b.append("(nothing crossed a threshold; these are just the current extremes)\n");
                 for (Rankings.Rank r : ranks) b.append(r.text()).append('\n');
             }
             b.append('\n').append("smells: ").append(smells.size()).append('\n');

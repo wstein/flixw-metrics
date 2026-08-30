@@ -60,7 +60,7 @@ tests: 1
 docCoveragePercent: 25
 purityPercent: 75
 
-where to look first
+where each measure peaks
   longest            11 lines                           Json.encode  (src/Json.flix:15)
   densest            1.1 complexity/line                Json.size  (src/Json.flix:33)
   most-complex       11 complexity                      Json.size  (src/Json.flix:33)

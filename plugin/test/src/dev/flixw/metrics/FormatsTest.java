@@ -3,7 +3,8 @@ package dev.flixw.metrics;
 import java.util.List;
 
 /**
- * Checks the two renderings meant for somebody other than the person at the terminal.
+ * Checks the renderings meant for somebody other than the person at the terminal, plus the
+ * ranking heading the terminal renderer shares with them.
  *
  * <p>The case worth having a test for is the one a real project rarely produces: a module-level
  * finding, which has no file and no line. SARIF requires a region's line to be at least 1, so an
@@ -66,6 +67,18 @@ public final class FormatsTest {
             "the old actionable heading never reappears now that a ranking is not a finding");
         require(count(clean.render(Metrics.Format.SARIF), "\"ruleId\"") == 0,
             "a clean project produces a valid, empty result set");
+
+        // The terminal renderer carries the same heading and the same reasoning: see Formats.
+        String text = report.render(Metrics.Format.TEXT);
+        require(text.contains("where each measure peaks"), "the terminal heading is an observation too");
+        require(!text.contains("nothing crossed a threshold"),
+            "a report with findings doesn't also claim there's nothing to act on");
+        String cleanText = clean.render(Metrics.Format.TEXT);
+        require(cleanText.contains("where each measure peaks")
+                && cleanText.contains("nothing crossed a threshold"),
+            "a clean terminal report notes the ranking below isn't a to-do list");
+        require(!cleanText.contains("where to look first"),
+            "the old actionable heading never reappears in the terminal format either");
         System.out.println("FormatsTest: ok");
     }
 
