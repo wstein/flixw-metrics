@@ -149,12 +149,11 @@ final class Formats {
             List<Rankings.Rank> shown = r.ranks().stream()
                     .filter(k -> !k.file().startsWith("test/") && !k.file().contains("/test/")).toList();
             int hidden = r.ranks().size() - shown.size();
-            // "Where to look first" is a call to action, and there is nothing to act on
-            // when
-            // nothing crossed a threshold above -- these are just the extremes of each
-            // measure,
-            // which exist whether or not they are a problem. Say that plainly instead of
-            // reusing the actionable heading for a report that just said "No findings."
+            // The heading names what the table is -- the current extreme of each measure --
+            // rather than telling the reader to act, because a ranking is not a finding: it
+            // exists whether or not anything is wrong. When nothing above crossed a
+            // threshold, one line says so plainly instead of leaving an actionable-sounding
+            // heading dangling under a report that just said "No findings."
             b.append("## Where each measure peaks\n\n");
             if (r.smells().isEmpty())
                 b.append("Nothing above crossed a threshold, so there is nothing to act on."
