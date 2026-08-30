@@ -45,9 +45,25 @@ public final class FormatsTest {
             "groups are ordered by their worst instance, not by how many they hold");
         require(md.contains("1.7x"), "each finding shows how far over it is");
 
+        // The ranking heading names what the table is, not what to do about it -- a project
+        // with findings still reads the extremes as plain fact, with no "nothing to act on"
+        // caveat that would only make sense when nothing above found anything.
+        require(md.contains("## Where each measure peaks"),
+            "the ranking table is headed as an observation, not a to-do list");
+        require(!md.contains("Nothing above crossed a threshold"),
+            "a report with findings doesn't also claim there's nothing to act on");
+
         Metrics.Report clean = report(List.of());
-        require(clean.render(Metrics.Format.MARKDOWN).contains("No findings."),
+        String cleanMd = clean.render(Metrics.Format.MARKDOWN);
+        require(cleanMd.contains("No findings."),
             "a clean project says so rather than printing an empty heading");
+        require(cleanMd.contains("## Where each measure peaks"),
+            "the ranking table keeps its heading even when there are no findings to rank against");
+        require(cleanMd.contains("Nothing above crossed a threshold"),
+            "a clean report says the ranking below is not a to-do list, since 'No findings' alone"
+                + " reads oddly next to a table that looks like one");
+        require(!cleanMd.contains("Where to look first"),
+            "the old actionable heading never reappears now that a ranking is not a finding");
         require(count(clean.render(Metrics.Format.SARIF), "\"ruleId\"") == 0,
             "a clean project produces a valid, empty result set");
         System.out.println("FormatsTest: ok");
