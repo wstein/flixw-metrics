@@ -1,0 +1,6 @@
+[package]
+name = "metrics-fixture"
+description = "Semantic metrics integration fixture."
+version = "0.1.0"
+flix = "0.75.3"
+authors = ["Test <test@example.com>"]

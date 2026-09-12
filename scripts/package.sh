@@ -18,10 +18,10 @@ mkdir -p "$dist"
 # whatever that machine happens to have.
 mill=$root/mill
 [ -x "$mill" ] || mill=mill
-(cd "$root" && "$mill" plugin.jar >/dev/null)
+(cd "$root" && "$mill" --no-server plugin.jar >/dev/null)
 
 # `mill show` prints `<content-hash>:<path>`; the path is everything from the first slash.
-built=$(cd "$root" && "$mill" show plugin.jar 2>/dev/null | tr -d '"' | sed 's|^[^/]*||')
+built=$(cd "$root" && "$mill" --no-server show plugin.jar 2>/dev/null | tr -d '"' | sed 's|^[^/]*||')
 [ -f "$built" ] || { echo "package: mill produced no jar at $built" >&2; exit 1; }
 
 # The version is stamped here rather than in build.mill so a release is one argument, not an
@@ -32,14 +32,15 @@ built=$(cd "$root" && "$mill" show plugin.jar 2>/dev/null | tr -d '"' | sed 's|^
 # Flixw-Plugin-Description, the attribute flixw reads to say what this plugin is for. The
 # released jar had it in the build and not in the artifact.
 work=$(mktemp -d)
-trap 'rm -rf "$work"' EXIT INT TERM
+manifest=$(mktemp)
+trap 'rm -rf "$work"; rm -f "$manifest"' EXIT INT TERM
 (cd "$work" && unzip -qo "$built")
 # Only the main section: a blank line ends it, and an attribute appended past one would land
 # in a per-entry section, where nothing looks for it.
-tr -d '\r' < "$work/META-INF/MANIFEST.MF" | awk 'NF==0{exit} {print}' > "$work/manifest.txt"
-printf 'Implementation-Version: %s\n' "$version" >> "$work/manifest.txt"
+tr -d '\r' < "$work/META-INF/MANIFEST.MF" | awk 'NF==0{exit} {print}' > "$manifest"
+printf 'Implementation-Version: %s\n' "$version" >> "$manifest"
 rm -rf "$work/META-INF"
-(cd "$work" && jar --create --file "$dist/plugin.jar" --manifest manifest.txt .)
+(cd "$work" && jar --create --file "$dist/plugin.jar" --manifest "$manifest" .)
 
 # What build.mill declares must survive packaging, or the release is a jar that does not say
 # what it is. Checked on the built artifact, because that is the thing that ships.

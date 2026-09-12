@@ -108,15 +108,25 @@ object plugin extends ScalaModule {
 
     def check() = Task.Command {
       val cp = (runClasspath() ++ Seq(compile().classes)).map(_.path).mkString(":")
-      for (main <- Seq("dev.flixw.metrics.CompilerCapabilitiesTest",
-                       "dev.flixw.metrics.ResultCacheTest",
-                       "dev.flixw.metrics.ThresholdsTest",
-                       "dev.flixw.metrics.MetricsTest",
-                       "dev.flixw.metrics.RuleDefinitionsTest",
-                       "dev.flixw.metrics.MetricsConfigTest",
-                       "dev.flixw.metrics.FormatsTest")) {
+      val sourceRoot = moduleDir / "src"
+      val special = Set("dev.flixw.metrics.Flix075AdapterTest",
+                        "dev.flixw.metrics.PluginIntegrationTest")
+      val mains = os.walk(sourceRoot)
+        .filter(path => path.ext == "java" && path.last.endsWith("Test.java"))
+        .map(path => path.relativeTo(sourceRoot).toString.stripSuffix(".java").replace('/', '.'))
+        .filterNot(special)
+        .sorted
+      for (main <- mains) {
         os.proc("java", "-cp", cp, main).call(stdout = os.Inherit, stderr = os.Inherit)
       }
+      val fixture = moduleDir / "fixtures" / "semantic"
+      val compiler = plugin.flixJar().head.path
+      val integrationCp = cp + java.io.File.pathSeparator + compiler
+      os.proc("java", "-cp", integrationCp, "dev.flixw.metrics.Flix075AdapterTest", fixture)
+        .call(stdout = os.Inherit, stderr = os.Inherit)
+      os.proc("java", "-cp", integrationCp, "dev.flixw.metrics.PluginIntegrationTest", fixture,
+              plugin.jar().path, compiler)
+        .call(stdout = os.Inherit, stderr = os.Inherit)
       ()
     }
   }
