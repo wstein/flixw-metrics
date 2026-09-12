@@ -58,6 +58,33 @@ otherwise empty project's `src/` directory and analyzed separately; totals in th
 sum. They complement `qual-effect-system`: the project exercises derived rules in normal library
 code, while the examples also carry literal facts.
 
+## Reproducing the pinned corpus
+
+The machine-readable source pins and expected per-target counts live in
+[`calibration/corpus.json`](../calibration/corpus.json). Run the complete check into a new or empty
+directory:
+
+```sh
+sh scripts/calibrate-corpus.sh /tmp/flixw-calibration-results
+```
+
+The runner builds the current analyzer, fetches every repository directly at its full commit SHA,
+measures Prelude, the six projects, and the four Datalog examples, then compares stable summaries
+with the manifest. It exits 1 with a per-target diff when measurements change and exits 2 for an
+invalid manifest or unavailable input. Full native JSON reports and `summary.json` remain in the
+output directory for review.
+
+For an offline repeat, set `CALIBRATION_SOURCE_ROOT` to a directory containing checkouts named
+`flix`, `flix-basicdb`, `flix-parsec`, `flix-semver2`, `flix-json`, `flix-game-engine`, and
+`qual-effect-system`. Their `HEAD`s must still equal the manifest's full SHAs; the runner refuses a
+nearby revision.
+
+The `calibration` GitHub Actions workflow runs this every Monday at 05:23 UTC and can also be
+started manually. Its read-only job retains the reports for 30 days even when drift fails the run.
+When drift is intentional, inspect those reports and update the manifest expectations in the same
+change as the analyzer or policy adjustment. Moving a source pin is a separate corpus decision,
+not a way to make unexpected counts pass.
+
 ## Results after calibration
 
 | Target | Findings | Finding counts by rule |
@@ -147,7 +174,7 @@ Ratings are confidence that the action improves signal, from 1 (speculative) to 
 | **5/5** | Gate `warning` or higher in CI; review `note` findings as backlog. | Documentation and formatting still dominate the expanded corpus. Treating all findings as equivalent would hide the structural signal. |
 | **5/5** | Add a baseline-aware new-finding gate. **Done.** | Teams can adopt the warning gate without first paying all existing debt; schema and effective-policy checks prevent invalid comparisons. |
 | **4/5** | Use project configuration for established line-length and documentation conventions. | A universal increase would erase useful notes for compact projects; the existing per-rule limits and suppressions preserve local policy. |
-| **4/5** | Automate the pinned calibration corpus as a scheduled workflow. | A scheduled run can detect compiler or analyzer drift without adding network-heavy calibration to every pull request. |
+| **4/5** | Automate the pinned calibration corpus as a scheduled workflow. **Done.** | The weekly read-only job verifies full source SHAs and exact per-target results without adding network-heavy calibration to every pull request. |
 | **4/5** | Add first-class exclusions for generated or embedded-data sources. | The 4,109-unit embedded-data line is useful project data but poor line-quality signal; explicit exclusions are clearer than many rule suppressions. |
 | **3/5** | Establish performance budgets from repeated CI measurements. | The cache-hit result is strong, but four local single samples are not a stable cross-machine benchmark. |
 

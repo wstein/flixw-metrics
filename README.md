@@ -249,11 +249,19 @@ or a stack trace. Supporting another Flix generation is one adapter class — se
 ```console
 sh scripts/test.sh                 # lint, build, tests
 sh scripts/package.sh 0.1.7        # dist/plugin.jar and dist/SHA256SUMS
+sh scripts/calibrate-corpus.sh /tmp/flixw-calibration-results
 ```
 
 `./mill` bootstraps the pinned build tool, and `scripts/fetch-flix.sh` downloads the Flix
 release the engine is written against and checks its digest — so "it builds here" means
 something.
+
+The corpus command is the slower, networked dogfood check, so it is scheduled weekly rather than
+run on every pull request. It clones only the full commits recorded in
+[`calibration/corpus.json`](calibration/corpus.json), rejects any metric drift, and leaves complete
+JSON reports in the requested output directory. See the
+[calibration report](docs/CALIBRATION.md#reproducing-the-pinned-corpus) for offline reuse and the
+intentional-update procedure.
 
 A jar is not byte-reproducible across machines, because `jar` records timestamps: a local
 build will not have the digest the release does. The digest under [Install](#install) is the
