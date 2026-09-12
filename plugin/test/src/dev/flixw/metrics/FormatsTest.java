@@ -98,10 +98,13 @@ public final class FormatsTest {
         require(!cleanText.contains("where to look first"),
             "the old actionable heading never reappears in the terminal format either");
 
-        Provenance provenance = new Provenance("abc123", true, "1.2.3", "2026-09-12T10:00:00Z");
+        Provenance provenance = new Provenance("abc123", true, "1.2.3", "2026-09-12T10:00:00Z",
+            "flix.jar", "inputs123");
         String provenJson = report.render(Metrics.Format.JSON, provenance);
         require(provenJson.contains("\"provenance\"") && provenJson.contains("\"commit\": \"abc123\"")
-                && provenJson.contains("\"analyzerVersion\": \"1.2.3\""),
+                && provenJson.contains("\"analyzerVersion\": \"1.2.3\"")
+                && provenJson.contains("\"compilerArtifact\": \"flix.jar\"")
+                && provenJson.contains("\"inputDigest\": \"inputs123\""),
             "JSON identifies the source revision and analyzer that produced it");
         String provenSarif = report.render(Metrics.Format.SARIF, provenance);
         require(provenSarif.contains("\"version\": \"1.2.3\"")

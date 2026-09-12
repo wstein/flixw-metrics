@@ -14,20 +14,26 @@ import java.util.concurrent.TimeUnit;
  * flag are the two that mislead most -- a report taken over a dirty tree describes a state
  * no commit contains and nobody can return to.
  */
-record Provenance(String commit, boolean dirty, String version, String when) {
+record Provenance(String commit, boolean dirty, String version, String when,
+                  String compilerArtifact, String inputDigest) {
 
     String json() {
         return "{\"commit\": " + SourceMetrics.Smell.quote(commit)
             + ", \"dirty\": " + dirty
             + ", \"analyzerVersion\": " + SourceMetrics.Smell.quote(version)
-            + ", \"measuredAt\": " + SourceMetrics.Smell.quote(when) + "}";
+            + ", \"measuredAt\": " + SourceMetrics.Smell.quote(when)
+            + ", \"compilerArtifact\": " + SourceMetrics.Smell.quote(compilerArtifact)
+            + ", \"inputDigest\": " + SourceMetrics.Smell.quote(inputDigest) + "}";
     }
 
-    static Provenance of(Path root, String version) {
+    static Provenance of(Main.Context context, List<Path> sources, String version) {
+        Path root = context.projectRoot();
         String sha = git(root, "rev-parse", "HEAD");
         boolean dirty = !git(root, "status", "--porcelain").isEmpty();
+        String inputs = ResultCache.key(context, sources, version);
         return new Provenance(sha.isEmpty() ? "(not a git checkout)" : sha, dirty, version,
-                              Instant.now().toString());
+            Instant.now().toString(), context.compilerJar().getFileName().toString(),
+            inputs == null ? "(unavailable)" : inputs);
     }
 
     /**

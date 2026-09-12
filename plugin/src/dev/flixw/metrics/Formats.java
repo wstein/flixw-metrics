@@ -46,6 +46,8 @@ final class Formats {
             b.append("| commit | `").append(p.commit()).append(p.dirty() ? "` **+ uncommitted changes**" : "`")
                     .append(" |\n");
             b.append("| analyzer | metrics ").append(p.version()).append(" |\n");
+            b.append("| compiler | `").append(p.compilerArtifact()).append("` |\n");
+            b.append("| inputs | `").append(p.inputDigest()).append("` |\n");
             b.append("| measured | ").append(p.when()).append(" |\n");
         }
         b.append("| policy | ").append(config.policySummary()).append(" |\n\n");

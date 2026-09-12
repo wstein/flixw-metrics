@@ -21,7 +21,8 @@ public final class PluginIntegrationTest {
             require(cold.trim().startsWith("{") && cold.trim().endsWith("}"),
                 "cold stdout is one JSON object");
             require(cold.contains("\"definitions\"") && cold.contains("\"provenance\"")
-                    && cold.contains("\"configuration\""),
+                    && cold.contains("\"configuration\"") && cold.contains("\"inputDigest\"")
+                    && cold.contains("\"compilerArtifact\""),
                 "cold JSON contains measurements and reproducibility metadata");
             try (var entries = Files.list(cache)) {
                 require(entries.filter(p -> p.toString().endsWith(".measurements")).count() == 1,

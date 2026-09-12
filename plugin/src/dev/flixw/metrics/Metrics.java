@@ -47,7 +47,7 @@ final class Metrics {
          * nothing reads this report back, so a schema change is a promise to a consumer rather
          * than a compatibility question for us. {@link Wire#VERSION} is the cache's own guard.
          */
-        static final int SCHEMA = 14;
+        static final int SCHEMA = 15;
 
 
         String render(Format format) { return render(format, null, MetricsConfig.defaults()); }

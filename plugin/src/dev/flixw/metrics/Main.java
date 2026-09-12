@@ -69,7 +69,7 @@ public final class Main {
                 // than on the next cache miss.
                 System.out.print(Metrics.of(sources.size(), hit,
                     SourceMetrics.measure(context.projectRoot(), sources, config), config).render(format,
-                        Provenance.of(context.projectRoot(), version()), config));
+                        Provenance.of(context, sources, version()), config));
                 return;
             }
             System.exit(spawnBridge(context, args));
@@ -106,7 +106,7 @@ public final class Main {
             // and parsing it back out of a stream the compiler also writes to would be reading
             // our own output past whatever Flix chose to print alongside it.
             System.out.print(report.render(parseFormat(args),
-                                           Provenance.of(context.projectRoot(), version()), config));
+                                           Provenance.of(context, sources, version()), config));
         } catch (LinkageError e) {
             // The promise is a sentence, never a stack trace, and the capability probe cannot
             // enumerate every member the adapter touches. Whatever it misses arrives here: the

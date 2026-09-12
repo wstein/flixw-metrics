@@ -100,8 +100,9 @@ Only the report goes to stdout — the compiler's own dependency-resolution chat
 stderr — so redirecting `--format json` gives you a file that parses.
 
 Markdown, JSON, and SARIF reports identify the source commit, dirty working-tree state,
-analyzer version, and measurement time. Provenance is recomputed on every invocation, including
-cache hits; a warm report therefore carries the same identifying information as a cold one.
+analyzer version, compiler artifact, complete measurement-input digest, and measurement time.
+Provenance is recomputed on every invocation, including cache hits; a warm report therefore
+carries the same identifying information as a cold one.
 
 ## Configure findings
 
