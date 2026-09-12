@@ -148,7 +148,7 @@ final class Formats {
             // not a suggestion anyone should follow. The test entries are in `--format
             // json`.
             List<Rankings.Rank> shown = r.ranks().stream()
-                    .filter(k -> !k.file().startsWith("test/") && !k.file().contains("/test/")).toList();
+                    .filter(k -> !Thresholds.inTests(k.file())).toList();
             int hidden = r.ranks().size() - shown.size();
             // The heading names what the table is -- the current extreme of each measure --
             // rather than telling the reader to act, because a ranking is not a finding: it
@@ -234,8 +234,7 @@ final class Formats {
      * carries.
      */
     private static boolean isTest(SourceMetrics.Smell s) {
-        String w = s.where();
-        return w.startsWith("test/") || w.startsWith("test\\") || w.contains("/test/");
+        return Thresholds.inTests(s.file());
     }
 
     /**

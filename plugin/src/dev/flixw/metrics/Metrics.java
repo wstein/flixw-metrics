@@ -47,7 +47,7 @@ final class Metrics {
          * nothing reads this report back, so a schema change is a promise to a consumer rather
          * than a compatibility question for us. {@link Wire#VERSION} is the cache's own guard.
          */
-        static final int SCHEMA = 10;
+        static final int SCHEMA = 11;
 
 
         String render(Format format) { return render(format, null); }
@@ -109,7 +109,7 @@ final class Metrics {
 
         /** The same label/value pairs both renderers use; Markdown needs them too. */
         String[][] fieldsForRender() {
-            return fields();
+            return fields(false);
         }
 
         private String json(Provenance p) {
@@ -124,9 +124,10 @@ final class Metrics {
             // emit second. A summary object makes the collision impossible rather than
             // renaming one side and hoping the next field does not collide too.
             b.append("  \"summary\": {\n");
-            for (int i = 0; i < fields().length; i++) {
-                b.append("    \"").append(fields()[i][0]).append("\": ")
-                 .append(fields()[i][1]).append(i == fields().length - 1 ? "\n" : ",\n");
+            String[][] fields = fields(true);
+            for (int i = 0; i < fields.length; i++) {
+                b.append("    \"").append(fields[i][0]).append("\": ")
+                 .append(fields[i][1]).append(i == fields.length - 1 ? "\n" : ",\n");
             }
             b.append("  },\n");
             b.append("  \"definitions\": [");
@@ -154,7 +155,8 @@ final class Metrics {
 
         private String text() {
             StringBuilder b = new StringBuilder();
-            for (String[] pair : fields()) b.append(pair[0]).append(": ").append(pair[1]).append('\n');
+            for (String[] pair : fields(false))
+                b.append(pair[0]).append(": ").append(pair[1]).append('\n');
             if (!ranks.isEmpty()) {
                 // Same reasoning as the Markdown heading (see Formats): a ranking is not a
                 // finding, so the heading names what the table is rather than telling the
@@ -170,7 +172,7 @@ final class Metrics {
         }
 
         /** The order the two renderers share, so they cannot drift apart field by field. */
-        private String[][] fields() {
+        private String[][] fields(boolean machine) {
             return new String[][] {
                 {"files", "" + files}, {"modules", "" + modules},
                 {"definitions", "" + definitions}, {"localDefinitions", "" + localDefinitions},
@@ -184,9 +186,14 @@ final class Metrics {
                 {"longestLine", "" + longestLine}, {"linesOverLimit", "" + linesOverLimit},
                 {"datalogRules", "" + datalogRules}, {"datalogFacts", "" + datalogFacts},
                 {"widestReturn", "" + widestReturn},
-                {"tests", "" + tests}, {"docCoveragePercent", "" + docCoveragePercent},
-                {"purityPercent", "" + purityPercent},
+                {"tests", "" + tests},
+                {"docCoveragePercent", percentage(docCoveragePercent, machine)},
+                {"purityPercent", percentage(purityPercent, machine)},
             };
+        }
+
+        private static String percentage(int value, boolean machine) {
+            return value < 0 ? machine ? "null" : "N/A" : String.valueOf(value);
         }
 
 
@@ -211,7 +218,7 @@ final class Metrics {
         int datalogFacts = defs.stream().mapToInt(CompilerModel.DefInfo::datalogFacts).sum();
         int widestReturn = defs.stream().mapToInt(CompilerModel.DefInfo::returnWidth).max().orElse(0);
         List<CompilerModel.DefInfo> api = defs.stream()
-            .filter(d -> d.isPublic() && !d.isTest()).toList();
+            .filter(d -> d.isPublic() && !d.isTest() && !Thresholds.inTests(d.file())).toList();
         List<SourceMetrics.Smell> smells = new java.util.ArrayList<>(text.smells());
         smells.addAll(Thresholds.apply(defs, m.modules()));
         smells.sort(java.util.Comparator.comparing(SourceMetrics.Smell::file)
@@ -230,13 +237,13 @@ final class Metrics {
     }
 
     /**
-     * A share as a whole percent, and 0 rather than undefined when there is nothing to divide.
+     * A share as a whole percent, and -1 for undefined when there is nothing to divide.
      *
      * <p>Integer percent because the report is compared between runs, and a ratio printed to
      * fifteen places turns every rounding difference into a change somebody has to read.
      */
     private static int percent(long part, int whole) {
-        return whole == 0 ? 0 : (int) Math.round(100.0 * part / whole);
+        return whole == 0 ? -1 : (int) Math.round(100.0 * part / whole);
     }
 
     /** The project's own sources. Package-visible: {@link ResultCache} keys on this exact

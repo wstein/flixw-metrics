@@ -116,7 +116,7 @@ child loader parented to the platform loader.
 | `cognitive` | branches weighted by nesting, plus boolean operators and match guards |
 | `returnWidth` | a tuple's arity, or a record's field count |
 | `datalogRules`, `datalogFacts` | constraints with and without a body |
-| `tests`, `docCoveragePercent` | `@Test` annotations and doc comments on the public surface |
+| `tests`, `docCoveragePercent` | `@Test` annotations and doc comments on the production public surface |
 | `lines`, `codeLines`, `commentLines`, `docCommentLines`, `blankLines` | the compiler's own lexer |
 | `longestLine`, `linesOverLimit` | the source text |
 | `smells` | thresholds over all of the above |
@@ -219,6 +219,11 @@ through the definition, and counting the match would say one.
 `effectfulDefinitions` asks the declared effect rather than inferring from the body, because
 the declaration is the promise the definition makes to its callers.
 
+Documentation and purity percentages exclude both `@Test` definitions and definitions whose
+portable project-relative path is under `test/`. If no production public definitions exist,
+the percentage is undefined: human reports show `N/A` and JSON emits `null`, rather than
+claiming that an empty API has zero-percent documentation or purity.
+
 `returnWidth` is a parameter list in the other direction: a record of ten fields or a tuple of
 six is wide for the same reason, read for the same reason, and invisible to every other measure
 here. It is gated at the same number as parameters, deliberately — giving them different limits
@@ -243,4 +248,3 @@ The walk is done reflectively rather than against `scala.Product` directly, so t
 this plugin does not require a Flix release on the class path. A metrics plugin that could
 only be compiled against the compiler it inspects would be awkward to keep working across
 several of them.
-

@@ -111,6 +111,7 @@ object plugin extends ScalaModule {
       for (main <- Seq("dev.flixw.metrics.CompilerCapabilitiesTest",
                        "dev.flixw.metrics.ResultCacheTest",
                        "dev.flixw.metrics.ThresholdsTest",
+                       "dev.flixw.metrics.MetricsTest",
                        "dev.flixw.metrics.FormatsTest")) {
         os.proc("java", "-cp", cp, main).call(stdout = os.Inherit, stderr = os.Inherit)
       }

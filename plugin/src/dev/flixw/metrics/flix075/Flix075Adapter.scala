@@ -382,7 +382,9 @@ final class Flix075Adapter extends CompilerModel {
     values.filter(v => projectFile(at(v), projectRoot).isDefined).toList
 
   private def relativise(loc: SourceLocation, projectRoot: Path): String =
-    projectFile(loc, projectRoot).map(projectRoot.relativize(_).toString).getOrElse(loc.source.name)
+    projectFile(loc, projectRoot)
+      .map(projectRoot.relativize(_).toString.replace('\\', '/'))
+      .getOrElse(loc.source.name.replace('\\', '/'))
 
   /**
    * The file a location is in, when that file is the project's own.

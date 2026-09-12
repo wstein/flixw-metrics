@@ -24,7 +24,8 @@ final class Thresholds {
 
     /** Test code, by path: the one thing a definition carries that says where it lives. */
     static boolean inTests(String file) {
-        return file.startsWith("test/") || file.contains("/test/");
+        String portable = file.replace('\\', '/');
+        return portable.startsWith("test/") || portable.contains("/test/");
     }
 
     /** Beyond this many lines a definition is hard to hold in the head at once. */
