@@ -170,22 +170,35 @@ public final class Main {
 
     private static int spawnBridge(Context context, String[] args) {
         try {
+            return new ProcessBuilder(bridgeCommand(context, args))
+                .directory(context.projectRoot().toFile())
+                .inheritIO().start().waitFor();
+        } catch (IOException e) {
+            throw new Usage("cannot start reflection bridge: " + e.getMessage());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new Usage("interrupted while waiting for reflection bridge");
+        }
+    }
+
+    static List<String> bridgeCommand(Context context, String[] args) {
+        try {
             Path plugin = Path.of(Main.class.getProtectionDomain().getCodeSource()
                 .getLocation().toURI());
             List<String> command = new ArrayList<>();
             command.add(context.java().toString());
+            // Flix's constraint visitors are deliberately recursive. Its own compiler constants
+            // specify this worker-stack floor; making the bridge explicit avoids platform JVM
+            // defaults (notably hosted Linux) deciding whether a valid large project compiles.
+            command.add("-Xss64m");
             command.add("-cp");
             command.add(plugin + File.pathSeparator + context.compilerJar());
             command.add(Main.class.getName());
             command.add("--bridge");
             command.addAll(Arrays.asList(args));
-            return new ProcessBuilder(command).directory(context.projectRoot().toFile())
-                .inheritIO().start().waitFor();
-        } catch (URISyntaxException | IOException e) {
+            return List.copyOf(command);
+        } catch (URISyntaxException e) {
             throw new Usage("cannot start reflection bridge: " + e.getMessage());
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new Usage("interrupted while waiting for reflection bridge");
         }
     }
 

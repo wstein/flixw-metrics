@@ -37,6 +37,10 @@ public final class MainOptionsTest {
                     FormatsTest.reportWithSmells(List.of()), newWarning),
             "a new warning crosses a warning-only baseline gate");
         expectUsage(new String[] {"--fail-on-new", "warning"}, "requires --baseline");
+        Main.Context context = new Main.Context(Path.of("project"), Path.of("flix.jar"),
+            Path.of("java-home/bin/java"), null);
+        require(Main.bridgeCommand(context, new String[] {"report"}).contains("-Xss64m"),
+            "the compiler bridge reserves the stack required by recursive compiler visitors");
         System.out.println("MainOptionsTest: ok");
     }
 
