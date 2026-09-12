@@ -84,6 +84,8 @@ public final class FormatsTest {
         require(cleanMd.contains("Nothing above crossed a threshold"),
             "a clean report says the ranking below is not a to-do list, since 'No findings' alone"
                 + " reads oddly next to a table that looks like one");
+        require(cleanMd.contains("Dense findings require at least 4 code lines"),
+            "Markdown explains why a tiny densest definition may not be a finding");
         require(!cleanMd.contains("Where to look first"),
             "the old actionable heading never reappears now that a ranking is not a finding");
         require(count(clean.render(Metrics.Format.SARIF), "\"ruleId\"") == 0,
@@ -98,6 +100,8 @@ public final class FormatsTest {
         require(cleanText.contains("where each measure peaks")
                 && cleanText.contains("nothing crossed a threshold"),
             "a clean terminal report notes the ranking below isn't a to-do list");
+        require(cleanText.contains("dense findings require at least 4 code lines"),
+            "terminal output explains the dense eligibility floor beside its rankings");
         require(!cleanText.contains("where to look first"),
             "the old actionable heading never reappears in the terminal format either");
 
@@ -109,6 +113,8 @@ public final class FormatsTest {
                 && provenJson.contains("\"compilerArtifact\": \"flix.jar\"")
                 && provenJson.contains("\"inputDigest\": \"inputs123\""),
             "JSON identifies the source revision and analyzer that produced it");
+        require(provenJson.contains("\"minimumCodeLines\": 4"),
+            "native JSON exposes the dense eligibility floor to consumers");
         String provenSarif = report.render(Metrics.Format.SARIF, provenance);
         require(provenSarif.contains("\"version\": \"1.2.3\"")
                 && provenSarif.contains("\"commit\": \"abc123\""),

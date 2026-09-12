@@ -128,6 +128,8 @@ final class MetricsConfig {
             out.append(SourceMetrics.Smell.quote(rule.id())).append(": {\"enabled\": ")
                 .append(enabled(rule));
             if (!rule.categorical()) out.append(", \"limit\": ").append(number(limit(rule)));
+            if (rule.minimumCodeLines() > 0)
+                out.append(", \"minimumCodeLines\": ").append(rule.minimumCodeLines());
             out.append('}');
         }
         long active = suppressions.stream().filter(s -> s.active(today)).count();

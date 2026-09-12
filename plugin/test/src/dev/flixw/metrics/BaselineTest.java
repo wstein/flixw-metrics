@@ -44,8 +44,7 @@ public final class BaselineTest {
                 "new or worsened warnings do not cross an error-only gate");
 
             String changedSchema = before.render(Metrics.Format.JSON)
-                .replace("\"schemaVersion\": " + Metrics.Report.SCHEMA,
-                         "\"schemaVersion\": " + (Metrics.Report.SCHEMA - 1));
+                .replaceFirst("\"schemaVersion\": [0-9]+", "\"schemaVersion\": 0");
             Files.writeString(baseline, changedSchema);
             expectInvalid(() -> Baseline.compare(baseline, after, MetricsConfig.defaults()),
                 "schema version");

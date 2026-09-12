@@ -171,6 +171,9 @@ final class Formats {
             if (r.smells().isEmpty())
                 b.append("Nothing above crossed a threshold, so there is nothing to act on."
                         + " This is simply the current extreme of each measure.\n\n");
+            b.append("_Dense findings require at least ")
+                .append(RuleDefinitions.DENSE.minimumCodeLines())
+                .append(" code lines; shorter entries may still appear in this ranking._\n\n");
 
             if (hidden > 0)
                 b.append("_Production code only; ").append(hidden)

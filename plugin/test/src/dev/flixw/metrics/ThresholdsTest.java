@@ -51,6 +51,10 @@ public final class ThresholdsTest {
         DefInfo tiny = def("Foo.tiny", 2, 1, 0, 1, 9, false, false, true);
         require(Thresholds.apply(List.of(tiny), List.of()).isEmpty(),
             "a very short definition is not called dense");
+        DefInfo denseBoundary = def("Foo.denseEnough", 4, 1, 0, 1, 9,
+            false, false, true);
+        require(has(Thresholds.apply(List.of(denseBoundary), List.of()), "dense"),
+            "a four-code-line definition is eligible for a dense finding");
 
         // Reported against the local, not the definition it sits in -- the whole point of
         // measuring which local owns the line.

@@ -9,7 +9,8 @@ final class RuleDefinitions {
     private RuleDefinitions() { }
 
     record Rule(String id, String title, String category, String description, String advice,
-                String unit, double defaultLimit, boolean categorical, String level) { }
+                String unit, double defaultLimit, int minimumCodeLines, boolean categorical,
+                String level) { }
 
     static final Rule DEFINITION_TOO_LONG = numeric("definition-too-long", "Definition too long",
         "maintainability", "A non-test definition spans more lines than the configured limit.",
@@ -26,9 +27,10 @@ final class RuleDefinitions {
         "Invert a condition to return early, or lift a branch into its own definition.", "levels", 4,
         "warning");
     static final Rule DENSE = numeric("dense", "Dense definition", "complexity",
-        "Cognitive complexity per code line exceeds the configured limit.",
+        "Cognitive complexity per code line exceeds the configured limit. Only definitions with"
+            + " at least 4 code lines are eligible.",
         "Simplify the control flow: blank and comment-only lines do not lower this density.",
-        "complexity per code line", 1.0, "warning");
+        "complexity per code line", 1.0, 4, "warning");
     static final Rule CRAMMED_LINE = numeric("crammed-line", "Crammed line", "readability",
         "A source line contains more lexer tokens than the configured limit.",
         "Break the line where it reads, not at a column limit.", "tokens", 35, "note");
@@ -76,11 +78,18 @@ final class RuleDefinitions {
 
     private static Rule numeric(String id, String title, String category, String description,
                                 String advice, String unit, double limit, String level) {
-        return new Rule(id, title, category, description, advice, unit, limit, false, level);
+        return numeric(id, title, category, description, advice, unit, limit, 0, level);
+    }
+
+    private static Rule numeric(String id, String title, String category, String description,
+                                String advice, String unit, double limit, int minimumCodeLines,
+                                String level) {
+        return new Rule(id, title, category, description, advice, unit, limit, minimumCodeLines,
+            false, level);
     }
 
     private static Rule categorical(String id, String title, String category, String description,
                                     String advice, String level) {
-        return new Rule(id, title, category, description, advice, "", 0, true, level);
+        return new Rule(id, title, category, description, advice, "", 0, 0, true, level);
     }
 }

@@ -48,7 +48,7 @@ final class Metrics {
          * nothing reads this report back, so a schema change is a promise to a consumer rather
          * than a compatibility question for us. {@link Wire#VERSION} is the cache's own guard.
          */
-        static final int SCHEMA = 17;
+        static final int SCHEMA = 18;
 
 
         String render(Format format) { return render(format, null, MetricsConfig.defaults()); }
@@ -184,6 +184,9 @@ final class Metrics {
                 b.append('\n').append("where each measure peaks\n");
                 if (smells.isEmpty())
                     b.append("(nothing crossed a threshold; these are just the current extremes)\n");
+                b.append("(dense findings require at least ")
+                    .append(RuleDefinitions.DENSE.minimumCodeLines())
+                    .append(" code lines; shorter definitions may still rank)\n");
                 for (Rankings.Rank r : ranks) b.append(r.text()).append('\n');
             }
             b.append('\n').append("smells: ").append(smells.size()).append('\n');

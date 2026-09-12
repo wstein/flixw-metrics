@@ -98,7 +98,8 @@ final class Thresholds {
                 out.add(at(d, "deeply-nested", d.nesting(), maxNesting, "levels", ""));
             double maxDensity = config.limit(RuleDefinitions.DENSE);
             if (config.enabled(RuleDefinitions.DENSE)
-                    && d.cognitiveDensity() > maxDensity && d.codeLines() > 3)
+                    && d.cognitiveDensity() > maxDensity
+                    && d.codeLines() >= RuleDefinitions.DENSE.minimumCodeLines())
                 out.add(at(d, "dense", d.cognitiveDensity(), maxDensity,
                     "complexity per line", ""));
             // Against the local that owns the line, not the definition it sits in: a crammed
