@@ -31,12 +31,17 @@ public final class FormatsTest {
         // Declared even when unfired, so a consumer's rule list does not change per run.
         require(count(sarif, "\"id\": ") == 9, "every rule is declared, fired or not");
         require(sarif.trim().startsWith("{") && sarif.trim().endsWith("}"), "SARIF is one object");
+        String firstId = report.smells().get(0).id();
+        require(sarif.contains("\"partialFingerprints\": {\"flixwMetricsFinding/v1\": \""
+                + firstId + "\"}"), "SARIF carries the stable finding fingerprint");
 
         // Two totals share a name with a list -- `definitions` and `modules`. A flat object
         // emitted both, and JSON parsers keep the last, so the count was silently replaced.
         String json = report.render(Metrics.Format.JSON);
         require(count(json, "\"definitions\":") == 2 && json.contains("\"summary\": {"),
             "totals are nested, so a total cannot collide with a list of the same name");
+        require(json.contains("\"id\": \"" + firstId + "\""),
+            "native JSON carries the same stable finding id as SARIF");
 
         String md = report.render(Metrics.Format.MARKDOWN);
         require(md.startsWith("# Flix metrics"), "markdown has a title");

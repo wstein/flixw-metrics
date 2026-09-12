@@ -200,6 +200,11 @@ unreadable and sorted least-severe by an accident of arithmetic rather than a de
 *owned* by the local definition holding it, and a module-level finding has a subject and no
 location at all.
 
+Each finding also has a deterministic SHA-256 observation ID derived from its rule, subject,
+portable file, and source line. Native JSON exposes it as `id`; SARIF carries the same value as
+`partialFingerprints.flixwMetricsFinding/v1`, so consumers can correlate a finding between
+formats and across unchanged source revisions without parsing its prose.
+
 ### Findings are reported, never enforced
 
 `Thresholds` is the single place a measurement becomes a finding, and nothing there fails a

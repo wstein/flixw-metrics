@@ -306,6 +306,8 @@ final class Formats {
             b.append("        {\"ruleId\": ").append(SourceMetrics.Smell.quote(s.rule()));
             b.append(", \"level\": ")
                     .append(SourceMetrics.Smell.quote(RuleDefinitions.byId(s.rule()).level()));
+            b.append(", \"partialFingerprints\": {\"flixwMetricsFinding/v1\": ")
+                    .append(SourceMetrics.Smell.quote(s.id())).append("}");
             b.append(", \"message\": {\"text\": ")
                     .append(SourceMetrics.Smell.quote(s.subject() + ": " + s.detail()));
             b.append("}, \"locations\": [{\"physicalLocation\": {");

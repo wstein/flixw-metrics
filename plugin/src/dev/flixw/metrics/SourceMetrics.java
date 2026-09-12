@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -94,6 +96,22 @@ record SourceMetrics(int lines, int longestLine, int linesOverLimit, List<Smell>
             return limit == 0 ? actual : actual / limit;
         }
 
+        /** Stable observation identity for baselines and SARIF result matching. */
+        String id() {
+            try {
+                MessageDigest digest = MessageDigest.getInstance("SHA-256");
+                String identity = rule + '\0' + subject + '\0' + file.replace('\\', '/') + '\0' + line;
+                byte[] bytes = digest.digest(identity.getBytes(StandardCharsets.UTF_8));
+                StringBuilder out = new StringBuilder(bytes.length * 2);
+                for (byte value : bytes)
+                    out.append(Character.forDigit((value >> 4) & 0xf, 16))
+                       .append(Character.forDigit(value & 0xf, 16));
+                return out.toString();
+            } catch (NoSuchAlgorithmException e) {
+                throw new AssertionError("the JVM has no SHA-256", e);
+            }
+        }
+
         /** Where it is, as a person writes it. Empty when nothing locates it. */
         String where() {
             return file.isEmpty() ? "" : file + ":" + line;
@@ -114,7 +132,8 @@ record SourceMetrics(int lines, int longestLine, int linesOverLimit, List<Smell>
         }
 
         String json() {
-            return "{\"rule\": " + quote(rule)
+            return "{\"id\": " + quote(id())
+                 + ", \"rule\": " + quote(rule)
                  + ", \"subject\": " + quote(subject)
                  + ", \"file\": " + quote(file)
                  + ", \"line\": " + line
