@@ -115,7 +115,7 @@ child loader parented to the platform loader.
 | `localDefinitions` | `LocalDef` nodes — definitions the outer signature hides |
 | `effectfulDefinitions`, `purityPercent` | the *declared* effect on each signature |
 | `cognitive` | branches weighted by nesting, plus boolean operators and match guards |
-| `returnWidth` | a tuple's arity, or a record's field count |
+| `returnWidth` | a tuple's arity, or a record's top-level field count |
 | `datalogRules`, `datalogFacts` | constraints with and without a body |
 | `tests`, `docCoveragePercent` | `@Test` annotations and doc comments on the production public surface |
 | `lines`, `codeLines`, `commentLines`, `docCommentLines`, `blankLines` | the compiler's own lexer |
@@ -246,10 +246,11 @@ portable project-relative path is under `test/`. If no production public definit
 the percentage is undefined: human reports show `N/A` and JSON emits `null`, rather than
 claiming that an empty API has zero-percent documentation or purity.
 
-`returnWidth` is a parameter list in the other direction: a record of ten fields or a tuple of
-six is wide for the same reason, read for the same reason, and invisible to every other measure
-here. It is gated at the same number as parameters, deliberately — giving them different limits
-would say one is more forgivable than the other.
+`returnWidth` is a parameter list in the other direction: a record of ten top-level fields or a
+tuple of six is wide for the same reason, read for the same reason, and invisible to every other
+measure here. Nested records remain one part of their containing record rather than being
+flattened. The metric is gated at the same number as parameters, deliberately — giving them
+different limits would say one is more forgivable than the other.
 
 `datalogFacts` are counted apart from rules because a constraint with no body is data written as
 code, and a thousand of them is a data file rather than a thousand things to understand. A

@@ -2,7 +2,7 @@
 
 # Real-project calibration, 2026-09-12
 
-This is a dogfood run, not a claim that five repositories represent all Flix code. Its purpose is
+This is a dogfood run, not a claim that eight targets represent all Flix code. Its purpose is
 to test whether the defaults produce useful review leads on code the analyzer was not written
 against, to expose false positives, and to put future threshold changes against a recorded
 baseline.
@@ -32,6 +32,9 @@ SHA-256 `bf123cdb6494d6e0cbff6399bf185314d332bbe97bfd776e4abc03a5d39dd954`.
 | [`stephentetley/flix-parsec`](https://github.com/stephentetley/flix-parsec/tree/d549c99ab6034c859ae1b27b338f559e5c61d911) | `d549c99a` | 0.75.0 | 20 | 258 | 2,330 |
 | [`KengoTODA/flix-semver2`](https://github.com/KengoTODA/flix-semver2/tree/4473950e945e61717000a87d83b94320d0e7e78b) | `4473950e` | 0.73.0 | 2 | 36 | 299 |
 | [`mlutze/flix-json`](https://github.com/mlutze/flix-json/tree/ac9d50c40d1f3fcf5a5317735ab58116e9eaf2ee) | `ac9d50c4` | 0.49.0 | 15 | 113 | 1,478 |
+| [`ababup1192/flix_game_engine`](https://github.com/ababup1192/flix_game_engine/tree/a44ad70e479082bc506b2d741efe95dc7531e3b9) | `a44ad70e` | 0.75.1 | 176 | 2,396 | 33,171 |
+| [`Simmypeet/qual-effect-system`](https://github.com/Simmypeet/qual-effect-system/tree/5632eaf6f2a0c4d65cdf75ce3d62ea032a61d3be) | `5632eaf6` | 0.75.1 | 19 | 36 | 889 |
+| [`flix/flix` Datalog examples](https://github.com/flix/flix/tree/1c26436689127913f7b447869712df0f04507996/examples/datalog) | `1c264366` | 0.75.3 | 4 | 48 | 971 |
 
 The older projects are compatibility probes, not evidence that the adapter supports every compiler
 between 0.49 and 0.75. They compile successfully with the pinned 0.75.3 compiler, so the measured
@@ -49,6 +52,12 @@ The runner takes semantic measurements from the compiler's exact virtual `Prelud
 measurements from the pinned checkout. This avoids a renamed or namespaced copy, which changes the
 meaning of Prelude's compiler-intrinsic declarations.
 
+The Datalog row is four standalone programs (`compiler-puzzle`, `dependency-resolution`,
+`ford-fulkerson`, and `railroad-network`). Each source was copied without modification into an
+otherwise empty project's `src/` directory and analyzed separately; totals in the table are their
+sum. They complement `qual-effect-system`: the project exercises derived rules in normal library
+code, while the examples also carry literal facts.
+
 ## Results after calibration
 
 | Target | Findings | Finding counts by rule |
@@ -58,14 +67,18 @@ meaning of Prelude's compiler-intrinsic declarations.
 | flix-parsec | 245 | crammed-line 21; deeply-nested 1; line-too-long 50; too-many-parameters 1; undocumented-public 170; wide-coupling 2 |
 | flix-semver2 | 7 | dense 1; undocumented-public 6 |
 | flix-json | 60 | crammed-line 8; dense 2; line-too-long 49; undocumented-public 1 |
-| **Total** | **404** | 472 definitions and 5,948 lines |
+| flix-game-engine | 1,172 | crammed-line 109; deeply-nested 15; definition-too-long 23; dense 72; line-too-long 725; too-many-parameters 89; undocumented-public 122; wide-coupling 16; wide-return 1 |
+| qual-effect-system | 27 | deeply-nested 1; definition-too-long 1; line-too-long 4; undocumented-public 21 |
+| Flix Datalog examples | 50 | crammed-line 17; line-too-long 33 |
+| **Total** | **1,653** | 2,952 definitions and 40,979 lines |
 
-The volume is dominated by two intentionally note-level policies: 211 missing public doc comments
-and 147 lines over 100 UTF-16 code units. Of the long lines, 51 are under `test/`; of the 33
-remaining crammed-line observations, five are under `test/`. These are real measurements but often
-formatting or documentation backlog, so they should not be used as a warning gate by default.
+The expanded volume remains dominated by note-level policy: 909 lines over 100 UTF-16 code units,
+354 missing public doc comments, and 159 crammed lines. The game engine intentionally embeds shader
+source and other large data and contains a 4,109-unit line, demonstrating why line findings need
+scoped suppression for generated or embedded content rather than a universal higher limit.
 
-The 13 structural observations were much more concentrated:
+The original corpus's 13 structural observations remain credible. The larger game engine adds
+enough variety to exercise the upper tail rather than only its threshold:
 
 - Six long definitions are JDBC effect handlers spanning 71–203 lines. Their repeated operation
   cases are understandable, but the locations are credible extraction/refactoring candidates.
@@ -76,6 +89,17 @@ The 13 structural observations were much more concentrated:
   be split.
 - Three dense parsing helpers barely or materially exceed 1.0 complexity per code line. They merit
   inspection; no threshold adjustment is supported by only three observations.
+- The engine's p95 definition still spans only 26 lines, but its 23 long-definition findings include
+  a 1,118-line LWJGL handler. Its parameter, nesting, and coupling findings likewise identify a
+  small high-complexity rendering core rather than shifting the whole distribution.
+- Return width now has 119 definitions wider than one part across the two added projects. Only
+  `UiDoc.parseOwnFields`, an anonymous record with eight top-level fields, exceeds the limit of five.
+- `TileLayer.usedRect` exposed a false positive: it has two top-level record fields, each containing
+  a two-field vector, but was flattened to width six. Commit `bb41851` fixes the metric to follow
+  only the top-level record row, and a compiler-backed nested-record regression test locks that in.
+- Datalog counts matched source inspection: `qual-effect-system` contributes seven derived rules;
+  the four Flix examples contribute 25 rules and 28 facts. Commit `3bcae21` now exercises separate
+  rule/fact counts through both the real compiler adapter and packaged JSON report.
 
 Selected distribution points show why thresholds were not tuned merely to manufacture findings:
 
@@ -86,9 +110,12 @@ Selected distribution points show why thresholds were not tuned merely to manufa
 | flix-parsec | 11/34 | 4/7 | 1/5 | 37/48 | 14/17 |
 | flix-semver2 | 9/11 | 2/3 | 2/3 | 23/26 | 2/6 |
 | flix-json | 20/42 | 2/3 | 2/4 | 36/43 | 9/10 |
+| flix-game-engine | 26/1,118 | 5/16 | 3/12 | 35/61 | 16/37 |
+| qual-effect-system | 32/75 | 4/4 | 3/5 | 30/34 | 3/6 |
 
-No project exercised a wide return or Datalog rule/fact. Those implementations remain covered by
-focused tests, but this corpus does not validate their defaults.
+The expanded corpus therefore validates tuple and record widths from two through eight, plus both
+Datalog rules and facts. Datalog totals are measurements rather than findings and have no arbitrary
+threshold to calibrate.
 
 ## Runtime and cache behavior
 
@@ -113,10 +140,12 @@ Ratings are confidence that the action improves signal, from 1 (speculative) to 
 | Rating | Decision or suggestion | Rationale |
 | ---: | --- | --- |
 | **5/5** | Raise `crammed-line` from 30 to 35 tokens. **Done.** | The old boundary produced 76 notes, including idiomatic Prelude/combinator signatures. The new boundary produces 33 while retaining the 40–53-token outliers. |
-| **5/5** | Keep the structural defaults. | The 13 hits are sparse, independently interpretable, and point to concrete code or module boundaries. |
-| **5/5** | Gate `warning` or higher in CI; review `note` findings as backlog. | Documentation and formatting account for 358 of 404 observations. Treating all findings as equivalent would hide the structural signal. |
+| **5/5** | Fix nested-record width to count top-level fields. **Done.** | The record-heavy project turned a synthetic concern into an observed false positive: two logical return parts were reported as six. |
+| **5/5** | Keep the `wide-return` limit at five. | Among 2,432 definitions in the two added projects, 119 return multiple parts and only one exceeds five: an anonymous eight-field record that fits the rule's advice to name the shape. |
+| **5/5** | Keep separate Datalog rule and fact totals. | Manual source counts match 32 rules and 28 facts across a real project and four official examples; end-to-end tests now preserve the distinction. |
+| **5/5** | Keep the other structural defaults. | The much larger engine produces meaningful upper tails and its findings remain localized to complex rendering, interop, and orchestration code. |
+| **5/5** | Gate `warning` or higher in CI; review `note` findings as backlog. | Documentation and formatting still dominate the expanded corpus. Treating all findings as equivalent would hide the structural signal. |
 | **4/5** | Use project configuration for established line-length and documentation conventions. | A universal increase would erase useful notes for compact projects; the existing per-rule limits and suppressions preserve local policy. |
-| **4/5** | Add at least one Datalog-heavy and one record-heavy project before changing `wide-return` or Datalog-related behavior. | This corpus contains no empirical observations for either family. |
 | **3/5** | Repeat cold timings in CI before setting a performance budget. | The cache-hit result is strong, but four local single samples are not a stable cross-machine benchmark. |
 
 Re-run this calibration when the compiler adapter changes, when a default threshold changes, or

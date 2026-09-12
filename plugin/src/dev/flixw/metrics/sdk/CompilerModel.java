@@ -91,7 +91,7 @@ public interface CompilerModel {
      * @param datalogFacts constraints with an empty body, which are data written as code and are
      *     not complexity however many there are
      * @param returnWidth how many parts the returned value has -- a tuple's arity, or a
-     *     record's field count. A record of ten fields is a parameter list in the other
+     *     record's top-level field count. A record of ten fields is a parameter list in the other
      *     direction: wide for the same reason, read for the same reason, and invisible to every
      *     other measure here
      * @param effects the declared effects, empty when pure
