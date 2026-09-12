@@ -30,7 +30,7 @@ record SourceMetrics(int lines, int longestLine, int linesOverLimit, List<Smell>
      * stated once, applies everywhere, and is reported rather than enforced. This plugin
      * measures and names; it does not fail anybody's build.
      */
-    static final int LINE_LIMIT = 100;
+    static final int LINE_LIMIT = (int) RuleDefinitions.LINE_TOO_LONG.defaultLimit();
 
     static SourceMetrics measure(Path projectRoot, List<Path> sources) throws IOException {
         int lines = 0;
@@ -50,7 +50,7 @@ record SourceMetrics(int lines, int longestLine, int linesOverLimit, List<Smell>
                     smells.add(new Smell("line-too-long",
                         projectRoot.relativize(source).toString() + ":" + (i + 1),
                         projectRoot.relativize(source).toString(), i + 1,
-                        length, LINE_LIMIT, "", "columns"));
+                        length, LINE_LIMIT, "", RuleDefinitions.LINE_TOO_LONG.unit()));
                 }
             }
         }

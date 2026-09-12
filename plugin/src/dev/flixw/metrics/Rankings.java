@@ -77,7 +77,7 @@ final class Rankings {
         // Modules carry no file of their own; a module spans files by definition.
         for (ModuleInfo m : sorted(modules, ModuleInfo::fanOut)) {
             out.add(new Rank("most-coupled", m.name(), "", 0,
-                m.fanOut() + " modules used, instability "
+                m.fanOut() + " modules called, call-instability "
                     + String.format(Locale.ROOT, "%.2f", m.instability())));
         }
         return out;

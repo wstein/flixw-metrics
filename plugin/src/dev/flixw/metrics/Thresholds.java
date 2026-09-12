@@ -29,7 +29,7 @@ final class Thresholds {
     }
 
     /** Beyond this many lines a definition is hard to hold in the head at once. */
-    static final int MAX_LINES = 60;
+    static final int MAX_LINES = (int) RuleDefinitions.DEFINITION_TOO_LONG.defaultLimit();
 
     /**
      * Counting the widest parameter list anywhere inside, not the outer signature.
@@ -37,10 +37,10 @@ final class Thresholds {
      * <p>A definition threading eight accumulators through a local loop reads as taking two, and
      * the outer signature is exactly the thing that hides it.
      */
-    static final int MAX_PARAMETERS = 5;
+    static final int MAX_PARAMETERS = (int) RuleDefinitions.TOO_MANY_PARAMETERS.defaultLimit();
 
     /** Branches inside branches inside branches; the fourth is where following it stops. */
-    static final int MAX_NESTING = 4;
+    static final int MAX_NESTING = (int) RuleDefinitions.DEEPLY_NESTED.defaultLimit();
 
     /**
      * Complexity per line, which is the measure that separates length from density.
@@ -48,10 +48,10 @@ final class Thresholds {
      * <p>A hundred readable lines and five dense ones can score the same in total. The second is
      * the one worth looking at, and a total alone calls it the better of the two.
      */
-    static final double MAX_COGNITIVE_DENSITY = 1.0;
+    static final double MAX_COGNITIVE_DENSITY = RuleDefinitions.DENSE.defaultLimit();
 
     /** A module depending on this many others is hard to move and hard to test. */
-    static final int MAX_FAN_OUT = 12;
+    static final int MAX_FAN_OUT = (int) RuleDefinitions.WIDE_COUPLING.defaultLimit();
 
     /**
      * Tokens on one line, which catches what a column count cannot.
@@ -60,7 +60,7 @@ final class Thresholds {
      * made of punctuation and one-letter binders. Length measures how far the eye travels;
      * this measures how much there is to take in.
      */
-    static final int MAX_LINE_TOKENS = 30;
+    static final int MAX_LINE_TOKENS = (int) RuleDefinitions.CRAMMED_LINE.defaultLimit();
 
     /**
      * Parts in a returned value, gated at the same number as parameters.
@@ -110,7 +110,7 @@ final class Thresholds {
             if (m.fanOut() > MAX_FAN_OUT)
                 // A module has no file of its own; it spans them by definition.
                 out.add(new SourceMetrics.Smell("wide-coupling", m.name(), "", 0,
-                    m.fanOut(), MAX_FAN_OUT, "", "modules depended on"));
+                    m.fanOut(), MAX_FAN_OUT, "", RuleDefinitions.WIDE_COUPLING.unit()));
         }
         return out;
     }

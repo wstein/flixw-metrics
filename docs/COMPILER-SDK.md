@@ -111,6 +111,7 @@ child loader parented to the platform loader.
 |---|---|
 | `definitions`, `traits`, `instances`, `enums`, `structs`, `effects`, `typeAliases` | the typed root, filtered to this project |
 | `modules` | the namespaces the definitions' own symbols carry |
+| module `fanIn`, `fanOut`, `instability` | resolved cross-module direct definition calls |
 | `localDefinitions` | `LocalDef` nodes — definitions the outer signature hides |
 | `effectfulDefinitions`, `purityPercent` | the *declared* effect on each signature |
 | `cognitive` | branches weighted by nesting, plus boolean operators and match guards |
@@ -131,6 +132,12 @@ counted too; without them a long boolean chain reads as trivial.
 `cognitiveDensity` is that divided by lines, and it is the measure that separates length from
 difficulty: a hundred readable lines and five dense ones can score the same in total, and the
 second is the one worth opening.
+
+Module coupling is deliberately narrower than general dependency coupling. An edge from A to B
+means a project definition in A contains a resolved direct call to a definition in B. Type,
+trait, effect, enum, struct, and instance dependencies are not included, so reports call these
+values definition-call coupling rather than claiming to describe every way modules can depend on
+one another.
 
 ### Lines are classified by the compiler's lexer, not by scanning for `//`
 

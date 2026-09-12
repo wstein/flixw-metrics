@@ -129,14 +129,14 @@ final class Formats {
         // nobody should have to read the analyzer to find out.
         b.append("## What the measures mean\n\n");
         b.append("| measure | formula | direction |\n|---|---|---|\n");
-        b.append("| `cognitive` | +1 per branch, `match` rule, or loop, **times its nesting depth**"
-                + " | higher is worse |\n");
+        b.append("| `cognitive` | each branch rule weighted by nesting, plus boolean operators"
+                + " and match guards | higher is worse |\n");
         b.append("| `dense` | `cognitive / lines` of one definition | higher is worse;"
                 + " flagged over 1.0 |\n");
         b.append("| `crammed` | most lexer tokens on any one line of a definition | higher is"
                 + " worse; flagged over ").append(Thresholds.MAX_LINE_TOKENS).append(" |\n");
-        b.append("| `instability` | `fan-out / (fan-out + fan-in)` of a module | 0 is depended"
-                + " upon and stable, 1 depends on others and is free to change |\n");
+        b.append("| `instability` | definition-call `fan-out / (fan-out + fan-in)` of a module"
+                + " | 0 is called by others, 1 calls others |\n");
         b.append("| `docCoveragePercent` | documented ÷ public definitions | higher is better;"
                 + " `@Test` functions and anything under `test/` are excluded |\n");
         b.append("| `tests` | definitions carrying `@Test`, discovered — not executed |\n\n");
@@ -195,18 +195,7 @@ final class Formats {
      * this does not.
      */
     private static String advice(String rule) {
-        return switch (rule) {
-            case "definition-too-long" -> "Split it, or name the parts by extracting local definitions.";
-            case "too-many-parameters" -> "Group related parameters into a record, or thread less state.";
-            case "wide-return" -> "Name the shape: a record with a type alias reads better than a wide tuple.";
-            case "deeply-nested" -> "Invert a condition to return early, or lift a branch into its own definition.";
-            case "dense" -> "Spread it out: this is complexity per line, so length is not the problem.";
-            case "crammed-line" -> "Break the line where it reads, not at a column limit.";
-            case "line-too-long" -> "Wrap it.";
-            case "undocumented-public" -> "Say what it is for; it is part of someone else's surface.";
-            case "wide-coupling" -> "This module reaches into many others; consider what it is really responsible for.";
-            default -> "No guidance recorded for this rule.";
-        };
+        return RuleDefinitions.byId(rule).advice();
     }
 
     /**
@@ -290,16 +279,21 @@ final class Formats {
                     .append(",\n");
         b.append("          \"informationUri\": \"https://github.com/wstein/flixw-metrics\",\n");
         b.append("          \"rules\": [\n");
-        List<String> rules = List.of("definition-too-long", "too-many-parameters", "wide-return",
-                "deeply-nested", "dense", "crammed-line", "line-too-long", "undocumented-public",
-                "wide-coupling");
+        List<RuleDefinitions.Rule> rules = RuleDefinitions.all();
         for (int i = 0; i < rules.size(); i++) {
-            String rule = rules.get(i);
-            b.append("            {\"id\": ").append(SourceMetrics.Smell.quote(rule));
-            b.append(", \"name\": ").append(SourceMetrics.Smell.quote(camel(rule)));
+            RuleDefinitions.Rule rule = rules.get(i);
+            b.append("            {\"id\": ").append(SourceMetrics.Smell.quote(rule.id()));
+            b.append(", \"name\": ").append(SourceMetrics.Smell.quote(camel(rule.id())));
             b.append(", \"shortDescription\": {\"text\": ")
-                    .append(SourceMetrics.Smell.quote(advice(rule))).append("}");
-            b.append(", \"defaultConfiguration\": {\"level\": \"note\"}}");
+                    .append(SourceMetrics.Smell.quote(rule.title())).append("}");
+            b.append(", \"fullDescription\": {\"text\": ")
+                    .append(SourceMetrics.Smell.quote(rule.description())).append("}");
+            b.append(", \"properties\": {\"category\": ")
+                    .append(SourceMetrics.Smell.quote(rule.category())).append("}");
+            b.append(", \"help\": {\"text\": ")
+                    .append(SourceMetrics.Smell.quote(rule.advice())).append("}");
+            b.append(", \"defaultConfiguration\": {\"level\": ")
+                    .append(SourceMetrics.Smell.quote(rule.level())).append("}}");
             b.append(i == rules.size() - 1 ? "\n" : ",\n");
         }
         b.append("          ]\n        }\n      }");
@@ -310,7 +304,8 @@ final class Formats {
         for (int i = 0; i < r.smells().size(); i++) {
             SourceMetrics.Smell s = r.smells().get(i);
             b.append("        {\"ruleId\": ").append(SourceMetrics.Smell.quote(s.rule()));
-            b.append(", \"level\": \"note\"");
+            b.append(", \"level\": ")
+                    .append(SourceMetrics.Smell.quote(RuleDefinitions.byId(s.rule()).level()));
             b.append(", \"message\": {\"text\": ")
                     .append(SourceMetrics.Smell.quote(s.subject() + ": " + s.detail()));
             b.append("}, \"locations\": [{\"physicalLocation\": {");

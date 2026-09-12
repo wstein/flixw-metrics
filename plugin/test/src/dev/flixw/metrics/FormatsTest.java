@@ -125,6 +125,10 @@ public final class FormatsTest {
         }
     }
 
+    static Metrics.Report reportForOtherTests() {
+        return report(List.of());
+    }
+
     private static Metrics.Report report(List<SourceMetrics.Smell> smells) {
         return new Metrics.Report(1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             10, 8, 1, 1, 0, 10, 40, 0, 0, 0, 0, 1, 100, 100, smells,
