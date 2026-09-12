@@ -1,0 +1,7 @@
+{
+  "schemaVersion": 1,
+  "samples": 5,
+  "coldMedianMaxMs": 12000,
+  "warmMedianMaxMs": 1200,
+  "warmToColdMaxPercent": 25
+}
