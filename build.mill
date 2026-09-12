@@ -106,6 +106,9 @@ object plugin extends ScalaModule {
   object test extends ScalaTests {
     def testFramework = "none"
 
+    /** Test-only: parse emitted JSON with the Gson already bundled in the pinned compiler jar. */
+    override def compileClasspath = Task { super.compileClasspath() ++ plugin.flixJar() }
+
     def check() = Task.Command {
       val cp = (runClasspath() ++ Seq(compile().classes)).map(_.path).mkString(":")
       val sourceRoot = moduleDir / "src"

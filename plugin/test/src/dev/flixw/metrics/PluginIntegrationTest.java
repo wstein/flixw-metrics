@@ -1,5 +1,8 @@
 package dev.flixw.metrics;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
@@ -18,11 +21,12 @@ public final class PluginIntegrationTest {
             verifyArtifact(plugin);
             String cold = run(project, cache, plugin, compiler, System.getProperty("java.home"),
                 "json");
-            require(cold.trim().startsWith("{") && cold.trim().endsWith("}"),
-                "cold stdout is one JSON object");
-            require(cold.contains("\"definitions\"") && cold.contains("\"provenance\"")
-                    && cold.contains("\"configuration\"") && cold.contains("\"inputDigest\"")
-                    && cold.contains("\"compilerArtifact\""),
+            JsonObject coldJson = JsonParser.parseString(cold).getAsJsonObject();
+            require(coldJson.getAsJsonObject("summary").get("definitions").getAsInt() == 4,
+                "cold stdout parses as one report with fixture measurements");
+            require(coldJson.has("provenance") && coldJson.has("configuration")
+                    && coldJson.getAsJsonObject("provenance").has("inputDigest")
+                    && coldJson.getAsJsonObject("provenance").has("compilerArtifact"),
                 "cold JSON contains measurements and reproducibility metadata");
             try (var entries = Files.list(cache)) {
                 require(entries.filter(p -> p.toString().endsWith(".measurements")).count() == 1,
@@ -31,14 +35,18 @@ public final class PluginIntegrationTest {
 
             String warm = run(project, cache, plugin, compiler,
                 project.resolve("no-such-java-home").toString(), "json");
-            require(withoutTime(cold).equals(withoutTime(warm)),
+            JsonObject warmJson = JsonParser.parseString(warm).getAsJsonObject();
+            require(withoutTime(coldJson).equals(withoutTime(warmJson)),
                 "a warm report equals the cold report apart from its fresh timestamp");
             String sarif = run(project, cache, plugin, compiler,
                 project.resolve("no-such-java-home").toString(), "sarif");
-            require(sarif.contains("\"version\": \"2.1.0\"")
-                    && sarif.contains("\"partialFingerprints\"")
-                    && sarif.contains("\"configuration\""),
-                "warm cached measurements render valid-shaped, attributable SARIF");
+            JsonObject sarifJson = JsonParser.parseString(sarif).getAsJsonObject();
+            JsonObject run = sarifJson.getAsJsonArray("runs").get(0).getAsJsonObject();
+            require("2.1.0".equals(sarifJson.get("version").getAsString())
+                    && run.getAsJsonObject("properties").has("configuration")
+                    && run.getAsJsonArray("results").get(0).getAsJsonObject()
+                        .has("partialFingerprints"),
+                "warm cached measurements render parseable, attributable SARIF");
             System.out.println("PluginIntegrationTest: ok");
         } finally {
             Flix075AdapterTest.delete(project);
@@ -82,8 +90,10 @@ public final class PluginIntegrationTest {
         }
     }
 
-    private static String withoutTime(String json) {
-        return json.replaceAll("\"measuredAt\": \\\"[^\\\"]+\\\"", "\"measuredAt\": \"TIME\"");
+    private static JsonObject withoutTime(JsonObject json) {
+        JsonObject copy = json.deepCopy();
+        copy.getAsJsonObject("provenance").remove("measuredAt");
+        return copy;
     }
 
     private static void require(boolean condition, String message) {
