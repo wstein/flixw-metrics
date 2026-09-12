@@ -31,6 +31,13 @@ public final class Flix075AdapterTest {
             var beta = model.modules().stream().filter(m -> m.name().equals("Beta")).findFirst()
                 .orElseThrow();
             require(beta.fanOut() == 1, "resolved direct definition calls form module edges");
+
+            Model prelude = new Flix075Adapter().measureCompilerSource(project, "Prelude.flix");
+            require(!prelude.defs().isEmpty(), "an exact compiler source can be calibrated");
+            require(prelude.defs().stream().allMatch(d -> d.file().endsWith("Prelude.flix")),
+                "compiler-source calibration does not leak other library definitions");
+            require(prelude.effects() == 3 && prelude.enums() == 6 && prelude.typeAliases() == 2,
+                "Prelude declarations cross the compiler adapter boundary");
             System.out.println("Flix075AdapterTest: ok");
         } finally {
             delete(project);

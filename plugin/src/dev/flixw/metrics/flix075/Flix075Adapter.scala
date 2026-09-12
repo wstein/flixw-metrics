@@ -36,7 +36,22 @@ final class Flix075Adapter extends CompilerModel {
   override def targets: String = "Flix 0.75.x"
 
   @throws(classOf[ModelFailure])
-  override def measure(projectRoot: Path): Model = {
+  override def measure(projectRoot: Path): Model =
+    measureSelected(projectRoot, projectSource(_, projectRoot))
+
+  /**
+   * Measures one compiler-embedded library source by its exact virtual path.
+   *
+   * This is deliberately separate from [[measure]]: normal reports must never count the
+   * compiler's library as project code. The narrow seam exists so release calibration can run
+   * the same AST walker against a known, real Flix source without copying Prelude into a project
+   * (where its compiler-intrinsic declarations no longer mean the same thing).
+   */
+  @throws(classOf[ModelFailure])
+  def measureCompilerSource(projectRoot: Path, virtualPath: String): Model =
+    measureSelected(projectRoot, compilerSource(_, virtualPath))
+
+  private def measureSelected(projectRoot: Path, include: Source => Boolean): Model = {
     val flix = new Flix()
     flix.setOptions(Options.Default)
 
@@ -61,22 +76,22 @@ final class Flix075Adapter extends CompilerModel {
     val root = flix.check()._1.getOrElse(
       throw new ModelFailure("the project does not compile; the compiler's errors are above"))
 
-    val defs = ofProject(root.defs.values, projectRoot)(_.loc)
+    val defs = selected(root.defs.values, include)(_.loc)
     // Self-edges dropped: a module calling itself is not coupling.
     val edges: Set[(String, String)] =
       defs.flatMap(references).toSet.filter(e => e._1 != e._2)
-    val sources = root.sources.keys.filter(src => projectSource(src, projectRoot)).toList
+    val sources = root.sources.keys.filter(include).toList
     val tokens = tokensPerLine(sources)
     val infos = defs.map(measureDef(_, projectRoot, tokens))
 
     new Model(
       infos.asJava, modules(infos, edges).asJava, lineInfo(sources),
-      ofProject(root.traits.values, projectRoot)(_.loc).size,
-      ofProject(root.instances.values, projectRoot)(_.loc).size,
-      ofProject(root.enums.values, projectRoot)(_.loc).size,
-      ofProject(root.structs.values, projectRoot)(_.loc).size,
-      ofProject(root.effects.values, projectRoot)(_.loc).size,
-      ofProject(root.typeAliases.values, projectRoot)(_.loc).size)
+      selected(root.traits.values, include)(_.loc).size,
+      selected(root.instances.values, include)(_.loc).size,
+      selected(root.enums.values, include)(_.loc).size,
+      selected(root.structs.values, include)(_.loc).size,
+      selected(root.effects.values, include)(_.loc).size,
+      selected(root.typeAliases.values, include)(_.loc).size)
   }
 
   // ---- lines ----------------------------------------------------------------------------
@@ -143,6 +158,11 @@ final class Flix075Adapter extends CompilerModel {
 
   private def projectSource(src: Source, projectRoot: Path): Boolean = src.input match {
     case Input.RealFile(path, _) => path.toAbsolutePath.normalize.startsWith(projectRoot)
+    case _ => false
+  }
+
+  private def compilerSource(src: Source, virtualPath: String): Boolean = src.input match {
+    case Input.VirtualFile(path, _, _) => path.toString.replace('\\', '/') == virtualPath
     case _ => false
   }
 
@@ -378,9 +398,9 @@ final class Flix075Adapter extends CompilerModel {
 
   // ---- what belongs to the project ------------------------------------------------------
 
-  private def ofProject[A](values: Iterable[A], projectRoot: Path)(
+  private def selected[A](values: Iterable[A], include: Source => Boolean)(
       at: A => SourceLocation): List[A] =
-    values.filter(v => projectFile(at(v), projectRoot).isDefined).toList
+    values.filter(v => include(at(v).source)).toList
 
   private def relativise(loc: SourceLocation, projectRoot: Path): String =
     projectFile(loc, projectRoot)
