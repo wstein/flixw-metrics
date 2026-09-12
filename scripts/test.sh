@@ -2,6 +2,7 @@
 set -eu
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd -P)
 sh "$root/scripts/lint.sh"
+sh "$root/scripts/test-calibration.sh"
 sh "$root/scripts/package.sh" 0.0.0-test >/dev/null
 java -jar "$root/dist/plugin.jar" --help | grep -q 'flixw metrics'
 # The outer phase must run with no Scala on its class path at all: it is what answers when the

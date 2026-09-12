@@ -1,0 +1,146 @@
+{
+  "compilerSource": {
+    "repository": "https://github.com/flix/flix.git",
+    "commit": "1c26436689127913f7b447869712df0f04507996",
+    "prelude": "main/src/library/Prelude.flix"
+  },
+  "projects": [
+    {
+      "id": "flix-basicdb",
+      "repository": "https://github.com/stephentetley/flix-basicdb.git",
+      "commit": "c83d571538ac4a16eed1ba8e1c445805897493e9"
+    },
+    {
+      "id": "flix-parsec",
+      "repository": "https://github.com/stephentetley/flix-parsec.git",
+      "commit": "d549c99ab6034c859ae1b27b338f559e5c61d911"
+    },
+    {
+      "id": "flix-semver2",
+      "repository": "https://github.com/KengoTODA/flix-semver2.git",
+      "commit": "4473950e945e61717000a87d83b94320d0e7e78b"
+    },
+    {
+      "id": "flix-json",
+      "repository": "https://github.com/mlutze/flix-json.git",
+      "commit": "ac9d50c40d1f3fcf5a5317735ab58116e9eaf2ee"
+    },
+    {
+      "id": "flix-game-engine",
+      "repository": "https://github.com/ababup1192/flix_game_engine.git",
+      "commit": "a44ad70e479082bc506b2d741efe95dc7531e3b9"
+    },
+    {
+      "id": "qual-effect-system",
+      "repository": "https://github.com/Simmypeet/qual-effect-system.git",
+      "commit": "5632eaf6f2a0c4d65cdf75ce3d62ea032a61d3be"
+    }
+  ],
+  "datalogExamples": [
+    "compiler-puzzle",
+    "dependency-resolution",
+    "ford-fulkerson",
+    "railroad-network"
+  ],
+  "expected": {
+    "prelude": {
+      "files": 1,
+      "definitions": 21,
+      "lines": 229,
+      "datalogRules": 0,
+      "datalogFacts": 0,
+      "findings": 5,
+      "rules": {"crammed-line": 4, "line-too-long": 1}
+    },
+    "flix-basicdb": {
+      "files": 10,
+      "definitions": 44,
+      "lines": 1612,
+      "datalogRules": 0,
+      "datalogFacts": 0,
+      "findings": 87,
+      "rules": {"definition-too-long": 6, "line-too-long": 47, "undocumented-public": 34}
+    },
+    "flix-parsec": {
+      "files": 20,
+      "definitions": 258,
+      "lines": 2330,
+      "datalogRules": 0,
+      "datalogFacts": 0,
+      "findings": 245,
+      "rules": {"crammed-line": 21, "deeply-nested": 1, "line-too-long": 50, "too-many-parameters": 1, "undocumented-public": 170, "wide-coupling": 2}
+    },
+    "flix-semver2": {
+      "files": 2,
+      "definitions": 36,
+      "lines": 299,
+      "datalogRules": 0,
+      "datalogFacts": 0,
+      "findings": 7,
+      "rules": {"dense": 1, "undocumented-public": 6}
+    },
+    "flix-json": {
+      "files": 15,
+      "definitions": 113,
+      "lines": 1478,
+      "datalogRules": 0,
+      "datalogFacts": 0,
+      "findings": 60,
+      "rules": {"crammed-line": 8, "dense": 2, "line-too-long": 49, "undocumented-public": 1}
+    },
+    "flix-game-engine": {
+      "files": 176,
+      "definitions": 2396,
+      "lines": 33171,
+      "datalogRules": 0,
+      "datalogFacts": 0,
+      "findings": 1172,
+      "rules": {"crammed-line": 109, "deeply-nested": 15, "definition-too-long": 23, "dense": 72, "line-too-long": 725, "too-many-parameters": 89, "undocumented-public": 122, "wide-coupling": 16, "wide-return": 1}
+    },
+    "qual-effect-system": {
+      "files": 19,
+      "definitions": 36,
+      "lines": 889,
+      "datalogRules": 7,
+      "datalogFacts": 0,
+      "findings": 27,
+      "rules": {"deeply-nested": 1, "definition-too-long": 1, "line-too-long": 4, "undocumented-public": 21}
+    },
+    "datalog-compiler-puzzle": {
+      "files": 1,
+      "definitions": 1,
+      "lines": 31,
+      "datalogRules": 3,
+      "datalogFacts": 4,
+      "findings": 0,
+      "rules": {}
+    },
+    "datalog-dependency-resolution": {
+      "files": 1,
+      "definitions": 2,
+      "lines": 107,
+      "datalogRules": 4,
+      "datalogFacts": 23,
+      "findings": 2,
+      "rules": {"line-too-long": 2}
+    },
+    "datalog-ford-fulkerson": {
+      "files": 1,
+      "definitions": 42,
+      "lines": 740,
+      "datalogRules": 5,
+      "datalogFacts": 0,
+      "findings": 45,
+      "rules": {"crammed-line": 16, "line-too-long": 29}
+    },
+    "datalog-railroad-network": {
+      "files": 1,
+      "definitions": 3,
+      "lines": 93,
+      "datalogRules": 13,
+      "datalogFacts": 1,
+      "findings": 3,
+      "rules": {"crammed-line": 1, "line-too-long": 2}
+    }
+  }
+}
