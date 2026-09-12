@@ -280,12 +280,15 @@ final class Formats {
         }
     }
 
-    static String sarif(Metrics.Report r) {
+    static String sarif(Metrics.Report r, Provenance p) {
         StringBuilder b = new StringBuilder();
         b.append("{\n  \"$schema\": \"https://json.schemastore.org/sarif-2.1.0.json\",\n");
         b.append("  \"version\": \"2.1.0\",\n  \"runs\": [\n    {\n");
         b.append("      \"tool\": {\n        \"driver\": {\n");
         b.append("          \"name\": \"metrics\",\n");
+        if (p != null)
+            b.append("          \"version\": ").append(SourceMetrics.Smell.quote(p.version()))
+                    .append(",\n");
         b.append("          \"informationUri\": \"https://github.com/wstein/flixw-metrics\",\n");
         b.append("          \"rules\": [\n");
         List<String> rules = List.of("definition-too-long", "too-many-parameters", "wide-return",
@@ -300,7 +303,10 @@ final class Formats {
             b.append(", \"defaultConfiguration\": {\"level\": \"note\"}}");
             b.append(i == rules.size() - 1 ? "\n" : ",\n");
         }
-        b.append("          ]\n        }\n      },\n");
+        b.append("          ]\n        }\n      }");
+        if (p != null)
+            b.append(",\n      \"properties\": ").append(p.json());
+        b.append(",\n");
         b.append("      \"results\": [\n");
         for (int i = 0; i < r.smells().size(); i++) {
             SourceMetrics.Smell s = r.smells().get(i);

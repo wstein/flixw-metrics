@@ -67,7 +67,8 @@ public final class Main {
                 // measurements, so a changed threshold takes effect on the next run rather
                 // than on the next cache miss.
                 System.out.print(Metrics.of(sources.size(), hit,
-                    SourceMetrics.measure(context.projectRoot(), sources)).render(format));
+                    SourceMetrics.measure(context.projectRoot(), sources)).render(format,
+                        Provenance.of(context.projectRoot(), version())));
                 return;
             }
             System.exit(spawnBridge(context, args));

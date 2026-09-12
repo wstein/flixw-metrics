@@ -54,9 +54,9 @@ final class Metrics {
 
         String render(Format format, Provenance p) {
             return switch (format) {
-                case JSON -> json();
+                case JSON -> json(p);
                 case MARKDOWN -> Formats.markdown(this, p);
-                case SARIF -> Formats.sarif(this);
+                case SARIF -> Formats.sarif(this, p);
                 case TEXT -> text();
             };
         }
@@ -112,9 +112,11 @@ final class Metrics {
             return fields();
         }
 
-        private String json() {
+        private String json(Provenance p) {
             StringBuilder b = new StringBuilder("{\n");
             b.append("  \"schemaVersion\": ").append(SCHEMA).append(",\n");
+            if (p != null)
+                b.append("  \"provenance\": ").append(p.json()).append(",\n");
             // Nested, because two of the totals are named for things that also have lists --
             // `definitions` and `modules` -- and a flat object emitted both. JSON allows a
             // duplicate key and parsers keep the last, so the count was silently replaced by

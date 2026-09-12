@@ -16,6 +16,13 @@ import java.util.concurrent.TimeUnit;
  */
 record Provenance(String commit, boolean dirty, String version, String when) {
 
+    String json() {
+        return "{\"commit\": " + SourceMetrics.Smell.quote(commit)
+            + ", \"dirty\": " + dirty
+            + ", \"analyzerVersion\": " + SourceMetrics.Smell.quote(version)
+            + ", \"measuredAt\": " + SourceMetrics.Smell.quote(when) + "}";
+    }
+
     static Provenance of(Path root, String version) {
         String sha = git(root, "rev-parse", "HEAD");
         boolean dirty = !git(root, "status", "--porcelain").isEmpty();

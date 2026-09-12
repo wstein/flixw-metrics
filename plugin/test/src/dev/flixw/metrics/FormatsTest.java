@@ -82,6 +82,16 @@ public final class FormatsTest {
             "a clean terminal report notes the ranking below isn't a to-do list");
         require(!cleanText.contains("where to look first"),
             "the old actionable heading never reappears in the terminal format either");
+
+        Provenance provenance = new Provenance("abc123", true, "1.2.3", "2026-09-12T10:00:00Z");
+        String provenJson = report.render(Metrics.Format.JSON, provenance);
+        require(provenJson.contains("\"provenance\"") && provenJson.contains("\"commit\": \"abc123\"")
+                && provenJson.contains("\"analyzerVersion\": \"1.2.3\""),
+            "JSON identifies the source revision and analyzer that produced it");
+        String provenSarif = report.render(Metrics.Format.SARIF, provenance);
+        require(provenSarif.contains("\"version\": \"1.2.3\"")
+                && provenSarif.contains("\"commit\": \"abc123\""),
+            "SARIF identifies the source revision and analyzer that produced it");
         System.out.println("FormatsTest: ok");
     }
 
