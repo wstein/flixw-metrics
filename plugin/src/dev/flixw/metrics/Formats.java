@@ -178,7 +178,7 @@ final class Formats {
         return b.toString();
     }
 
-    /** The worst instance in a group, which is what decides the group's place. */
+    /** The worst instance in a group, which breaks ties between equal rule severities. */
     private static double worst(List<SourceMetrics.Smell> smells) {
         return smells.stream().mapToDouble(SourceMetrics.Smell::overBy).max().orElse(0);
     }

@@ -167,9 +167,10 @@ tool descriptor does not see a different rule set on every run. Module-level fin
 file and no line, and SARIF requires a region line of at least 1 — those are emitted without a
 region rather than with a fabricated line 0.
 
-Markdown puts findings first and totals last, grouped by rule with the largest group first: ten
-instances of one rule is one decision, ten separate rules is ten, and an ungrouped list hides
-which it is. Every rule carries a one-line action, because a finding without one is a complaint.
+Markdown puts findings first and totals last, grouped by rule and ordered by declared severity,
+then threshold distance. Ten instances of one rule are one policy decision while ten separate
+rules are ten, and an ungrouped list hides which it is. Every rule carries a one-line action,
+because a finding without one is a complaint.
 
 ### A finding is data, not a sentence
 

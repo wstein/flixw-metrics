@@ -67,11 +67,11 @@ where each measure peaks
   deepest            3 levels nested                    Json.size  (src/Json.flix:33)
   widest             2 parameters                       Json.size  (src/Json.flix:33)
   crammed-line       43 tokens on one line              Json.encode  (src/Json.flix:24)
-  most-coupled       3 modules used, instability 1.00   Json
+  most-coupled       3 modules called, call-instability 1.00   Json
 
 smells: 10
   src/Json.flix:24  crammed-line         (43 tokens, over 30  [Json.encode])
-  src/Json.flix:24  line-too-long        (122 columns, over 100)
+  src/Json.flix:24  line-too-long        (122 UTF-16 code units, over 100)
   src/Json.flix:27  undocumented-public  (public with no doc comment  [Json.depth])
   src/Json.flix:33  dense                (1.1 complexity per line, over 1  [Json.size])
   src/Json.flix:38  crammed-line         (37 tokens, over 30  [Json.size.loop])

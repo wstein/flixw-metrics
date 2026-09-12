@@ -54,7 +54,7 @@ final class Thresholds {
     static final int MAX_FAN_OUT = (int) RuleDefinitions.WIDE_COUPLING.defaultLimit();
 
     /**
-     * Tokens on one line, which catches what a column count cannot.
+     * Tokens on one line, which catches what a text-length count cannot.
      *
      * <p>A line of 90 columns made of long descriptive names is easier to read than one of 70
      * made of punctuation and one-letter binders. Length measures how far the eye travels;

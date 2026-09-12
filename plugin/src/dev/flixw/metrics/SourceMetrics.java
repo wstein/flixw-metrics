@@ -26,7 +26,7 @@ import java.util.Locale;
 record SourceMetrics(int lines, int longestLine, int linesOverLimit, List<Smell> smells) {
 
     /**
-     * A hundred columns, matching what the compiler-side engine gated at.
+     * A hundred UTF-16 code units, matching Java's precisely reproducible string length.
      *
      * <p>The number is arbitrary in the way every such number is; what matters is that it is
      * stated once, applies everywhere, and is reported rather than enforced. This plugin
