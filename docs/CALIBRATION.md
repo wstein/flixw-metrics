@@ -160,6 +160,30 @@ The cache is doing materially useful work. Cold performance is dominated by comp
 bootstrap, especially dependency-heavy BasicDB; this sample does not justify adding another cache
 layer.
 
+### Repeated performance budget
+
+The scheduled workflow separately runs the packaged semantic fixture five times cold and five
+times warm. It gates medians rather than the slowest sample, while also gating the warm/cold ratio
+so a uniformly fast or slow runner cannot hide a broken measurement cache.
+
+| Measure | Initial five-sample median | Budget |
+| --- | ---: | ---: |
+| Cold packaged run | 4,399 ms | at most 12,000 ms |
+| Warm packaged run | 261 ms | at most 1,200 ms |
+| Warm / cold | 5% | at most 25% |
+
+These initial measurements were recorded on the same Darwin arm64 development machine as the
+calibration above. CI executes the repeated set independently and retains `performance.json` for
+30 days. Tighten the ceilings only after the retained hosted-runner history supports it; a single
+fast run is not evidence for a smaller budget. Run the same contract locally with:
+
+```sh
+sh scripts/measure-performance.sh /tmp/flixw-performance.json
+```
+
+The budget and evaluator are separate from measurement, so their boundary behavior is covered by
+the normal offline test suite without adding ten compiler startups to every pull request.
+
 ## Decisions and rated next actions
 
 Ratings are confidence that the action improves signal, from 1 (speculative) to 5 (well supported).
@@ -176,7 +200,7 @@ Ratings are confidence that the action improves signal, from 1 (speculative) to 
 | **4/5** | Use project configuration for established line-length and documentation conventions. | A universal increase would erase useful notes for compact projects; the existing per-rule limits and suppressions preserve local policy. |
 | **4/5** | Automate the pinned calibration corpus as a scheduled workflow. **Done.** | The weekly read-only job verifies full source SHAs and exact per-target results without adding network-heavy calibration to every pull request. |
 | **4/5** | Add first-class exclusions for generated or embedded-data sources. **Done.** | Exclusions keep sources in the compiler while removing their line totals and located quality signals; every report discloses matched paths and reasons. |
-| **3/5** | Establish performance budgets from repeated CI measurements. | The cache-hit result is strong, but four local single samples are not a stable cross-machine benchmark. |
+| **3/5** | Establish performance budgets from repeated CI measurements. **Done.** | The scheduled job records five cold and five warm samples, enforcing conservative median and cache-speedup ceilings while retaining raw CI evidence for later tuning. |
 
 Re-run this calibration when the compiler adapter changes, when a default threshold changes, or
 when the corpus gains a materially different Flix style. Compare distributions and reviewed

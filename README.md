@@ -260,6 +260,7 @@ or a stack trace. Supporting another Flix generation is one adapter class — se
 sh scripts/test.sh                 # lint, build, tests
 sh scripts/package.sh 0.1.7        # dist/plugin.jar and dist/SHA256SUMS
 sh scripts/calibrate-corpus.sh /tmp/flixw-calibration-results
+sh scripts/measure-performance.sh /tmp/flixw-performance.json
 ```
 
 `./mill` bootstraps the pinned build tool, and `scripts/fetch-flix.sh` downloads the Flix
@@ -272,6 +273,12 @@ run on every pull request. It clones only the full commits recorded in
 JSON reports in the requested output directory. See the
 [calibration report](docs/CALIBRATION.md#reproducing-the-pinned-corpus) for offline reuse and the
 intentional-update procedure.
+
+The performance command runs five cold and five warm packaged-plugin samples, records every timing,
+and checks cold median, warm median, and warm/cold ratio against
+[`calibration/performance-budget.json`](calibration/performance-budget.json). The scheduled workflow
+retains those measurements, making budget changes reviewable against CI history rather than a
+single favorable run.
 
 A jar is not byte-reproducible across machines, because `jar` records timestamps: a local
 build will not have the digest the release does. The digest under [Install](#install) is the
