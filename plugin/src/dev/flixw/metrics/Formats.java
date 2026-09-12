@@ -320,16 +320,18 @@ final class Formats {
                     .append(SourceMetrics.Smell.quote(s.id())).append("}");
             b.append(", \"message\": {\"text\": ")
                     .append(SourceMetrics.Smell.quote(s.subject() + ": " + s.detail()));
-            b.append("}, \"locations\": [{\"physicalLocation\": {");
-            b.append("\"artifactLocation\": {\"uri\": ").append(SourceMetrics.Smell.quote(s.file()));
-            // A module-level finding has no file. SARIF requires a region's line to be >=
-            // 1, so
-            // one that has no line is reported without a region rather than with a made-up
-            // line 0.
-            b.append("}");
-            if (s.line() > 0)
-                b.append(", \"region\": {\"startLine\": ").append(s.line()).append("}");
-            b.append("}}]}");
+            b.append('}');
+            // A module-level finding spans files, so it has no physical location at all. An
+            // empty URI or made-up line would turn absence of a location into a false one.
+            if (!s.file().isEmpty()) {
+                b.append(", \"locations\": [{\"physicalLocation\": {");
+                b.append("\"artifactLocation\": {\"uri\": ")
+                        .append(SourceMetrics.Smell.quote(s.file())).append("}");
+                if (s.line() > 0)
+                    b.append(", \"region\": {\"startLine\": ").append(s.line()).append("}");
+                b.append("}}]");
+            }
+            b.append('}');
             b.append(i == r.smells().size() - 1 ? "\n" : ",\n");
         }
         b.append("      ]\n    }\n  ]\n}\n");

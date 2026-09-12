@@ -26,6 +26,8 @@ public final class FormatsTest {
 
         String sarif = report.render(Metrics.Format.SARIF);
         require(!sarif.contains("\"startLine\": 0"), "SARIF never emits a zero start line");
+        require(!sarif.contains("\"uri\": \"\""),
+            "module findings do not invent an empty artifact URI");
         require(sarif.contains("\"startLine\": 12"), "SARIF keeps a real line");
         require(count(sarif, "\"ruleId\"") == 2, "every finding becomes a result");
         // Declared even when unfired, so a consumer's rule list does not change per run.
