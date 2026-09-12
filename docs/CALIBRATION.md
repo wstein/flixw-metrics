@@ -175,7 +175,7 @@ Ratings are confidence that the action improves signal, from 1 (speculative) to 
 | **5/5** | Add a baseline-aware new-finding gate. **Done.** | Teams can adopt the warning gate without first paying all existing debt; schema and effective-policy checks prevent invalid comparisons. |
 | **4/5** | Use project configuration for established line-length and documentation conventions. | A universal increase would erase useful notes for compact projects; the existing per-rule limits and suppressions preserve local policy. |
 | **4/5** | Automate the pinned calibration corpus as a scheduled workflow. **Done.** | The weekly read-only job verifies full source SHAs and exact per-target results without adding network-heavy calibration to every pull request. |
-| **4/5** | Add first-class exclusions for generated or embedded-data sources. | The 4,109-unit embedded-data line is useful project data but poor line-quality signal; explicit exclusions are clearer than many rule suppressions. |
+| **4/5** | Add first-class exclusions for generated or embedded-data sources. **Done.** | Exclusions keep sources in the compiler while removing their line totals and located quality signals; every report discloses matched paths and reasons. |
 | **3/5** | Establish performance budgets from repeated CI measurements. | The cache-hit result is strong, but four local single samples are not a stable cross-machine benchmark. |
 
 Re-run this calibration when the compiler adapter changes, when a default threshold changes, or

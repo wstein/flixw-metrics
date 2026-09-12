@@ -228,6 +228,14 @@ limit, disable a rule, or suppress a scoped finding with a mandatory reason and 
 This policy is applied after cached compiler measurements are read, so changing it takes effect
 without invalidating or contaminating the measurement cache.
 
+First-class `exclusions.<label>.file` entries are different from suppressions. The source remains
+an input to Flix so references to generated definitions still type-check, and AST census totals
+remain complete. The adapter retains lexer classifications per source in the cache; report policy
+can therefore subtract excluded code, comment, doc-comment, and blank lines without approximating
+Flix's lexer. File-located definitions leave API ratios, findings, and rankings, while module-wide
+coupling remains because it cannot honestly be assigned to one file. Reports expose compiled,
+analyzed, and excluded file counts plus each matched path and mandatory reason.
+
 **Tests are judged differently, not exempted.** A long test is usually a table of cases, which
 is the clearest way to write it; an undocumented test is not a gap in a public API. Reporting
 those trains a reader to skim the whole list, and the finding that mattered goes with them.
