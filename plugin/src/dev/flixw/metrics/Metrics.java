@@ -48,7 +48,11 @@ final class Metrics {
          * nothing reads this report back, so a schema change is a promise to a consumer rather
          * than a compatibility question for us. {@link Wire#VERSION} is the cache's own guard.
          */
-        static final int SCHEMA = 18;
+        // A method so javac cannot inline yesterday's value into Baseline. Incremental builds
+        // must ask the current report class which contract it emits.
+        static int schemaVersion() {
+            return 19;
+        }
 
 
         String render(Format format) { return render(format, null, MetricsConfig.defaults()); }
@@ -125,7 +129,7 @@ final class Metrics {
 
         private String json(Provenance p, MetricsConfig config, Baseline.Comparison comparison) {
             StringBuilder b = new StringBuilder("{\n");
-            b.append("  \"schemaVersion\": ").append(SCHEMA).append(",\n");
+            b.append("  \"schemaVersion\": ").append(schemaVersion()).append(",\n");
             if (p != null)
                 b.append("  \"provenance\": ").append(p.json()).append(",\n");
             b.append("  \"configuration\": ").append(config.json()).append(",\n");

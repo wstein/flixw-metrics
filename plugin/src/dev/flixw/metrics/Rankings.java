@@ -37,20 +37,38 @@ final class Rankings {
      * @param subject the definition or module
      * @param value already formatted, because the unit belongs with the number -- a bare "310"
      *     means nothing three columns away from the word "lines"
+     * @param eligible whether structural prerequisites permit a related finding; this does not
+     *     say that the value crossed a threshold or that the rule is enabled
+     * @param ineligibilityReason empty when eligible, otherwise the prerequisite that was missed
      */
-    record Rank(String measure, String subject, String file, int line, String value) {
+    record Rank(String measure, String subject, String file, int line, String value,
+                boolean eligible, String ineligibilityReason) {
+
+        Rank {
+            if (eligible != ineligibilityReason.isEmpty())
+                throw new IllegalArgumentException(
+                    "an eligible rank has no ineligibility reason, and vice versa");
+        }
+
+        Rank(String measure, String subject, String file, int line, String value) {
+            this(measure, subject, file, line, value, true, "");
+        }
 
         String json() {
             return "{\"measure\": " + SourceMetrics.Smell.quote(measure)
                  + ", \"subject\": " + SourceMetrics.Smell.quote(subject)
                  + ", \"file\": " + SourceMetrics.Smell.quote(file)
                  + ", \"line\": " + line
-                 + ", \"value\": " + SourceMetrics.Smell.quote(value) + "}";
+                 + ", \"value\": " + SourceMetrics.Smell.quote(value)
+                 + ", \"eligible\": " + eligible
+                 + ", \"ineligibilityReason\": "
+                 + SourceMetrics.Smell.quote(ineligibilityReason) + "}";
         }
 
         String text() {
             return String.format(Locale.ROOT, "  %-18s %-34s %s", measure, value, subject
-                + (file.isEmpty() ? "" : "  (" + file + ":" + line + ")"));
+                + (file.isEmpty() ? "" : "  (" + file + ":" + line + ")")
+                + (eligible ? "" : "  [ineligible: " + ineligibilityReason + "]"));
         }
     }
 
@@ -58,9 +76,14 @@ final class Rankings {
         List<Rank> out = new ArrayList<>();
         // Tests are ranked with everything else here, unlike in Thresholds. A long test is not a
         // defect, but if it is the longest thing in the project that is worth knowing.
-        top(out, defs, "longest", DefInfo::lines, d -> d.lines() + " lines");
+        top(out, defs, "longest", DefInfo::lines, d -> d.lines() + " lines",
+            d -> d.isTest()
+                ? "test definitions are excluded from definition-too-long findings" : "");
         top(out, defs, "densest", DefInfo::cognitiveDensity,
-            d -> String.format(Locale.ROOT, "%.1f complexity/line", d.cognitiveDensity()));
+            d -> String.format(Locale.ROOT, "%.1f complexity/line", d.cognitiveDensity()),
+            d -> d.codeLines() < RuleDefinitions.DENSE.minimumCodeLines()
+                ? "requires at least " + RuleDefinitions.DENSE.minimumCodeLines()
+                    + " code lines (has " + d.codeLines() + ")" : "");
         top(out, defs, "most-complex", DefInfo::cognitive, d -> d.cognitive() + " complexity");
         top(out, defs, "deepest", DefInfo::nesting, d -> d.nesting() + " levels nested");
         top(out, defs, "widest", DefInfo::widestParameterList,
@@ -87,8 +110,18 @@ final class Rankings {
                                                       String measure,
                                                       Function<DefInfo, T> by,
                                                       Function<DefInfo, String> value) {
+        top(out, defs, measure, by, value, ignored -> "");
+    }
+
+    private static <T extends Comparable<T>> void top(List<Rank> out, List<DefInfo> defs,
+                                                      String measure,
+                                                      Function<DefInfo, T> by,
+                                                      Function<DefInfo, String> value,
+                                                      Function<DefInfo, String> reason) {
         for (DefInfo d : sorted(defs, by)) {
-            out.add(new Rank(measure, d.name(), d.file(), d.line(), value.apply(d)));
+            String why = reason.apply(d);
+            out.add(new Rank(measure, d.name(), d.file(), d.line(), value.apply(d),
+                why.isEmpty(), why));
         }
     }
 

@@ -155,9 +155,9 @@ final class Baseline {
         }
         Map<String, Object> root = object(parsed, path, "report");
         int schema = integer(root.get("schemaVersion"), path, "schemaVersion");
-        if (schema != Metrics.Report.SCHEMA)
+        if (schema != Metrics.Report.schemaVersion())
             throw invalid(path, "incompatible schema version " + schema
-                + " (expected " + Metrics.Report.SCHEMA + ")");
+                + " (expected " + Metrics.Report.schemaVersion() + ")");
         Object baselineConfig = required(root, "configuration", path);
         Object currentConfig = new Json(config.json()).parse();
         if (!baselineConfig.equals(currentConfig))

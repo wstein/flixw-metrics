@@ -105,6 +105,19 @@ public final class FormatsTest {
         require(!cleanText.contains("where to look first"),
             "the old actionable heading never reappears in the terminal format either");
 
+        String reason = "requires at least 4 code lines (has 3)";
+        Metrics.Report ineligible = reportWithRank(new Rankings.Rank("densest", "A.tiny",
+            "src/A.flix", 7, "3.0 complexity/line", false, reason));
+        String ineligibleJson = ineligible.render(Metrics.Format.JSON);
+        require(ineligibleJson.contains("\"eligible\": false")
+                && ineligibleJson.contains("\"ineligibilityReason\": \"" + reason + "\""),
+            "native JSON marks the individual ranking and gives its reason");
+        require(ineligible.render(Metrics.Format.TEXT).contains("ineligible: " + reason),
+            "terminal output marks the individual ranking, not only the report");
+        String ineligibleMd = ineligible.render(Metrics.Format.MARKDOWN);
+        require(ineligibleMd.contains("| ineligible — " + reason + " |"),
+            "Markdown marks the individual ranking, not only the report");
+
         Provenance provenance = new Provenance("abc123", true, "1.2.3", "2026-09-12T10:00:00Z",
             "flix.jar", "inputs123");
         String provenJson = report.render(Metrics.Format.JSON, provenance);
@@ -190,10 +203,19 @@ public final class FormatsTest {
     }
 
     private static Metrics.Report report(List<SourceMetrics.Smell> smells) {
+        return reportWithRank(new Rankings.Rank("longest", "A.b", "src/A.flix", 3,
+            "9 lines"), smells);
+    }
+
+    private static Metrics.Report reportWithRank(Rankings.Rank rank) {
+        return reportWithRank(rank, List.of());
+    }
+
+    private static Metrics.Report reportWithRank(Rankings.Rank rank,
+                                                 List<SourceMetrics.Smell> smells) {
         return new Metrics.Report(1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             10, 8, 1, 1, 0, 10, 40, 0, 0, 0, 0, 1, 100, 100, List.of(), smells,
-            List.of(new Rankings.Rank("longest", "A.b", "src/A.flix", 3, "9 lines")),
-            List.of(), List.of());
+            List.of(rank), List.of(), List.of());
     }
 
     private static int count(String text, String needle) {

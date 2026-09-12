@@ -174,15 +174,19 @@ final class Formats {
             b.append("_Dense findings require at least ")
                 .append(RuleDefinitions.DENSE.minimumCodeLines())
                 .append(" code lines; shorter entries may still appear in this ranking._\n\n");
+            b.append("_Rule eligibility records structural prerequisites, not whether the value"
+                + " crossed its threshold._\n\n");
 
             if (hidden > 0)
                 b.append("_Production code only; ").append(hidden)
                         .append(" test entries omitted and kept in `--format json`._\n\n");
-            b.append("| measure | subject | value | at |\n");
-            b.append("|---|---|---|---|\n");
+            b.append("| measure | subject | value | rule eligibility | at |\n");
+            b.append("|---|---|---|---|---|\n");
             for (Rankings.Rank k : shown) {
                 b.append("| ").append(k.measure()).append(" | `").append(k.subject())
                         .append("` | ").append(k.value()).append(" | ")
+                        .append(k.eligible() ? "eligible" : "ineligible — "
+                            + k.ineligibilityReason()).append(" | ")
                         .append(k.file().isEmpty() ? "—" : "`" + k.file() + ":" + k.line() + "`")
                         .append(" |\n");
             }
