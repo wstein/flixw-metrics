@@ -148,9 +148,19 @@ public interface CompilerModel {
      */
     record LineInfo(int total, int code, int comment, int docComment, int blank) { }
 
+    /** Lexer-derived line classes retained per source so report policy can exclude a file. */
+    record SourceInfo(String file, LineInfo lines) { }
+
     /** Everything an adapter reports. Counts that have no per-declaration detail stay counts. */
     record Model(List<DefInfo> defs, List<ModuleInfo> modules, LineInfo lines, int traits,
-                 int instances, int enums, int structs, int effects, int typeAliases) { }
+                 int instances, int enums, int structs, int effects, int typeAliases,
+                 List<SourceInfo> sources) {
+        public Model(List<DefInfo> defs, List<ModuleInfo> modules, LineInfo lines, int traits,
+                     int instances, int enums, int structs, int effects, int typeAliases) {
+            this(defs, modules, lines, traits, instances, enums, structs, effects, typeAliases,
+                List.of());
+        }
+    }
 
     /** A project this adapter could load but could not measure. */
     class ModelFailure extends Exception {

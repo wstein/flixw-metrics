@@ -1,7 +1,7 @@
 package dev.flixw.metrics.flix075
 
 import dev.flixw.metrics.sdk.CompilerModel
-import dev.flixw.metrics.sdk.CompilerModel.{DefInfo, LineInfo, Model, ModelFailure, ModuleInfo}
+import dev.flixw.metrics.sdk.CompilerModel.{DefInfo, LineInfo, Model, ModelFailure, ModuleInfo, SourceInfo}
 
 import ca.uwaterloo.flix.api.{Bootstrap, Flix}
 import ca.uwaterloo.flix.language.ast.shared.{Input, Source}
@@ -91,7 +91,8 @@ final class Flix075Adapter extends CompilerModel {
       selected(root.enums.values, include)(_.loc).size,
       selected(root.structs.values, include)(_.loc).size,
       selected(root.effects.values, include)(_.loc).size,
-      selected(root.typeAliases.values, include)(_.loc).size)
+      selected(root.typeAliases.values, include)(_.loc).size,
+      sources.map(src => new SourceInfo(sourceName(src, projectRoot), lineInfo(List(src)))).asJava)
   }
 
   // ---- lines ----------------------------------------------------------------------------
@@ -159,6 +160,13 @@ final class Flix075Adapter extends CompilerModel {
   private def projectSource(src: Source, projectRoot: Path): Boolean = src.input match {
     case Input.RealFile(path, _) => path.toAbsolutePath.normalize.startsWith(projectRoot)
     case _ => false
+  }
+
+  private def sourceName(src: Source, projectRoot: Path): String = src.input match {
+    case Input.RealFile(path, _) => projectRoot.relativize(path.toAbsolutePath.normalize)
+      .toString.replace('\\', '/')
+    case Input.VirtualFile(path, _, _) => path.toString.replace('\\', '/')
+    case _ => src.name.replace('\\', '/')
   }
 
   private def compilerSource(src: Source, virtualPath: String): Boolean = src.input match {

@@ -4,6 +4,7 @@ import dev.flixw.metrics.sdk.CompilerModel.DefInfo;
 import dev.flixw.metrics.sdk.CompilerModel.LineInfo;
 import dev.flixw.metrics.sdk.CompilerModel.Model;
 import dev.flixw.metrics.sdk.CompilerModel.ModuleInfo;
+import dev.flixw.metrics.sdk.CompilerModel.SourceInfo;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,7 +37,7 @@ final class Wire {
     private Wire() { }
 
     /** Bumped when a record's field order changes; a mismatch is a cache miss, never a guess. */
-    static final int VERSION = 2;
+    static final int VERSION = 3;
 
     static String encode(Model m) {
         StringBuilder b = new StringBuilder();
@@ -45,6 +46,9 @@ final class Wire {
             m.lines().docComment(), m.lines().blank());
         row(b, "c", m.traits(), m.instances(), m.enums(), m.structs(), m.effects(),
             m.typeAliases());
+        for (SourceInfo source : m.sources())
+            row(b, "s", source.file(), source.lines().total(), source.lines().code(),
+                source.lines().comment(), source.lines().docComment(), source.lines().blank());
         for (DefInfo d : m.defs()) {
             row(b, "d", d.name(), d.module(), d.file(), d.line(), d.lines(), d.codeLines(), d.parameters(),
                 d.maxLocalParameters(), d.localDefs(), d.nesting(), d.cognitive(),
@@ -78,12 +82,15 @@ final class Wire {
             int[] counts = null;
             List<DefInfo> defs = new ArrayList<>();
             List<ModuleInfo> modules = new ArrayList<>();
+            List<SourceInfo> sources = new ArrayList<>();
 
             for (String[] f : rows.subList(1, rows.size())) {
                 switch (f[0]) {
                     case "l" -> lines = new LineInfo(i(f[1]), i(f[2]), i(f[3]), i(f[4]), i(f[5]));
                     case "c" -> counts = new int[] {i(f[1]), i(f[2]), i(f[3]), i(f[4]), i(f[5]),
                         i(f[6])};
+                    case "s" -> sources.add(new SourceInfo(un(f[1]), new LineInfo(i(f[2]), i(f[3]),
+                        i(f[4]), i(f[5]), i(f[6]))));
                     case "d" -> defs.add(new DefInfo(un(f[1]), un(f[2]), un(f[3]), i(f[4]),
                         i(f[5]), i(f[6]), i(f[7]), i(f[8]), i(f[9]), i(f[10]), i(f[11]), i(f[12]),
                         i(f[13]), un(f[14]), i(f[15]), i(f[16]), i(f[17]), b(f[18]), b(f[19]),
@@ -95,7 +102,7 @@ final class Wire {
             }
             if (lines == null || counts == null) return null;
             return new Model(defs, modules, lines, counts[0], counts[1], counts[2], counts[3],
-                counts[4], counts[5]);
+                counts[4], counts[5], sources);
         } catch (RuntimeException e) {
             // Any malformed entry at all: a miss, not an exception thrown at a user who only
             // asked for their metrics.

@@ -25,18 +25,21 @@ final class MetricsConfig {
     private final Map<String, Double> limits;
     private final Set<String> disabled;
     private final List<Suppression> suppressions;
+    private final List<Exclusion> exclusions;
     private final LocalDate today;
 
     private MetricsConfig(Map<String, Double> limits, Set<String> disabled,
-                          List<Suppression> suppressions, LocalDate today) {
+                          List<Suppression> suppressions, List<Exclusion> exclusions,
+                          LocalDate today) {
         this.limits = Map.copyOf(limits);
         this.disabled = Set.copyOf(disabled);
         this.suppressions = List.copyOf(suppressions);
+        this.exclusions = List.copyOf(exclusions);
         this.today = today;
     }
 
     static MetricsConfig defaults() {
-        return new MetricsConfig(Map.of(), Set.of(), List.of(), LocalDate.now());
+        return new MetricsConfig(Map.of(), Set.of(), List.of(), List.of(), LocalDate.now());
     }
 
     static MetricsConfig read(Path root) {
@@ -46,7 +49,7 @@ final class MetricsConfig {
     static MetricsConfig read(Path root, LocalDate today) {
         Path path = root.resolve(FILE);
         if (!Files.isRegularFile(path))
-            return new MetricsConfig(Map.of(), Set.of(), List.of(), today);
+            return new MetricsConfig(Map.of(), Set.of(), List.of(), List.of(), today);
         Properties properties = new Properties();
         try (Reader reader = Files.newBufferedReader(path)) {
             properties.load(reader);
@@ -57,12 +60,15 @@ final class MetricsConfig {
         Map<String, Double> limits = new HashMap<>();
         Set<String> disabled = new HashSet<>();
         Map<String, SuppressionBuilder> builders = new HashMap<>();
+        Map<String, ExclusionBuilder> exclusionBuilders = new HashMap<>();
         for (String key : properties.stringPropertyNames().stream().sorted().toList()) {
             String value = properties.getProperty(key).trim();
             if (key.startsWith("rules.")) {
                 readRule(path, key, value, limits, disabled);
             } else if (key.startsWith("suppressions.")) {
                 readSuppression(path, key, value, builders);
+            } else if (key.startsWith("exclusions.")) {
+                readExclusion(path, key, value, exclusionBuilders);
             } else {
                 throw invalid(path, "unknown key " + key);
             }
@@ -70,7 +76,10 @@ final class MetricsConfig {
         List<Suppression> suppressions = builders.entrySet().stream()
             .sorted(Map.Entry.comparingByKey())
             .map(entry -> entry.getValue().build(path, entry.getKey())).toList();
-        return new MetricsConfig(limits, disabled, suppressions, today);
+        List<Exclusion> exclusions = exclusionBuilders.entrySet().stream()
+            .sorted(Map.Entry.comparingByKey())
+            .map(entry -> entry.getValue().build(path, entry.getKey())).toList();
+        return new MetricsConfig(limits, disabled, suppressions, exclusions, today);
     }
 
     boolean enabled(RuleDefinitions.Rule rule) {
@@ -85,11 +94,27 @@ final class MetricsConfig {
         return suppressions.stream().anyMatch(s -> s.active(today) && s.matches(smell));
     }
 
+    boolean isExcluded(String file) {
+        return exclusion(file) != null;
+    }
+
+    ExcludedSource excludedSource(String file) {
+        Exclusion found = exclusion(file);
+        return found == null ? null : new ExcludedSource(file.replace('\\', '/'), found.reason());
+    }
+
+    private Exclusion exclusion(String file) {
+        if (file == null || file.isEmpty()) return null;
+        String portable = file.replace('\\', '/');
+        return exclusions.stream().filter(e -> e.file().matcher(portable).matches())
+            .findFirst().orElse(null);
+    }
+
     String policySummary() {
         List<String> parts = RuleDefinitions.all().stream().map(rule -> enabled(rule)
             ? rule.categorical() ? rule.id() + "=on" : rule.id() + "=" + number(limit(rule))
             : rule.id() + "=off").toList();
-        return String.join(", ", parts);
+        return String.join(", ", parts) + "; exclusions=" + exclusions.size();
     }
 
     String json() {
@@ -106,7 +131,12 @@ final class MetricsConfig {
             out.append('}');
         }
         long active = suppressions.stream().filter(s -> s.active(today)).count();
-        return out.append("}, \"activeSuppressions\": ").append(active).append('}').toString();
+        out.append("}, \"activeSuppressions\": ").append(active).append(", \"exclusions\": [");
+        for (int i = 0; i < exclusions.size(); i++) {
+            if (i > 0) out.append(", ");
+            out.append(exclusions.get(i).json());
+        }
+        return out.append("]}").toString();
     }
 
     /** Identity of every effective rule and suppression, used to reject unlike baselines. */
@@ -116,6 +146,8 @@ final class MetricsConfig {
             .append(s.rule()).append('\0')
             .append(s.file() == null ? "" : s.file().pattern()).append('\0')
             .append(s.subject() == null ? "" : s.subject().pattern()));
+        exclusions.forEach(e -> policy.append('\0').append("exclude").append('\0')
+            .append(e.fileGlob()).append('\0').append(e.reason()));
         try {
             byte[] bytes = MessageDigest.getInstance("SHA-256")
                 .digest(policy.toString().getBytes(StandardCharsets.UTF_8));
@@ -195,6 +227,23 @@ final class MetricsConfig {
         }
     }
 
+    private static void readExclusion(Path path, String key, String value,
+                                      Map<String, ExclusionBuilder> builders) {
+        String rest = key.substring("exclusions.".length());
+        int dot = rest.indexOf('.');
+        if (dot <= 0 || dot == rest.length() - 1)
+            throw invalid(path, "invalid exclusion key " + key);
+        String label = rest.substring(0, dot);
+        String field = rest.substring(dot + 1);
+        ExclusionBuilder builder = builders.computeIfAbsent(label,
+            ignored -> new ExclusionBuilder());
+        switch (field) {
+            case "file" -> builder.file = value;
+            case "reason" -> builder.reason = value;
+            default -> throw invalid(path, "unknown exclusion field " + key);
+        }
+    }
+
     private static Invalid invalid(Path path, String message) {
         return new Invalid(path + ": " + message);
     }
@@ -207,6 +256,33 @@ final class MetricsConfig {
             return (rule.equals("*") || rule.equals(smell.rule()))
                 && (file == null || file.matcher(smell.file().replace('\\', '/')).matches())
                 && (subject == null || subject.matcher(smell.subject()).matches());
+        }
+    }
+
+    record ExcludedSource(String file, String reason) {
+        String json() {
+            return "{\"file\": " + SourceMetrics.Smell.quote(file)
+                + ", \"reason\": " + SourceMetrics.Smell.quote(reason) + "}";
+        }
+    }
+
+    private record Exclusion(String fileGlob, Pattern file, String reason) {
+        String json() {
+            return "{\"file\": " + SourceMetrics.Smell.quote(fileGlob)
+                + ", \"reason\": " + SourceMetrics.Smell.quote(reason) + "}";
+        }
+    }
+
+    private static final class ExclusionBuilder {
+        String file;
+        String reason;
+
+        Exclusion build(Path path, String label) {
+            if (file == null || file.isBlank())
+                throw invalid(path, "exclusion " + label + " needs file");
+            if (reason == null || reason.isBlank())
+                throw invalid(path, "exclusion " + label + " needs reason");
+            return new Exclusion(file.replace('\\', '/'), glob(file), reason);
         }
     }
 

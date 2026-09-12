@@ -60,6 +60,14 @@ final class Formats {
             b.append("> Measured over a working tree with uncommitted changes, so this"
                     + " describes a state no commit contains. Not a baseline.\n\n");
 
+        if (!r.excludedSources().isEmpty()) {
+            b.append("## Excluded sources (").append(r.excludedSources().size()).append(")\n\n");
+            for (MetricsConfig.ExcludedSource source : r.excludedSources())
+                b.append("- `").append(source.file()).append("` — ")
+                    .append(source.reason()).append('\n');
+            b.append('\n');
+        }
+
         if (comparison != null) b.append(comparison.markdown());
 
         if (r.smells().isEmpty()) {
@@ -321,6 +329,12 @@ final class Formats {
         if (p != null)
             b.append("\"provenance\": ").append(p.json()).append(", ");
         b.append("\"configuration\": ").append(config.json());
+        b.append(", \"excludedSources\": [");
+        for (int i = 0; i < r.excludedSources().size(); i++) {
+            if (i > 0) b.append(", ");
+            b.append(r.excludedSources().get(i).json());
+        }
+        b.append(']');
         if (comparison != null)
             b.append(", \"baseline\": ").append(comparison.json());
         b.append('}');

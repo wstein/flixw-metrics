@@ -17,14 +17,27 @@ public final class PluginIntegrationTest {
         Path project = Flix075AdapterTest.copyFixture(Path.of(args[0]));
         Path cache = Files.createTempDirectory("flixw-metrics-integration-cache-");
         try {
+            Path generated = project.resolve("src/generated/Data.flix");
+            Files.createDirectories(generated.getParent());
+            Files.writeString(generated, "pub def generated(): String = \"" + "x".repeat(200)
+                + "\"\n");
+            Files.writeString(project.resolve(MetricsConfig.FILE), """
+                exclusions.generated.file=src/generated/**
+                exclusions.generated.reason=generated integration fixture
+                """);
             Path plugin = Path.of(args[1]);
             Path compiler = Path.of(args[2]);
             verifyArtifact(plugin);
             String cold = run(project, cache, plugin, compiler, System.getProperty("java.home"),
                 "json");
             JsonObject coldJson = JsonParser.parseString(cold).getAsJsonObject();
-            require(coldJson.getAsJsonObject("summary").get("definitions").getAsInt() == 6,
+            require(coldJson.getAsJsonObject("summary").get("definitions").getAsInt() == 7,
                 "cold stdout parses as one report with fixture measurements");
+            require(coldJson.getAsJsonObject("summary").get("excludedFiles").getAsInt() == 1
+                    && coldJson.getAsJsonArray("excludedSources").size() == 1
+                    && coldJson.getAsJsonArray("smells").asList().stream().noneMatch(element ->
+                        element.getAsJsonObject().get("file").getAsString().contains("generated")),
+                "packaged reports compile but exclude a configured generated source");
             require(coldJson.getAsJsonObject("summary").get("datalogRules").getAsInt() == 1
                     && coldJson.getAsJsonObject("summary").get("datalogFacts").getAsInt() == 1,
                 "packaged reports preserve separate Datalog rule and fact counts");

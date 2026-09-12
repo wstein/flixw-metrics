@@ -23,7 +23,12 @@ import java.util.Locale;
  * scanning for {@code def} is the text-scan approach this plugin exists to avoid, and it gets
  * comments, strings and local definitions wrong. Those come from the compiler.
  */
-record SourceMetrics(int lines, int longestLine, int linesOverLimit, List<Smell> smells) {
+record SourceMetrics(int lines, int longestLine, int linesOverLimit, List<Smell> smells,
+                     List<MetricsConfig.ExcludedSource> excludedSources) {
+
+    SourceMetrics(int lines, int longestLine, int linesOverLimit, List<Smell> smells) {
+        this(lines, longestLine, linesOverLimit, smells, List.of());
+    }
 
     /**
      * A hundred UTF-16 code units, matching Java's precisely reproducible string length.
@@ -44,7 +49,14 @@ record SourceMetrics(int lines, int longestLine, int linesOverLimit, List<Smell>
         int longest = 0;
         int over = 0;
         List<Smell> smells = new ArrayList<>();
+        List<MetricsConfig.ExcludedSource> excluded = new ArrayList<>();
         for (Path source : sources) {
+            String relative = projectRoot.relativize(source).toString().replace('\\', '/');
+            MetricsConfig.ExcludedSource excludedSource = config.excludedSource(relative);
+            if (excludedSource != null) {
+                excluded.add(excludedSource);
+                continue;
+            }
             List<String> text = Files.readAllLines(source, StandardCharsets.UTF_8);
             lines += text.size();
             for (int i = 0; i < text.size(); i++) {
@@ -56,13 +68,12 @@ record SourceMetrics(int lines, int longestLine, int linesOverLimit, List<Smell>
                 if (config.enabled(RuleDefinitions.LINE_TOO_LONG) && length > lineLimit) {
                     over++;
                     smells.add(new Smell("line-too-long",
-                        projectRoot.relativize(source).toString() + ":" + (i + 1),
-                        projectRoot.relativize(source).toString(), i + 1,
+                        relative + ":" + (i + 1), relative, i + 1,
                         length, lineLimit, "", RuleDefinitions.LINE_TOO_LONG.unit()));
                 }
             }
         }
-        return new SourceMetrics(lines, longest, over, List.copyOf(smells));
+        return new SourceMetrics(lines, longest, over, List.copyOf(smells), List.copyOf(excluded));
     }
 
     /**

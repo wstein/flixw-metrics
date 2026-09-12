@@ -154,7 +154,7 @@ public final class FormatsTest {
                 0, 0, 1, false, false, true, List.of());
             var module = new dev.flixw.metrics.sdk.CompilerModel.ModuleInfo("A", 1, 2, 1, 2);
             Metrics.Report localized = new Metrics.Report(1, 1, 1, 0, 0, 3, 0, 0, 0,
-                0, 0, 0, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, List.of(
+                0, 0, 0, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, List.of(), List.of(
                     new SourceMetrics.Smell("dense", "A.f", "src/A.flix", 1,
                         1.5, 1.0, "", "complexity per line")),
                 List.of(new Rankings.Rank("densest", "A.f", "src/A.flix", 1,
@@ -185,7 +185,7 @@ public final class FormatsTest {
 
     private static Metrics.Report report(List<SourceMetrics.Smell> smells) {
         return new Metrics.Report(1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            10, 8, 1, 1, 0, 10, 40, 0, 0, 0, 0, 1, 100, 100, smells,
+            10, 8, 1, 1, 0, 10, 40, 0, 0, 0, 0, 1, 100, 100, List.of(), smells,
             List.of(new Rankings.Rank("longest", "A.b", "src/A.flix", 3, "9 lines")),
             List.of(), List.of());
     }

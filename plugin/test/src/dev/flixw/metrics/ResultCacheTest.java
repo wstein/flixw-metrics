@@ -79,8 +79,11 @@ public final class ResultCacheTest {
                 "Foo.od\td", "Foo", "src/A.flix", 3, 40, 30, 2, 9, 1, 4, 12, 31, 7, "Foo.odd.loop",
                 2, 5, 6, true, false, true, List.of("IO", "Net"));
             var mod = new dev.flixw.metrics.sdk.CompilerModel.ModuleInfo("Foo", 1, 40, 2, 3);
+            var sourceInfo = new dev.flixw.metrics.sdk.CompilerModel.SourceInfo("src/A.flix",
+                new dev.flixw.metrics.sdk.CompilerModel.LineInfo(40, 30, 4, 3, 3));
             var model = new dev.flixw.metrics.sdk.CompilerModel.Model(List.of(def), List.of(mod),
-                new dev.flixw.metrics.sdk.CompilerModel.LineInfo(40, 30, 4, 3, 3), 1, 2, 3, 4, 5, 6);
+                new dev.flixw.metrics.sdk.CompilerModel.LineInfo(40, 30, 4, 3, 3), 1, 2, 3, 4, 5, 6,
+                List.of(sourceInfo));
             ResultCache.write(pluginCache, base, Wire.encode(model));
             var back = Wire.decode(ResultCache.read(pluginCache, base));
             require(back != null, "a written entry reads back");
@@ -88,6 +91,7 @@ public final class ResultCacheTest {
                 "every definition field survives, including a tab inside a symbol");
             require(back.modules().equals(model.modules()), "modules survive");
             require(back.lines().equals(model.lines()), "line counts survive");
+            require(back.sources().equals(model.sources()), "per-source line counts survive");
             require(back.traits() == 1 && back.typeAliases() == 6, "the counts survive");
             require(Wire.decode("v\t99\n") == null, "an unknown wire version is a miss");
             require(Wire.decode("not a record at all") == null, "a corrupt entry is a miss");

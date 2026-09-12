@@ -39,7 +39,8 @@ final class Metrics {
                   int commentLines, int docCommentLines, int blankLines, int commentPercent,
                   int longestLine, int linesOverLimit, int datalogRules, int datalogFacts,
                   int widestReturn, int tests, int docCoveragePercent,
-                  int purityPercent, List<SourceMetrics.Smell> smells, List<Rankings.Rank> ranks,
+                  int purityPercent, List<MetricsConfig.ExcludedSource> excludedSources,
+                  List<SourceMetrics.Smell> smells, List<Rankings.Rank> ranks,
                   List<CompilerModel.DefInfo> defs, List<CompilerModel.ModuleInfo> modulesList) {
 
         /**
@@ -47,7 +48,7 @@ final class Metrics {
          * nothing reads this report back, so a schema change is a promise to a consumer rather
          * than a compatibility question for us. {@link Wire#VERSION} is the cache's own guard.
          */
-        static final int SCHEMA = 16;
+        static final int SCHEMA = 17;
 
 
         String render(Format format) { return render(format, null, MetricsConfig.defaults()); }
@@ -130,6 +131,12 @@ final class Metrics {
             b.append("  \"configuration\": ").append(config.json()).append(",\n");
             if (comparison != null)
                 b.append("  \"baseline\": ").append(comparison.json()).append(",\n");
+            b.append("  \"excludedSources\": [");
+            for (int i = 0; i < excludedSources.size(); i++) {
+                if (i > 0) b.append(", ");
+                b.append(excludedSources.get(i).json());
+            }
+            b.append("],\n");
             // Nested, because two of the totals are named for things that also have lists --
             // `definitions` and `modules` -- and a flat object emitted both. JSON allows a
             // duplicate key and parsers keep the last, so the count was silently replaced by
@@ -181,6 +188,12 @@ final class Metrics {
             }
             b.append('\n').append("smells: ").append(smells.size()).append('\n');
             for (SourceMetrics.Smell smell : smells) b.append(smell.text()).append('\n');
+            if (!excludedSources.isEmpty()) {
+                b.append('\n').append("excluded sources: ").append(excludedSources.size()).append('\n');
+                for (MetricsConfig.ExcludedSource source : excludedSources)
+                    b.append("  ").append(source.file()).append("  (")
+                        .append(source.reason()).append(")\n");
+            }
             if (comparison != null) b.append(comparison.text());
             return b.toString();
         }
@@ -188,7 +201,8 @@ final class Metrics {
         /** The order the two renderers share, so they cannot drift apart field by field. */
         private String[][] fields(boolean machine) {
             return new String[][] {
-                {"files", "" + files}, {"modules", "" + modules},
+                {"files", "" + files}, {"analyzedFiles", "" + (files - excludedSources.size())},
+                {"excludedFiles", "" + excludedSources.size()}, {"modules", "" + modules},
                 {"definitions", "" + definitions}, {"localDefinitions", "" + localDefinitions},
                 {"effectfulDefinitions", "" + effectfulDefinitions}, {"cognitive", "" + cognitive},
                 {"traits", "" + traits}, {"instances", "" + instances}, {"enums", "" + enums},
@@ -229,6 +243,7 @@ final class Metrics {
 
     static Report of(int files, CompilerModel.Model m, SourceMetrics text, MetricsConfig config) {
         List<CompilerModel.DefInfo> defs = m.defs();
+        CompilerModel.LineInfo lines = includedLines(m, config);
         int localDefs = defs.stream().mapToInt(CompilerModel.DefInfo::localDefs).sum();
         int effectful = (int) defs.stream().filter(d -> !d.isPure()).count();
         int cognitive = defs.stream().mapToInt(CompilerModel.DefInfo::cognitive).sum();
@@ -236,23 +251,44 @@ final class Metrics {
         int datalogFacts = defs.stream().mapToInt(CompilerModel.DefInfo::datalogFacts).sum();
         int widestReturn = defs.stream().mapToInt(CompilerModel.DefInfo::returnWidth).max().orElse(0);
         List<CompilerModel.DefInfo> api = defs.stream()
-            .filter(d -> d.isPublic() && !d.isTest() && !Thresholds.inTests(d.file())).toList();
+            .filter(d -> d.isPublic() && !d.isTest() && !Thresholds.inTests(d.file())
+                && !config.isExcluded(d.file())).toList();
         List<SourceMetrics.Smell> smells = new java.util.ArrayList<>(text.smells());
         smells.addAll(Thresholds.apply(defs, m.modules(), config));
-        smells.removeIf(config::isSuppressed);
+        smells.removeIf(smell -> config.isSuppressed(smell) || config.isExcluded(smell.file()));
         smells.sort(java.util.Comparator.comparing(SourceMetrics.Smell::file)
             .thenComparingInt(SourceMetrics.Smell::line)
             .thenComparing(SourceMetrics.Smell::rule));
         return new Report(files, m.modules().size(), defs.size(), localDefs, effectful, cognitive,
             m.traits(), m.instances(), m.enums(), m.structs(), m.effects(), m.typeAliases(),
-            m.lines().total(), m.lines().code(), m.lines().comment(), m.lines().docComment(),
-            m.lines().blank(), percent(m.lines().comment() + m.lines().docComment(),
-                                       m.lines().total()),
+            lines.total(), lines.code(), lines.comment(), lines.docComment(),
+            lines.blank(), percent(lines.comment() + lines.docComment(), lines.total()),
             text.longestLine(), text.linesOverLimit(), datalogRules, datalogFacts, widestReturn,
             (int) defs.stream().filter(CompilerModel.DefInfo::isTest).count(),
             percent(api.stream().filter(CompilerModel.DefInfo::hasDoc).count(), api.size()),
             percent(api.stream().filter(CompilerModel.DefInfo::isPure).count(), api.size()),
-            List.copyOf(smells), Rankings.of(defs, m.modules()), defs, m.modules());
+            text.excludedSources(), List.copyOf(smells),
+            Rankings.of(defs, m.modules()).stream()
+                .filter(rank -> !config.isExcluded(rank.file())).toList(), defs, m.modules());
+    }
+
+    private static CompilerModel.LineInfo includedLines(CompilerModel.Model model,
+                                                         MetricsConfig config) {
+        if (model.sources().isEmpty()) return model.lines();
+        int total = 0;
+        int code = 0;
+        int comment = 0;
+        int doc = 0;
+        int blank = 0;
+        for (CompilerModel.SourceInfo source : model.sources()) {
+            if (config.isExcluded(source.file())) continue;
+            total += source.lines().total();
+            code += source.lines().code();
+            comment += source.lines().comment();
+            doc += source.lines().docComment();
+            blank += source.lines().blank();
+        }
+        return new CompilerModel.LineInfo(total, code, comment, doc, blank);
     }
 
     /**
