@@ -143,6 +143,10 @@ the effective rule state and limits. Nothing fails the build unless a caller sup
 
 ## What the numbers mean
 
+The default thresholds are checked against pinned real-world projects, including the compiler's
+own Prelude. See the [calibration report](docs/CALIBRATION.md) for the corpus, distributions,
+false-positive review, timings, and rated follow-up suggestions.
+
 Three things get measured, and where each comes from is deliberate:
 
 - **From the compiler's typed AST** — definitions, modules, local definitions, declared
