@@ -90,6 +90,27 @@ The gate exits 1 when an unsuppressed finding meets or exceeds the selected regi
 (`note`, `warning`, or `error`), after still writing the complete report. Usage or analysis
 failures remain exit 2, so policy failure is distinguishable from a broken run.
 
+To adopt metrics without making existing debt block every change, capture a native JSON report
+on the branch you want to treat as the baseline, commit it, and gate only regressions:
+
+```console
+./flixw metrics report --format json > metrics-baseline.json
+./flixw metrics report --baseline metrics-baseline.json --fail-on-new warning
+```
+
+`--fail-on-new` exits 1 only for a new finding, or for the same stable finding whose threshold
+multiple increased, at or above the selected severity. Existing and improved findings do not
+fail it. A moved finding is new at its new location and resolved at its old location, because
+location is part of the observation ID. The report separately lists new, worsened, and resolved
+observations and counts those retained; SARIF labels current results `new`, `updated`, or
+`unchanged`.
+
+The baseline must be a native JSON report with the current `schemaVersion` and the same effective
+rule/suppression policy. A missing, malformed, stale-schema, or differently configured baseline
+exits 2 instead of silently comparing unlike policies. Relative baseline paths resolve from the
+Flix project root. `--baseline` can be used without a gate to inspect the delta, and `--fail-on`
+can still be combined with it when both all current debt and new debt should be enforced.
+
 Four output formats:
 
 | | for |
@@ -139,7 +160,8 @@ incomplete suppressions stop with a diagnostic instead of silently weakening the
 
 Configuration never changes measurements or rankings, and it is deliberately absent from the
 measurement-cache key: editing policy takes effect immediately on a warm run. Reports include
-the effective rule state and limits. Nothing fails the build unless a caller supplies `--fail-on`.
+the effective rule state, limits, and policy digest. Nothing fails the build unless a caller
+supplies `--fail-on` or `--fail-on-new`.
 
 ## What the numbers mean
 

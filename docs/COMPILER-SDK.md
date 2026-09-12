@@ -214,6 +214,14 @@ reports: the project that needs a 200-line definition exists and its author know
 may explicitly choose `--fail-on note|warning|error`; the full report is still written and exit
 status 1 then means policy failure, distinct from usage or analysis failure at status 2.
 
+`--baseline report.json --fail-on-new warning` narrows that policy failure to new warning/error
+observations and stable observations whose reported `overBy` increased. The baseline reader runs
+in both the outer cache-hit JVM and the compiler bridge without a JSON dependency. It requires the
+native report's schema and effective configuration (including scoped suppressions) to match;
+incompatible input is a usage failure at status 2. A source move becomes new plus resolved because
+the stable observation ID intentionally includes location. JSON and human reports retain the
+resolved side explicitly, while SARIF gives current results its standard baseline states.
+
 `RuleDefinitions` is the single catalog for stable IDs, categories, SARIF severity, descriptions,
 default limits, and remediation. A tracked `.flixw-metrics.properties` may override a numeric
 limit, disable a rule, or suppress a scoped finding with a mandatory reason and optional expiry.

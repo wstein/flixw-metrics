@@ -145,8 +145,11 @@ Ratings are confidence that the action improves signal, from 1 (speculative) to 
 | **5/5** | Keep separate Datalog rule and fact totals. | Manual source counts match 32 rules and 28 facts across a real project and four official examples; end-to-end tests now preserve the distinction. |
 | **5/5** | Keep the other structural defaults. | The much larger engine produces meaningful upper tails and its findings remain localized to complex rendering, interop, and orchestration code. |
 | **5/5** | Gate `warning` or higher in CI; review `note` findings as backlog. | Documentation and formatting still dominate the expanded corpus. Treating all findings as equivalent would hide the structural signal. |
+| **5/5** | Add a baseline-aware new-finding gate. **Done.** | Teams can adopt the warning gate without first paying all existing debt; schema and effective-policy checks prevent invalid comparisons. |
 | **4/5** | Use project configuration for established line-length and documentation conventions. | A universal increase would erase useful notes for compact projects; the existing per-rule limits and suppressions preserve local policy. |
-| **3/5** | Repeat cold timings in CI before setting a performance budget. | The cache-hit result is strong, but four local single samples are not a stable cross-machine benchmark. |
+| **4/5** | Automate the pinned calibration corpus as a scheduled workflow. | A scheduled run can detect compiler or analyzer drift without adding network-heavy calibration to every pull request. |
+| **4/5** | Add first-class exclusions for generated or embedded-data sources. | The 4,109-unit embedded-data line is useful project data but poor line-quality signal; explicit exclusions are clearer than many rule suppressions. |
+| **3/5** | Establish performance budgets from repeated CI measurements. | The cache-hit result is strong, but four local single samples are not a stable cross-machine benchmark. |
 
 Re-run this calibration when the compiler adapter changes, when a default threshold changes, or
 when the corpus gains a materially different Flix style. Compare distributions and reviewed
