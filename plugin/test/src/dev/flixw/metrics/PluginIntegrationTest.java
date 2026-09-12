@@ -5,6 +5,7 @@ import com.google.gson.JsonParser;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 import java.util.jar.JarFile;
 
@@ -41,6 +42,28 @@ public final class PluginIntegrationTest {
             JsonObject warmJson = JsonParser.parseString(warm).getAsJsonObject();
             require(withoutTime(coldJson).equals(withoutTime(warmJson)),
                 "a warm report equals the cold report apart from its fresh timestamp");
+
+            Path baseline = project.resolve("metrics-baseline.json");
+            Files.writeString(baseline, cold);
+            String comparedWarm = run(project, cache, plugin, compiler,
+                project.resolve("no-such-java-home").toString(), "json",
+                "--baseline", baseline.toString(), "--fail-on-new", "warning");
+            JsonObject comparison = JsonParser.parseString(comparedWarm).getAsJsonObject()
+                .getAsJsonObject("baseline");
+            require(comparison.get("newCount").getAsInt() == 0
+                    && comparison.get("worsenedCount").getAsInt() == 0
+                    && comparison.get("resolvedCount").getAsInt() == 0,
+                "an unchanged warm run passes a new-findings gate");
+
+            JsonObject emptyBaseline = coldJson.deepCopy();
+            emptyBaseline.add("smells", new com.google.gson.JsonArray());
+            Files.writeString(baseline, emptyBaseline.toString());
+            String failed = runExpecting(project, cache, plugin, compiler,
+                project.resolve("no-such-java-home").toString(), "json", 1,
+                "--baseline", baseline.toString(), "--fail-on-new", "note");
+            require(JsonParser.parseString(failed).getAsJsonObject().getAsJsonObject("baseline")
+                    .get("newCount").getAsInt() > 0,
+                "a failed baseline gate still writes the complete parseable report");
             String sarif = run(project, cache, plugin, compiler,
                 project.resolve("no-such-java-home").toString(), "sarif");
             JsonObject sarifJson = JsonParser.parseString(sarif).getAsJsonObject();
@@ -70,9 +93,18 @@ public final class PluginIntegrationTest {
     }
 
     private static String run(Path project, Path cache, Path plugin, Path compiler,
-                              String javaHome, String format) throws Exception {
-        ProcessBuilder builder = new ProcessBuilder(System.getProperty("java.home") + "/bin/java",
-            "-jar", plugin.toString(), "report", "--format", format);
+                              String javaHome, String format, String... extra) throws Exception {
+        return runExpecting(project, cache, plugin, compiler, javaHome, format, 0, extra);
+    }
+
+    private static String runExpecting(Path project, Path cache, Path plugin, Path compiler,
+                                       String javaHome, String format, int expected,
+                                       String... extra) throws Exception {
+        java.util.ArrayList<String> command = new java.util.ArrayList<>(List.of(
+            System.getProperty("java.home") + "/bin/java", "-jar", plugin.toString(),
+            "report", "--format", format));
+        command.addAll(List.of(extra));
+        ProcessBuilder builder = new ProcessBuilder(command);
         Map<String, String> env = builder.environment();
         env.put("FLIXW_ABI_VERSION", "1");
         env.put("FLIXW_PROJECT_ROOT", project.toString());
@@ -85,8 +117,9 @@ public final class PluginIntegrationTest {
             String stdout = new String(process.getInputStream().readAllBytes(),
                 java.nio.charset.StandardCharsets.UTF_8);
             int status = process.waitFor();
-            if (status != 0)
-                throw new AssertionError("plugin exited " + status + ": " + Files.readString(errors));
+            if (status != expected)
+                throw new AssertionError("plugin exited " + status + " instead of " + expected
+                    + ": " + Files.readString(errors));
             return stdout;
         } finally {
             Files.deleteIfExists(errors);

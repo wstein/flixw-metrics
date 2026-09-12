@@ -1,5 +1,6 @@
 package dev.flixw.metrics;
 
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Locale;
 
@@ -112,6 +113,35 @@ public final class FormatsTest {
         require(provenSarif.contains("\"version\": \"1.2.3\"")
                 && provenSarif.contains("\"commit\": \"abc123\""),
             "SARIF identifies the source revision and analyzer that produced it");
+
+        SourceMetrics.Smell added = report.smells().get(0);
+        SourceMetrics.Smell updated = report.smells().get(1);
+        Baseline.Snapshot before = new Baseline.Snapshot(updated.id(), updated.rule(),
+            updated.subject(), updated.file(), updated.line(), 13, 12, updated.unit(), 1.08);
+        Baseline.Snapshot resolved = new Baseline.Snapshot("gone", "dense", "A.gone",
+            "src/A.flix", 40, 1.2, 1, "complexity per line", 1.2);
+        Baseline.Comparison comparison = new Baseline.Comparison(Path.of("baseline.json"),
+            List.of(added), List.of(new Baseline.Change(before, updated)), List.of(resolved), 3);
+        String comparedJson = report.render(Metrics.Format.JSON, provenance,
+            MetricsConfig.defaults(), comparison);
+        require(comparedJson.contains("\"baseline\": {")
+                && comparedJson.contains("\"newCount\": 1")
+                && comparedJson.contains("\"resolvedCount\": 1"),
+            "native JSON reports every baseline outcome separately");
+        String comparedText = report.render(Metrics.Format.TEXT, provenance,
+            MetricsConfig.defaults(), comparison);
+        require(comparedText.contains("baseline: 1 new, 1 worsened, 1 resolved, 3 retained"),
+            "terminal output summarizes the baseline delta");
+        String comparedMd = report.render(Metrics.Format.MARKDOWN, provenance,
+            MetricsConfig.defaults(), comparison);
+        require(comparedMd.contains("## Baseline changes") && comparedMd.contains("Resolved: 1")
+                && comparedMd.contains("`A.gone` — `dense`"),
+            "Markdown separates baseline changes from current findings");
+        String comparedSarif = report.render(Metrics.Format.SARIF, provenance,
+            MetricsConfig.defaults(), comparison);
+        require(comparedSarif.contains("\"baselineState\": \"new\"")
+                && comparedSarif.contains("\"baselineState\": \"updated\""),
+            "SARIF labels new and worsened current results");
         System.out.println("FormatsTest: ok");
     }
 

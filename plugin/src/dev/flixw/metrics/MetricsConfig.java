@@ -2,8 +2,11 @@ package dev.flixw.metrics;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.HashMap;
@@ -91,7 +94,8 @@ final class MetricsConfig {
 
     String json() {
         StringBuilder out = new StringBuilder("{\"source\": ")
-            .append(SourceMetrics.Smell.quote(FILE)).append(", \"rules\": {");
+            .append(SourceMetrics.Smell.quote(FILE)).append(", \"policyDigest\": ")
+            .append(SourceMetrics.Smell.quote(policyDigest())).append(", \"rules\": {");
         List<RuleDefinitions.Rule> rules = RuleDefinitions.all();
         for (int i = 0; i < rules.size(); i++) {
             RuleDefinitions.Rule rule = rules.get(i);
@@ -103,6 +107,26 @@ final class MetricsConfig {
         }
         long active = suppressions.stream().filter(s -> s.active(today)).count();
         return out.append("}, \"activeSuppressions\": ").append(active).append('}').toString();
+    }
+
+    /** Identity of every effective rule and suppression, used to reject unlike baselines. */
+    private String policyDigest() {
+        StringBuilder policy = new StringBuilder(policySummary());
+        suppressions.stream().filter(s -> s.active(today)).forEach(s -> policy.append('\0')
+            .append(s.rule()).append('\0')
+            .append(s.file() == null ? "" : s.file().pattern()).append('\0')
+            .append(s.subject() == null ? "" : s.subject().pattern()));
+        try {
+            byte[] bytes = MessageDigest.getInstance("SHA-256")
+                .digest(policy.toString().getBytes(StandardCharsets.UTF_8));
+            StringBuilder out = new StringBuilder(bytes.length * 2);
+            for (byte value : bytes)
+                out.append(Character.forDigit((value >> 4) & 0xf, 16))
+                    .append(Character.forDigit(value & 0xf, 16));
+            return out.toString();
+        } catch (NoSuchAlgorithmException e) {
+            throw new AssertionError("the JVM has no SHA-256", e);
+        }
     }
 
     private static String number(double value) {

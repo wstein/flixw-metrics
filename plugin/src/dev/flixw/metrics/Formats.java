@@ -40,6 +40,11 @@ final class Formats {
     private static final int SHOWN_PER_RULE = 10;
 
     static String markdown(Metrics.Report r, Provenance p, MetricsConfig config) {
+        return markdown(r, p, config, null);
+    }
+
+    static String markdown(Metrics.Report r, Provenance p, MetricsConfig config,
+                           Baseline.Comparison comparison) {
         StringBuilder b = new StringBuilder("# Flix metrics\n\n");
         b.append("| | |\n|---|---|\n");
         if (p != null) {
@@ -54,6 +59,8 @@ final class Formats {
         if (p != null && p.dirty())
             b.append("> Measured over a working tree with uncommitted changes, so this"
                     + " describes a state no commit contains. Not a baseline.\n\n");
+
+        if (comparison != null) b.append(comparison.markdown());
 
         if (r.smells().isEmpty()) {
             b.append("No findings.\n\n");
@@ -277,6 +284,11 @@ final class Formats {
     }
 
     static String sarif(Metrics.Report r, Provenance p, MetricsConfig config) {
+        return sarif(r, p, config, null);
+    }
+
+    static String sarif(Metrics.Report r, Provenance p, MetricsConfig config,
+                        Baseline.Comparison comparison) {
         StringBuilder b = new StringBuilder();
         b.append("{\n  \"$schema\": \"https://json.schemastore.org/sarif-2.1.0.json\",\n");
         b.append("  \"version\": \"2.1.0\",\n  \"runs\": [\n    {\n");
@@ -308,7 +320,10 @@ final class Formats {
         b.append(",\n      \"properties\": {");
         if (p != null)
             b.append("\"provenance\": ").append(p.json()).append(", ");
-        b.append("\"configuration\": ").append(config.json()).append('}');
+        b.append("\"configuration\": ").append(config.json());
+        if (comparison != null)
+            b.append(", \"baseline\": ").append(comparison.json());
+        b.append('}');
         b.append(",\n");
         b.append("      \"results\": [\n");
         for (int i = 0; i < r.smells().size(); i++) {
@@ -318,6 +333,10 @@ final class Formats {
                     .append(SourceMetrics.Smell.quote(RuleDefinitions.byId(s.rule()).level()));
             b.append(", \"partialFingerprints\": {\"flixwMetricsFinding/v1\": ")
                     .append(SourceMetrics.Smell.quote(s.id())).append("}");
+            if (comparison != null)
+                b.append(", \"baselineState\": ")
+                    .append(SourceMetrics.Smell.quote(comparison.isAdded(s.id()) ? "new"
+                        : comparison.isWorsened(s.id()) ? "updated" : "unchanged"));
             b.append(", \"message\": {\"text\": ")
                     .append(SourceMetrics.Smell.quote(s.subject() + ": " + s.detail()));
             b.append('}');

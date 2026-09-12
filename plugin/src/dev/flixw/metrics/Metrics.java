@@ -47,7 +47,7 @@ final class Metrics {
          * nothing reads this report back, so a schema change is a promise to a consumer rather
          * than a compatibility question for us. {@link Wire#VERSION} is the cache's own guard.
          */
-        static final int SCHEMA = 15;
+        static final int SCHEMA = 16;
 
 
         String render(Format format) { return render(format, null, MetricsConfig.defaults()); }
@@ -57,11 +57,16 @@ final class Metrics {
         }
 
         String render(Format format, Provenance p, MetricsConfig config) {
+            return render(format, p, config, null);
+        }
+
+        String render(Format format, Provenance p, MetricsConfig config,
+                      Baseline.Comparison comparison) {
             return switch (format) {
-                case JSON -> json(p, config);
-                case MARKDOWN -> Formats.markdown(this, p, config);
-                case SARIF -> Formats.sarif(this, p, config);
-                case TEXT -> text();
+                case JSON -> json(p, config, comparison);
+                case MARKDOWN -> Formats.markdown(this, p, config, comparison);
+                case SARIF -> Formats.sarif(this, p, config, comparison);
+                case TEXT -> text(comparison);
             };
         }
 
@@ -117,12 +122,14 @@ final class Metrics {
             return fields(false);
         }
 
-        private String json(Provenance p, MetricsConfig config) {
+        private String json(Provenance p, MetricsConfig config, Baseline.Comparison comparison) {
             StringBuilder b = new StringBuilder("{\n");
             b.append("  \"schemaVersion\": ").append(SCHEMA).append(",\n");
             if (p != null)
                 b.append("  \"provenance\": ").append(p.json()).append(",\n");
             b.append("  \"configuration\": ").append(config.json()).append(",\n");
+            if (comparison != null)
+                b.append("  \"baseline\": ").append(comparison.json()).append(",\n");
             // Nested, because two of the totals are named for things that also have lists --
             // `definitions` and `modules` -- and a flat object emitted both. JSON allows a
             // duplicate key and parsers keep the last, so the count was silently replaced by
@@ -159,7 +166,7 @@ final class Metrics {
             return b.toString();
         }
 
-        private String text() {
+        private String text(Baseline.Comparison comparison) {
             StringBuilder b = new StringBuilder();
             for (String[] pair : fields(false))
                 b.append(pair[0]).append(": ").append(pair[1]).append('\n');
@@ -174,6 +181,7 @@ final class Metrics {
             }
             b.append('\n').append("smells: ").append(smells.size()).append('\n');
             for (SourceMetrics.Smell smell : smells) b.append(smell.text()).append('\n');
+            if (comparison != null) b.append(comparison.text());
             return b.toString();
         }
 

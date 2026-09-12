@@ -69,13 +69,15 @@ public final class Main {
                 // than on the next cache miss.
                 Metrics.Report report = Metrics.of(sources.size(), hit,
                     SourceMetrics.measure(context.projectRoot(), sources, config), config);
+                Baseline.Comparison comparison = options.compare(context.projectRoot(), report,
+                    config);
                 System.out.print(report.render(options.format(),
-                    Provenance.of(context, sources, version()), config));
-                if (options.shouldFail(report)) System.exit(1);
+                    Provenance.of(context, sources, version()), config, comparison));
+                if (options.shouldFail(report, comparison)) System.exit(1);
                 return;
             }
             System.exit(spawnBridge(context, args));
-        } catch (Usage | Metrics.Failure | MetricsConfig.Invalid e) {
+        } catch (Usage | Metrics.Failure | MetricsConfig.Invalid | Baseline.Invalid e) {
             System.err.println("metrics: " + e.getMessage());
             System.exit(2);
         } catch (IOException e) {
@@ -108,9 +110,10 @@ public final class Main {
             // and parsing it back out of a stream the compiler also writes to would be reading
             // our own output past whatever Flix chose to print alongside it.
             Options options = parseOptions(args);
+            Baseline.Comparison comparison = options.compare(context.projectRoot(), report, config);
             System.out.print(report.render(options.format(),
-                                           Provenance.of(context, sources, version()), config));
-            if (options.shouldFail(report)) System.exit(1);
+                Provenance.of(context, sources, version()), config, comparison));
+            if (options.shouldFail(report, comparison)) System.exit(1);
         } catch (LinkageError e) {
             // The promise is a sentence, never a stack trace, and the capability probe cannot
             // enumerate every member the adapter touches. Whatever it misses arrives here: the
@@ -119,7 +122,8 @@ public final class Main {
             System.err.println("       " + e);
             System.err.println("       run: ./flixw metrics capabilities");
             System.exit(2);
-        } catch (Usage | Metrics.Failure | MetricsConfig.Invalid | CompilerModel.ModelFailure e) {
+        } catch (Usage | Metrics.Failure | MetricsConfig.Invalid | Baseline.Invalid
+                | CompilerModel.ModelFailure e) {
             System.err.println("metrics: " + e.getMessage());
             System.exit(2);
         } catch (IOException e) {
@@ -190,13 +194,25 @@ public final class Main {
         return version == null ? "development" : version;
     }
 
-    record Options(Metrics.Format format, String failOn) {
-        boolean shouldFail(Metrics.Report report) {
-            if (failOn == null) return false;
-            int threshold = RuleDefinitions.levelRank(failOn);
-            return report.smells().stream().anyMatch(smell -> RuleDefinitions.levelRank(
-                RuleDefinitions.byId(smell.rule()).level()) >= threshold);
+    record Options(Metrics.Format format, String failOn, Path baseline, String failOnNew) {
+        boolean shouldFail(Metrics.Report report, Baseline.Comparison comparison) {
+            boolean existing = false;
+            if (failOn != null) {
+                int threshold = RuleDefinitions.levelRank(failOn);
+                existing = report.smells().stream().anyMatch(smell -> RuleDefinitions.levelRank(
+                    RuleDefinitions.byId(smell.rule()).level()) >= threshold);
+            }
+            return existing || failOnNew != null && comparison != null
+                && comparison.crosses(failOnNew);
         }
+
+        Baseline.Comparison compare(Path projectRoot, Metrics.Report report, MetricsConfig config)
+                throws IOException {
+            if (baseline == null) return null;
+            Path resolved = baseline.isAbsolute() ? baseline : projectRoot.resolve(baseline);
+            return Baseline.compare(resolved.normalize(), report, config);
+        }
+
     }
 
     static Options parseOptions(String[] args) {
@@ -204,6 +220,8 @@ public final class Main {
         if (!rest.isEmpty() && "report".equals(rest.get(0))) rest.remove(0);
         Metrics.Format format = Metrics.Format.TEXT;
         String failOn = null;
+        Path baseline = null;
+        String failOnNew = null;
         for (int i = 0; i < rest.size(); i += 2) {
             if (i + 1 >= rest.size()) throw usageError();
             switch (rest.get(i)) {
@@ -215,20 +233,32 @@ public final class Main {
                             + " (expected note, warning or error)");
                     failOn = level;
                 }
+                case "--baseline" -> baseline = Path.of(rest.get(i + 1));
+                case "--fail-on-new" -> {
+                    String level = rest.get(i + 1);
+                    if (!List.of("note", "warning", "error").contains(level))
+                        throw new Usage("unknown failure level " + level
+                            + " (expected note, warning or error)");
+                    failOnNew = level;
+                }
                 default -> throw usageError();
             }
         }
-        return new Options(format, failOn);
+        if (failOnNew != null && baseline == null)
+            throw new Usage("--fail-on-new requires --baseline");
+        return new Options(format, failOn, baseline, failOnNew);
     }
 
     private static Usage usageError() {
         return new Usage("usage: ./flixw metrics [report] [--format text|json|md|sarif]"
-            + " [--fail-on note|warning|error]");
+            + " [--fail-on note|warning|error] [--baseline report.json]"
+            + " [--fail-on-new note|warning|error]");
     }
 
     private static void usage() {
         System.out.println("usage: ./flixw metrics [report] [--format text|json|md|sarif]"
-            + " [--fail-on note|warning|error]\n"
+            + " [--fail-on note|warning|error] [--baseline report.json]"
+            + " [--fail-on-new note|warning|error]\n"
             + "       ./flixw metrics capabilities\n\n"
             + "Reads typed compiler data through a supported compiler adapter.\n"
             + "Results are cached under FLIXW_PLUGIN_CACHE and reused until the sources, the\n"

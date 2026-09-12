@@ -15,6 +15,8 @@ final class Baseline {
 
     record Snapshot(String id, String rule, String subject, String file, int line,
                     double actual, double limit, String unit, double overBy) {
+        String where() { return file.isEmpty() ? "" : file + ":" + line; }
+
         String json() {
             return "{\"id\": " + SourceMetrics.Smell.quote(id)
                 + ", \"rule\": " + SourceMetrics.Smell.quote(rule)
@@ -31,7 +33,7 @@ final class Baseline {
     record Change(Snapshot before, SourceMetrics.Smell after) { }
 
     record Comparison(Path path, List<SourceMetrics.Smell> added, List<Change> worsened,
-                      List<Snapshot> resolved, int unchanged) {
+                      List<Snapshot> resolved, int retained) {
         Comparison {
             added = List.copyOf(added);
             worsened = List.copyOf(worsened);
@@ -42,6 +44,100 @@ final class Baseline {
             int threshold = RuleDefinitions.levelRank(level);
             return added.stream().anyMatch(s -> severity(s.rule()) >= threshold)
                 || worsened.stream().anyMatch(c -> severity(c.after().rule()) >= threshold);
+        }
+
+        boolean isAdded(String id) {
+            return added.stream().anyMatch(finding -> finding.id().equals(id));
+        }
+
+        boolean isWorsened(String id) {
+            return worsened.stream().anyMatch(change -> change.after().id().equals(id));
+        }
+
+        String json() {
+            StringBuilder out = new StringBuilder("{\"source\": ")
+                .append(SourceMetrics.Smell.quote(path.toString()))
+                .append(", \"newCount\": ").append(added.size())
+                .append(", \"worsenedCount\": ").append(worsened.size())
+                .append(", \"resolvedCount\": ").append(resolved.size())
+                .append(", \"retainedCount\": ").append(retained)
+                .append(", \"new\": [");
+            for (int i = 0; i < added.size(); i++) {
+                if (i > 0) out.append(", ");
+                out.append(added.get(i).json());
+            }
+            out.append("], \"worsened\": [");
+            for (int i = 0; i < worsened.size(); i++) {
+                if (i > 0) out.append(", ");
+                Change change = worsened.get(i);
+                out.append("{\"before\": ").append(change.before().json())
+                    .append(", \"after\": ").append(change.after().json()).append('}');
+            }
+            out.append("], \"resolved\": [");
+            for (int i = 0; i < resolved.size(); i++) {
+                if (i > 0) out.append(", ");
+                out.append(resolved.get(i).json());
+            }
+            return out.append("]}").toString();
+        }
+
+        String text() {
+            StringBuilder out = new StringBuilder("\nbaseline: ")
+                .append(added.size()).append(" new, ")
+                .append(worsened.size()).append(" worsened, ")
+                .append(resolved.size()).append(" resolved, ")
+                .append(retained).append(" retained\n");
+            for (SourceMetrics.Smell finding : added)
+                out.append("  new       ").append(finding.text().stripLeading()).append('\n');
+            for (Change change : worsened)
+                out.append("  worsened  ").append(change.after().where()).append("  ")
+                    .append(change.after().rule()).append("  (")
+                    .append(number(change.before().overBy())).append("x -> ")
+                    .append(number(change.after().overBy())).append("x)\n");
+            for (Snapshot finding : resolved)
+                out.append("  resolved  ")
+                    .append(finding.where().isEmpty() ? finding.subject() : finding.where())
+                    .append("  ").append(finding.rule())
+                    .append("  [").append(finding.subject()).append("]\n");
+            return out.toString();
+        }
+
+        String markdown() {
+            StringBuilder out = new StringBuilder("## Baseline changes\n\n")
+                .append("Compared with `").append(path).append("`: **")
+                .append(added.size()).append(" new**, **")
+                .append(worsened.size()).append(" worsened**, **")
+                .append(resolved.size()).append(" resolved**, and ")
+                .append(retained).append(" retained.\n\n")
+                .append("Resolved: ").append(resolved.size()).append(".\n\n");
+            if (!added.isEmpty()) {
+                out.append("### New\n\n");
+                for (SourceMetrics.Smell finding : added)
+                    out.append("- `").append(finding.subject()).append("` — `")
+                        .append(finding.rule()).append('`')
+                        .append(finding.where().isEmpty() ? "" : " at `" + finding.where() + "`")
+                        .append('\n');
+                out.append('\n');
+            }
+            if (!worsened.isEmpty()) {
+                out.append("### Worsened\n\n");
+                for (Change change : worsened)
+                    out.append("- `").append(change.after().subject()).append("` — `")
+                        .append(change.after().rule()).append("` changed from ")
+                        .append(number(change.before().overBy())).append("x to ")
+                        .append(number(change.after().overBy())).append("x\n");
+                out.append('\n');
+            }
+            if (!resolved.isEmpty()) {
+                out.append("### Resolved\n\n");
+                for (Snapshot finding : resolved)
+                    out.append("- `").append(finding.subject()).append("` — `")
+                        .append(finding.rule()).append('`')
+                        .append(finding.where().isEmpty() ? "" : " at `" + finding.where() + "`")
+                        .append('\n');
+                out.append('\n');
+            }
+            return out.toString();
         }
 
         private static int severity(String rule) {
@@ -77,18 +173,18 @@ final class Baseline {
 
         List<SourceMetrics.Smell> added = new ArrayList<>();
         List<Change> worsened = new ArrayList<>();
-        int unchanged = 0;
+        int retained = 0;
         for (SourceMetrics.Smell finding : current.smells()) {
             Snapshot before = previous.remove(finding.id());
             if (before == null) {
                 added.add(finding);
-            } else if (Double.compare(finding.overBy(), before.overBy()) > 0) {
+            } else if (Double.compare(reportedOverBy(finding), before.overBy()) > 0) {
                 worsened.add(new Change(before, finding));
             } else {
-                unchanged++;
+                retained++;
             }
         }
-        return new Comparison(path, added, worsened, new ArrayList<>(previous.values()), unchanged);
+        return new Comparison(path, added, worsened, new ArrayList<>(previous.values()), retained);
     }
 
     private static Snapshot snapshot(Map<String, Object> value, Path path) {
@@ -149,6 +245,11 @@ final class Baseline {
 
     private static String number(double value) {
         return BigDecimal.valueOf(value).stripTrailingZeros().toPlainString();
+    }
+
+    /** Compare the precision promised by report JSON, not hidden floating-point digits. */
+    private static double reportedOverBy(SourceMetrics.Smell finding) {
+        return Double.parseDouble(String.format(java.util.Locale.ROOT, "%.2f", finding.overBy()));
     }
 
     private static Invalid invalid(Path path, String message) {

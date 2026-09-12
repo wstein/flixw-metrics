@@ -13,14 +13,16 @@ public final class BaselineTest {
         SourceMetrics.Smell worsenedBefore = smell("deeply-nested", "A.changed", 7, 5, 4);
         SourceMetrics.Smell movedBefore = smell("line-too-long", "src/A.flix:11", 11, 120, 100);
         SourceMetrics.Smell resolved = smell("too-many-parameters", "A.gone", 20, 7, 5);
+        SourceMetrics.Smell improvedBefore = smell("definition-too-long", "A.better", 24, 90, 60);
         Metrics.Report before = FormatsTest.reportWithSmells(
-            List.of(kept, worsenedBefore, movedBefore, resolved));
+            List.of(kept, worsenedBefore, movedBefore, resolved, improvedBefore));
 
         SourceMetrics.Smell worsenedAfter = smell("deeply-nested", "A.changed", 7, 8, 4);
         SourceMetrics.Smell movedAfter = smell("line-too-long", "src/A.flix:12", 12, 120, 100);
         SourceMetrics.Smell added = smell("definition-too-long", "A.new", 30, 80, 60);
+        SourceMetrics.Smell improvedAfter = smell("definition-too-long", "A.better", 24, 70, 60);
         Metrics.Report after = FormatsTest.reportWithSmells(
-            List.of(kept, worsenedAfter, movedAfter, added));
+            List.of(kept, worsenedAfter, movedAfter, added, improvedAfter));
 
         Path baseline = Files.createTempFile("flixw-metrics-baseline-", ".json");
         try {
@@ -34,7 +36,8 @@ public final class BaselineTest {
                 "a stable observation with a larger threshold multiple is worsened");
             require(comparison.resolved().size() == 2,
                 "a removed and the old side of a move are resolved");
-            require(comparison.unchanged() == 1, "an identical observation is unchanged");
+            require(comparison.retained() == 2,
+                "identical and improved observations are retained without failing the gate");
             require(comparison.crosses("warning"),
                 "new or worsened warnings cross a warning-only gate");
             require(!comparison.crosses("error"),
