@@ -137,7 +137,10 @@ counted too; without them a long boolean chain reads as trivial.
 `cognitiveDensity` is that divided by lexer-confirmed code lines inside the definition, and it
 is the measure that separates length from difficulty: a hundred readable lines and five dense
 ones can score the same in total, and the second is the one worth opening. Blank lines and
-comment-only lines are excluded, so padding the span cannot improve the score.
+comment-only lines are excluded, so padding the span cannot improve the score. The ranking includes
+every definition, while the finding requires at least four code lines so a one-expression helper
+does not become debt merely for containing a branch. That eligibility floor lives in the rule
+registry, is used by threshold evaluation, and is disclosed in native JSON and SARIF metadata.
 
 Module coupling is deliberately narrower than general dependency coupling. An edge from A to B
 means a project definition in A contains a resolved direct call to a definition in B. Type,

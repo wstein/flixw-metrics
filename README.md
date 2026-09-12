@@ -214,7 +214,10 @@ Two measures are worth knowing about because they catch what totals hide:
 consecutive ones. Divided by lexer-confirmed code lines, it separates *long* from *hard*: a
 hundred readable lines and ten dense ones can total the same, and the second is the one worth
 opening. Blank and comment-only padding cannot improve the ratio. It is the `densest` ranking
-and the `dense` finding.
+and the `dense` finding. Rankings show every definition, but only definitions with at least four
+code lines are eligible for a `dense` finding; a tiny branch-heavy helper is useful context, not
+actionable density debt. Human reports state that boundary beside the ranking, and JSON/SARIF
+carry it as rule metadata.
 
 **Parameters and crammed lines are attributed to the local definition that owns them.** In
 the sample above, `Json.size.loop` is blamed for its own crammed line — not `Json.size`, the
