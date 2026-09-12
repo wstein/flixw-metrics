@@ -22,8 +22,11 @@ public final class PluginIntegrationTest {
             String cold = run(project, cache, plugin, compiler, System.getProperty("java.home"),
                 "json");
             JsonObject coldJson = JsonParser.parseString(cold).getAsJsonObject();
-            require(coldJson.getAsJsonObject("summary").get("definitions").getAsInt() == 5,
+            require(coldJson.getAsJsonObject("summary").get("definitions").getAsInt() == 6,
                 "cold stdout parses as one report with fixture measurements");
+            require(coldJson.getAsJsonObject("summary").get("datalogRules").getAsInt() == 1
+                    && coldJson.getAsJsonObject("summary").get("datalogFacts").getAsInt() == 1,
+                "packaged reports preserve separate Datalog rule and fact counts");
             require(coldJson.has("provenance") && coldJson.has("configuration")
                     && coldJson.getAsJsonObject("provenance").has("inputDigest")
                     && coldJson.getAsJsonObject("provenance").has("compilerArtifact"),
