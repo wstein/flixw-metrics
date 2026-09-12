@@ -22,7 +22,7 @@ public final class PluginIntegrationTest {
             String cold = run(project, cache, plugin, compiler, System.getProperty("java.home"),
                 "json");
             JsonObject coldJson = JsonParser.parseString(cold).getAsJsonObject();
-            require(coldJson.getAsJsonObject("summary").get("definitions").getAsInt() == 4,
+            require(coldJson.getAsJsonObject("summary").get("definitions").getAsInt() == 5,
                 "cold stdout parses as one report with fixture measurements");
             require(coldJson.has("provenance") && coldJson.has("configuration")
                     && coldJson.getAsJsonObject("provenance").has("inputDigest")

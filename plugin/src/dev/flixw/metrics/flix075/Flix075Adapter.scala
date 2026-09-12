@@ -203,13 +203,15 @@ final class Flix075Adapter extends CompilerModel {
    * the same reason, read for the same reason, and nothing else measured here would notice it.
    * A type that is neither is one part.
    *
-   * Record fields are counted through the whole type rather than at the top: a record row is
-   * built from nested `RecordRowExtend` constructors, so the field count is the depth of that
-   * chain and not the arity of anything.
+   * A record row is built from nested `RecordRowExtend` constructors. Follow only the row's
+   * `rest` argument: the other argument is the field's value type, and recursing into it would
+   * flatten a nested record. `{position = {x, y}, size = {x, y}}` has two parts for a caller to
+   * handle, not six.
    */
   private def shapeWidth(tpe: Type): Int = {
     def recordFields(t: Type): Int = t.typeConstructor match {
-      case Some(_: TypeConstructor.RecordRowExtend) => 1 + t.typeArguments.map(recordFields).sum
+      case Some(_: TypeConstructor.RecordRowExtend) =>
+        1 + t.typeArguments.lastOption.map(recordFields).getOrElse(0)
       case _ => t.typeArguments.map(recordFields).sum
     }
 

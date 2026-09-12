@@ -16,8 +16,8 @@ public final class Flix075AdapterTest {
         Path project = copyFixture(Path.of(args[0]));
         try {
             Model model = new Flix075Adapter().measure(project);
-            require(model.defs().size() == 4, "fixture definitions are measured");
-            require(model.lines().code() == 12 && model.lines().docComment() == 1,
+            require(model.defs().size() == 5, "fixture definitions are measured");
+            require(model.lines().code() == 15 && model.lines().docComment() == 1,
                 "the real lexer classifies fixture lines");
             DefInfo select = definition(model, "Alpha.selectValue");
             require(select.localDefs() == 1 && select.maxLocalParameters() == 2,
@@ -26,6 +26,8 @@ public final class Flix075AdapterTest {
                 "branches, booleans, and definition code lines are measured");
             require(definition(model, "Alpha.documented").returnWidth() == 2,
                 "typed return shape is measured");
+            require(definition(model, "Alpha.nestedRecord").returnWidth() == 2,
+                "return width counts top-level record fields, not their nested fields");
             require(definition(model, "testSelectValue").isTest(),
                 "compiler test annotations are measured");
             var beta = model.modules().stream().filter(m -> m.name().equals("Beta")).findFirst()
