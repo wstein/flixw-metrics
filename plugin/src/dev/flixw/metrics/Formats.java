@@ -3,6 +3,7 @@ package dev.flixw.metrics;
 import dev.flixw.metrics.sdk.CompilerModel;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -269,7 +270,7 @@ final class Formats {
                 // The multiple, so a reader can see at a glance which of sixteen findings is
                 // the one actually worth opening.
                 if (s.overBy() > 1)
-                    b.append(String.format("  _(%.1fx)_", s.overBy()));
+                    b.append(String.format(Locale.ROOT, "  _(%.1fx)_", s.overBy()));
                 b.append('\n');
             }
             if (half.size() > SHOWN_PER_RULE)

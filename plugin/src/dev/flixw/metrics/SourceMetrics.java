@@ -6,6 +6,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * The measurements that come from the text, not from the compiler.
@@ -109,7 +110,7 @@ record SourceMetrics(int lines, int longestLine, int linesOverLimit, List<Smell>
         /** Whole numbers read as whole numbers; a ratio keeps one decimal. */
         private static String number(double value) {
             return value == Math.rint(value) ? String.valueOf((long) value)
-                                             : String.format("%.1f", value);
+                                             : String.format(Locale.ROOT, "%.1f", value);
         }
 
         String json() {
@@ -120,7 +121,7 @@ record SourceMetrics(int lines, int longestLine, int linesOverLimit, List<Smell>
                  + ", \"actual\": " + number(actual)
                  + ", \"limit\": " + number(limit)
                  + ", \"unit\": " + quote(unit)
-                 + ", \"overBy\": " + String.format("%.2f", overBy())
+                 + ", \"overBy\": " + String.format(Locale.ROOT, "%.2f", overBy())
                  + ", \"note\": " + quote(note)
                  + ", \"detail\": " + quote(detail()) + "}";
         }
@@ -142,7 +143,7 @@ record SourceMetrics(int lines, int longestLine, int linesOverLimit, List<Smell>
                     case '\r' -> b.append("\\r");
                     case '\t' -> b.append("\\t");
                     default -> {
-                        if (c < 0x20) b.append(String.format("\\u%04x", (int) c));
+                        if (c < 0x20) b.append(String.format(Locale.ROOT, "\\u%04x", (int) c));
                         else b.append(c);
                     }
                 }

@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import dev.flixw.metrics.sdk.CompilerModel;
 
 import java.util.List;
+import java.util.Locale;
 
 /** A deliberately small semantic metrics engine over Flix's runtime-checked typed root. */
 final class Metrics {
@@ -84,7 +85,7 @@ final class Metrics {
                  + ", \"localDefinitions\": " + d.localDefs()
                  + ", \"nesting\": " + d.nesting()
                  + ", \"cognitive\": " + d.cognitive()
-                 + ", \"cognitiveDensity\": " + String.format("%.3f", d.cognitiveDensity())
+                 + ", \"cognitiveDensity\": " + String.format(Locale.ROOT, "%.3f", d.cognitiveDensity())
                  + ", \"maxLineTokens\": " + d.maxLineTokens()
                  + ", \"maxLineTokensLine\": " + d.maxLineTokensLine()
                  + ", \"maxLineTokensOwner\": " + SourceMetrics.Smell.quote(d.maxLineTokensOwner())
@@ -103,7 +104,7 @@ final class Metrics {
                  + ", \"lines\": " + m.lines()
                  + ", \"fanIn\": " + m.fanIn()
                  + ", \"fanOut\": " + m.fanOut()
-                 + ", \"instability\": " + String.format("%.3f", m.instability()) + "}";
+                 + ", \"instability\": " + String.format(Locale.ROOT, "%.3f", m.instability()) + "}";
         }
 
         /** The same label/value pairs both renderers use; Markdown needs them too. */

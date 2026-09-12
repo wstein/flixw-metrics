@@ -6,6 +6,7 @@ import dev.flixw.metrics.sdk.CompilerModel.ModuleInfo;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.function.Function;
 
 /**
@@ -48,7 +49,7 @@ final class Rankings {
         }
 
         String text() {
-            return String.format("  %-18s %-34s %s", measure, value, subject
+            return String.format(Locale.ROOT, "  %-18s %-34s %s", measure, value, subject
                 + (file.isEmpty() ? "" : "  (" + file + ":" + line + ")"));
         }
     }
@@ -59,7 +60,7 @@ final class Rankings {
         // defect, but if it is the longest thing in the project that is worth knowing.
         top(out, defs, "longest", DefInfo::lines, d -> d.lines() + " lines");
         top(out, defs, "densest", DefInfo::cognitiveDensity,
-            d -> String.format("%.1f complexity/line", d.cognitiveDensity()));
+            d -> String.format(Locale.ROOT, "%.1f complexity/line", d.cognitiveDensity()));
         top(out, defs, "most-complex", DefInfo::cognitive, d -> d.cognitive() + " complexity");
         top(out, defs, "deepest", DefInfo::nesting, d -> d.nesting() + " levels nested");
         top(out, defs, "widest", DefInfo::widestParameterList,
@@ -77,7 +78,7 @@ final class Rankings {
         for (ModuleInfo m : sorted(modules, ModuleInfo::fanOut)) {
             out.add(new Rank("most-coupled", m.name(), "", 0,
                 m.fanOut() + " modules used, instability "
-                    + String.format("%.2f", m.instability())));
+                    + String.format(Locale.ROOT, "%.2f", m.instability())));
         }
         return out;
     }

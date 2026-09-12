@@ -1,6 +1,7 @@
 package dev.flixw.metrics;
 
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Checks the renderings meant for somebody other than the person at the terminal, plus the
@@ -15,6 +16,8 @@ public final class FormatsTest {
     private FormatsTest() { }
 
     public static void main(String[] args) {
+        localeIndependentNumbers();
+
         Metrics.Report report = report(List.of(
             new SourceMetrics.Smell("deeply-nested", "A.deep", "src/A.flix", 12, 5, 4, "",
                 "levels"),
@@ -80,6 +83,36 @@ public final class FormatsTest {
         require(!cleanText.contains("where to look first"),
             "the old actionable heading never reappears in the terminal format either");
         System.out.println("FormatsTest: ok");
+    }
+
+    private static void localeIndependentNumbers() {
+        Locale previous = Locale.getDefault();
+        try {
+            Locale.setDefault(Locale.GERMANY);
+            var def = new dev.flixw.metrics.sdk.CompilerModel.DefInfo(
+                "A.f", "A", "src/A.flix", 1, 2, 0, 0, 0, 1, 3, 0, 1, "A.f",
+                0, 0, 1, false, false, true, List.of());
+            var module = new dev.flixw.metrics.sdk.CompilerModel.ModuleInfo("A", 1, 2, 1, 2);
+            Metrics.Report localized = new Metrics.Report(1, 1, 1, 0, 0, 3, 0, 0, 0,
+                0, 0, 0, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, List.of(
+                    new SourceMetrics.Smell("dense", "A.f", "src/A.flix", 1,
+                        1.5, 1.0, "", "complexity per line")),
+                List.of(new Rankings.Rank("densest", "A.f", "src/A.flix", 1,
+                    String.format(Locale.ROOT, "%.1f complexity/line", 1.5))),
+                List.of(def), List.of(module));
+
+            String json = localized.render(Metrics.Format.JSON);
+            require(json.contains("\"cognitiveDensity\": 1.500"),
+                "JSON decimals are independent of the process locale");
+            require(json.contains("\"instability\": 0.667"),
+                "module JSON decimals are independent of the process locale");
+            require(json.contains("\"overBy\": 1.50"),
+                "finding JSON decimals are independent of the process locale");
+            require(localized.render(Metrics.Format.MARKDOWN).contains("1.5x"),
+                "Markdown decimals are independent of the process locale");
+        } finally {
+            Locale.setDefault(previous);
+        }
     }
 
     private static Metrics.Report report(List<SourceMetrics.Smell> smells) {
