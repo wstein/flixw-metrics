@@ -105,7 +105,7 @@ public final class FormatsTest {
         try {
             Locale.setDefault(Locale.GERMANY);
             var def = new dev.flixw.metrics.sdk.CompilerModel.DefInfo(
-                "A.f", "A", "src/A.flix", 1, 2, 0, 0, 0, 1, 3, 0, 1, "A.f",
+                "A.f", "A", "src/A.flix", 1, 2, 2, 0, 0, 0, 1, 3, 0, 1, "A.f",
                 0, 0, 1, false, false, true, List.of());
             var module = new dev.flixw.metrics.sdk.CompilerModel.ModuleInfo("A", 1, 2, 1, 2);
             Metrics.Report localized = new Metrics.Report(1, 1, 1, 0, 0, 3, 0, 0, 0,

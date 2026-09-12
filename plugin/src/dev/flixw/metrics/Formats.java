@@ -127,7 +127,7 @@ final class Formats {
         b.append("| measure | formula | direction |\n|---|---|---|\n");
         b.append("| `cognitive` | each branch rule weighted by nesting, plus boolean operators"
                 + " and match guards | higher is worse |\n");
-        b.append("| `dense` | `cognitive / lines` of one definition | higher is worse;"
+        b.append("| `dense` | `cognitive / code lines` of one definition | higher is worse;"
                 + " flagged over ").append(config.limit(RuleDefinitions.DENSE)).append(" |\n");
         b.append("| `crammed` | most lexer tokens on any one line of a definition | higher is"
                 + " worse; flagged over ").append(config.limit(RuleDefinitions.CRAMMED_LINE))

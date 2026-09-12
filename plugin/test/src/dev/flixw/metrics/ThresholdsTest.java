@@ -54,7 +54,7 @@ public final class ThresholdsTest {
 
         // Reported against the local, not the definition it sits in -- the whole point of
         // measuring which local owns the line.
-        DefInfo crammed = new DefInfo("Foo.outer", "Foo", "src/Foo.flix", 1, 90, 1, 0, 1, 1, 0,
+        DefInfo crammed = new DefInfo("Foo.outer", "Foo", "src/Foo.flix", 1, 90, 80, 1, 0, 1, 1, 0,
             44, 57, "Foo.outer.loop", 0, 0, 1, false, false, true, List.of());
         List<SourceMetrics.Smell> found = Thresholds.apply(List.of(crammed), List.of());
         // The owner is the *subject* now, not buried in prose: a consumer can group by it.
@@ -73,7 +73,7 @@ public final class ThresholdsTest {
 
     private static DefInfo def(String name, int lines, int params, int localParams, int nesting,
                                int cognitive, boolean isPublic, boolean isTest, boolean hasDoc) {
-        return new DefInfo(name, "Foo", "src/Foo.flix", 1, lines, params, localParams, 0, nesting,
+        return new DefInfo(name, "Foo", "src/Foo.flix", 1, lines, lines, params, localParams, 0, nesting,
             cognitive, 0, 1, name, 0, 0, 1, isPublic, isTest, hasDoc, List.of());
     }
 

@@ -69,7 +69,7 @@ public final class ResultCacheTest {
             // has to survive: a definition with everything set, and a symbol carrying the tab
             // the format itself uses to separate fields.
             var def = new dev.flixw.metrics.sdk.CompilerModel.DefInfo(
-                "Foo.od\td", "Foo", "src/A.flix", 3, 40, 2, 9, 1, 4, 12, 31, 7, "Foo.odd.loop",
+                "Foo.od\td", "Foo", "src/A.flix", 3, 40, 30, 2, 9, 1, 4, 12, 31, 7, "Foo.odd.loop",
                 2, 5, 6, true, false, true, List.of("IO", "Net"));
             var mod = new dev.flixw.metrics.sdk.CompilerModel.ModuleInfo("Foo", 1, 40, 2, 3);
             var model = new dev.flixw.metrics.sdk.CompilerModel.Model(List.of(def), List.of(mod),

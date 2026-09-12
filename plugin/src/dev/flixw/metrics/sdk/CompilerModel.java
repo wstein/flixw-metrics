@@ -72,6 +72,7 @@ public interface CompilerModel {
      * @param file relative to the project root, so a report does not carry someone's home
      *     directory and two machines produce the same bytes
      * @param lines how many lines the definition spans
+     * @param codeLines how many lines in that span carry lexer-confirmed code
      * @param parameters what the outer signature declares
      * @param maxLocalParameters the widest parameter list of any definition nested inside it --
      *     a body threading eight accumulators through a local loop reads as taking two
@@ -95,15 +96,15 @@ public interface CompilerModel {
      *     other measure here
      * @param effects the declared effects, empty when pure
      */
-    record DefInfo(String name, String module, String file, int line, int lines, int parameters,
-                   int maxLocalParameters, int localDefs, int nesting, int cognitive,
+    record DefInfo(String name, String module, String file, int line, int lines, int codeLines,
+                   int parameters, int maxLocalParameters, int localDefs, int nesting, int cognitive,
                    int maxLineTokens, int maxLineTokensLine, String maxLineTokensOwner,
                    int datalogRules, int datalogFacts, int returnWidth,
                    boolean isPublic, boolean isTest, boolean hasDoc, List<String> effects) {
 
-        /** Complexity per line: five dense lines and a hundred readable ones can score alike. */
+        /** Complexity per code line; blank or comment-only padding cannot lower it. */
         public double cognitiveDensity() {
-            return lines == 0 ? 0.0 : (double) cognitive / lines;
+            return codeLines == 0 ? 0.0 : (double) cognitive / codeLines;
         }
 
         public boolean isPure() {

@@ -129,9 +129,10 @@ than five consecutive ones — a flat count calls them equal, and they are not e
 Boolean `and`/`or` and match guards add a path without adding a branch construct, so they are
 counted too; without them a long boolean chain reads as trivial.
 
-`cognitiveDensity` is that divided by lines, and it is the measure that separates length from
-difficulty: a hundred readable lines and five dense ones can score the same in total, and the
-second is the one worth opening.
+`cognitiveDensity` is that divided by lexer-confirmed code lines inside the definition, and it
+is the measure that separates length from difficulty: a hundred readable lines and five dense
+ones can score the same in total, and the second is the one worth opening. Blank lines and
+comment-only lines are excluded, so padding the span cannot improve the score.
 
 Module coupling is deliberately narrower than general dependency coupling. An edge from A to B
 means a project definition in A contains a resolved direct call to a definition in B. Type,

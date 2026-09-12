@@ -153,6 +153,7 @@ final class Flix075Adapter extends CompilerModel {
     val tally = new Tally
     walk(d.exp, tally)
     val onLines = tokens.getOrElse(d.loc.source.name, Map.empty)
+    val codeLines = (d.loc.startLine to d.loc.endLine).count(onLines.contains)
     // The densest line this definition spans, and who actually owns it.
     val (crammedLine, crammedTokens) =
       (d.loc.startLine to d.loc.endLine)
@@ -167,7 +168,7 @@ final class Flix075Adapter extends CompilerModel {
       .getOrElse(d.sym.toString)
     new DefInfo(
       d.sym.toString, moduleOf(d.sym), relativise(d.loc, projectRoot),
-      d.loc.startLine, spannedLines(d.loc), declaredParameters(d.spec.fparams.toList),
+      d.loc.startLine, spannedLines(d.loc), codeLines, declaredParameters(d.spec.fparams.toList),
       tally.widestLocalParams, tally.localDefs, deepestChain(tally.branches.toList),
       cognitive(tally), crammedTokens, crammedLine, owner,
       tally.datalogRules, tally.datalogFacts, shapeWidth(d.spec.retTpe),

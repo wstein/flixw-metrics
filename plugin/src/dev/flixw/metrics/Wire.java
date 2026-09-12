@@ -36,7 +36,7 @@ final class Wire {
     private Wire() { }
 
     /** Bumped when a record's field order changes; a mismatch is a cache miss, never a guess. */
-    static final int VERSION = 1;
+    static final int VERSION = 2;
 
     static String encode(Model m) {
         StringBuilder b = new StringBuilder();
@@ -46,7 +46,7 @@ final class Wire {
         row(b, "c", m.traits(), m.instances(), m.enums(), m.structs(), m.effects(),
             m.typeAliases());
         for (DefInfo d : m.defs()) {
-            row(b, "d", d.name(), d.module(), d.file(), d.line(), d.lines(), d.parameters(),
+            row(b, "d", d.name(), d.module(), d.file(), d.line(), d.lines(), d.codeLines(), d.parameters(),
                 d.maxLocalParameters(), d.localDefs(), d.nesting(), d.cognitive(),
                 d.maxLineTokens(), d.maxLineTokensLine(), d.maxLineTokensOwner(),
                 d.datalogRules(), d.datalogFacts(), d.returnWidth(), d.isPublic(), d.isTest(),
@@ -86,8 +86,8 @@ final class Wire {
                         i(f[6])};
                     case "d" -> defs.add(new DefInfo(un(f[1]), un(f[2]), un(f[3]), i(f[4]),
                         i(f[5]), i(f[6]), i(f[7]), i(f[8]), i(f[9]), i(f[10]), i(f[11]), i(f[12]),
-                        un(f[13]), i(f[14]), i(f[15]), i(f[16]), b(f[17]), b(f[18]), b(f[19]),
-                        un(f[20]).isEmpty() ? List.of() : List.of(un(f[20]).split(","))));
+                        i(f[13]), un(f[14]), i(f[15]), i(f[16]), i(f[17]), b(f[18]), b(f[19]),
+                        b(f[20]), un(f[21]).isEmpty() ? List.of() : List.of(un(f[21]).split(","))));
                     case "m" -> modules.add(new ModuleInfo(un(f[1]), i(f[2]), i(f[3]), i(f[4]),
                         i(f[5])));
                     default -> { }

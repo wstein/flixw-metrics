@@ -12,6 +12,11 @@ public final class MetricsTest {
     private MetricsTest() { }
 
     public static void main(String[] args) {
+        DefInfo padded = new DefInfo("Api.padded", "Api", "src/Api.flix", 1, 100, 4,
+            0, 0, 0, 0, 5, 0, 1, "Api.padded", 0, 0, 1, false, false, true, List.of());
+        require(Math.abs(padded.cognitiveDensity() - 1.25) < 0.001,
+            "blank and comment-only span does not lower cognitive density");
+
         DefInfo testHelper = def("Test.helper", "test\\Test.flix", true, false, false);
         DefInfo api = def("Api.good", "src/Api.flix", true, true, true);
         Metrics.Report report = Metrics.of(2, model(List.of(testHelper, api)), emptyText());
@@ -38,7 +43,7 @@ public final class MetricsTest {
 
     private static DefInfo def(String name, String file, boolean isPublic, boolean pure,
                                boolean documented) {
-        return new DefInfo(name, "Api", file, 1, 1, 0, 0, 0, 0, 0, 0, 1, name,
+        return new DefInfo(name, "Api", file, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, name,
             0, 0, 1, isPublic, false, documented, pure ? List.of() : List.of("IO"));
     }
 

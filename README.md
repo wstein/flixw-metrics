@@ -149,9 +149,10 @@ Three things get measured, and where each comes from is deliberate:
 Two measures are worth knowing about because they catch what totals hide:
 
 **Cognitive complexity is nesting-weighted.** Five nested conditions cost more than five
-consecutive ones. Divided by lines, it separates *long* from *hard*: a hundred readable
-lines and ten dense ones can total the same, and the second is the one worth opening. That
-ratio is the `densest` ranking and the `dense` finding.
+consecutive ones. Divided by lexer-confirmed code lines, it separates *long* from *hard*: a
+hundred readable lines and ten dense ones can total the same, and the second is the one worth
+opening. Blank and comment-only padding cannot improve the ratio. It is the `densest` ranking
+and the `dense` finding.
 
 **Parameters and crammed lines are attributed to the local definition that owns them.** In
 the sample above, `Json.size.loop` is blamed for its own crammed line — not `Json.size`, the

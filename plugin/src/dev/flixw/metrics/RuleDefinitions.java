@@ -26,9 +26,9 @@ final class RuleDefinitions {
         "Invert a condition to return early, or lift a branch into its own definition.", "levels", 4,
         "warning");
     static final Rule DENSE = numeric("dense", "Dense definition", "complexity",
-        "Cognitive complexity per definition line exceeds the configured limit.",
-        "Spread it out: this is complexity per line, so length is not the problem.",
-        "complexity per line", 1.0, "warning");
+        "Cognitive complexity per code line exceeds the configured limit.",
+        "Simplify the control flow: blank and comment-only lines do not lower this density.",
+        "complexity per code line", 1.0, "warning");
     static final Rule CRAMMED_LINE = numeric("crammed-line", "Crammed line", "readability",
         "A source line contains more lexer tokens than the configured limit.",
         "Break the line where it reads, not at a column limit.", "tokens", 30, "note");

@@ -76,7 +76,7 @@ public final class MetricsConfigTest {
     }
 
     private static DefInfo def(String name, int lines, int cognitive) {
-        return new DefInfo(name, "Api", "src/Api.flix", 1, lines, 0, 0, 0, 0, cognitive,
+        return new DefInfo(name, "Api", "src/Api.flix", 1, lines, lines, 0, 0, 0, 0, cognitive,
             0, 1, name, 0, 0, 1, false, false, true, List.of());
     }
 
