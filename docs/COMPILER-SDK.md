@@ -89,6 +89,11 @@ A version string is never evidence. The gate asks the JAR.
 The compiler is loaded through the **application class path** of a second JVM, launched with
 `-cp plugin.jar:flix.jar`. That is forced, not chosen.
 
+The bridge also starts with a 64 MiB thread stack. Flix's constraint generation is recursive, and
+the pinned compiler documents 64 MiB as its minimum worker stack; the usual 1–2 MiB JVM default
+overflowed while checking the pinned `flix-game-engine` calibration target. Keeping the larger
+stack on the isolated bridge avoids imposing it on ordinary wrapper commands.
+
 An isolated `URLClassLoader` was tried and does not work. The Flix standard library imports
 Java classes that live inside `flix.jar` itself — `dev.flix.runtime.Global` among them — and
 the compiler resolves those through the application class path rather than through the loader

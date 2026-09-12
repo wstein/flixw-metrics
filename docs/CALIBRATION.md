@@ -166,16 +166,18 @@ The scheduled workflow separately runs the packaged semantic fixture five times 
 times warm. It gates medians rather than the slowest sample, while also gating the warm/cold ratio
 so a uniformly fast or slow runner cannot hide a broken measurement cache.
 
-| Measure | Initial five-sample median | Budget |
-| --- | ---: | ---: |
-| Cold packaged run | 4,399 ms | at most 12,000 ms |
-| Warm packaged run | 261 ms | at most 1,200 ms |
-| Warm / cold | 5% | at most 25% |
+| Measure | Local median | Hosted run 1 | Hosted run 2 | Budget |
+| --- | ---: | ---: | ---: | ---: |
+| Cold packaged run | 4,399 ms | 9,911 ms | 8,620 ms | at most 12,000 ms |
+| Warm packaged run | 261 ms | 458 ms | 415 ms | at most 1,200 ms |
+| Warm / cold | 5% | 4% | 4% | at most 25% |
 
-These initial measurements were recorded on the same Darwin arm64 development machine as the
-calibration above. CI executes the repeated set independently and retains `performance.json` for
-30 days. Tighten the ceilings only after the retained hosted-runner history supports it; a single
-fast run is not evidence for a smaller budget. Run the same contract locally with:
+The local measurements were recorded on the same Darwin arm64 development machine as the
+calibration above. The hosted measurements are two independent Ubuntu runs of the scheduled job.
+The slower hosted cold median leaves 21% headroom under the ceiling, while both cache ratios are
+well inside budget. That supports keeping the current ceilings: tightening the cold limit now would
+mostly measure hosted-runner variance. CI retains each `performance.json` for 30 days so later
+history can support a deliberate adjustment. Run the same contract locally with:
 
 ```sh
 sh scripts/measure-performance.sh /tmp/flixw-performance.json
