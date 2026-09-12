@@ -19,7 +19,7 @@ import java.util.List;
  *
  * <p>Two phases in two JVMs, and the split is forced rather than chosen. The compiler resolves
  * the Java classes its own standard library imports through the application class path, so
- * {@code flix.jar} has to be flat on {@code -cp} -- see {@link ReflectionEngine#measure}. This
+ * {@code flix.jar} has to be flat on {@code -cp} -- see {@code CompilerModel.measure(Path)}. This
  * process cannot put it there after the fact, so it re-launches itself with {@code --bridge}.
  *
  * <p>The 270ms that costs is why the cache is consulted <em>here</em>, in the outer phase: a

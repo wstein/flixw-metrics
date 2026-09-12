@@ -58,10 +58,11 @@ public interface CompilerModel {
     /**
      * Measures one project, or throws.
      *
+     * <p>Throws {@code ModelFailure} when the project cannot be typed, which is a fact about the
+     * project and not about this adapter. The checked exception remains part of the signature.
+     *
      * @param projectRoot the root flixw resolved; only declarations under it are described, since
      *     a typed root also holds the standard library and every dependency
-     * @throws ModelFailure when the project cannot be typed, which is a fact about the project
-     *     and not about this adapter
      */
     Model measure(Path projectRoot) throws ModelFailure;
 
