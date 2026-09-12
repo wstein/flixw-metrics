@@ -181,8 +181,10 @@ mostly JVM startup.
 What is cached is the **measurements**, never the report: they are facts about your source
 and cannot go stale while the key holds. Findings and formatting are recomputed every run,
 so an adjusted threshold takes effect immediately instead of at the next cache miss. The key
-covers your sources, `flix.toml`, the pinned compiler and this plugin's version — change any
-of them and it recomputes. Every cache failure is a miss, never a stale answer.
+covers your sources, `flix.toml`, the pinned compiler, this plugin's version, and the plugin
+artifact bytes — change any of them and it recomputes. The artifact fingerprint also prevents
+two local `development` builds from sharing stale measurements. Every cache failure is a miss,
+never a stale answer.
 
 Entries live where flixw says (`FLIXW_PLUGIN_CACHE`) and go away with the plugin.
 

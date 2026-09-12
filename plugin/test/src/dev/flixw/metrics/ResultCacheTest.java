@@ -58,6 +58,13 @@ public final class ResultCacheTest {
             require(!base.equals(ResultCache.key(context, sources, "1.0.1")),
                 "a plugin version change changes the key");
 
+            Path plugin = work.resolve("plugin.jar");
+            Files.writeString(plugin, "first plugin build\n");
+            String firstBuild = ResultCache.key(context, sources, "development", plugin);
+            Files.writeString(plugin, "second plugin build\n");
+            require(!firstBuild.equals(ResultCache.key(context, sources, "development", plugin)),
+                "changing development plugin bytes changes the cache key");
+
             // The manifest selects dependencies that participate in typing.
             Files.writeString(project.resolve("flix.toml"), "[package]\n");
             require(!base.equals(ResultCache.key(context, sources, "1.0.0")),
