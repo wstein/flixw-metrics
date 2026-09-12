@@ -227,6 +227,12 @@ incompatible input is a usage failure at status 2. A source move becomes new plu
 the stable observation ID intentionally includes location. JSON and human reports retain the
 resolved side explicitly, while SARIF gives current results its standard baseline states.
 
+`init` does not have a second measurement implementation. It selects native JSON, follows the same
+cache-or-compiler path as `report`, and writes that rendered report to `metrics-baseline.json` after
+preflighting both output names. Its `.flixw-metrics.properties` contains comments only, so the
+captured effective policy is exactly the documented default. Both files use create-new semantics;
+if either already exists, initialization stops without overwriting or creating the other.
+
 `RuleDefinitions` is the single catalog for stable IDs, categories, SARIF severity, descriptions,
 default limits, and remediation. A tracked `.flixw-metrics.properties` may override a numeric
 limit, disable a rule, or suppress a scoped finding with a mandatory reason and optional expiry.

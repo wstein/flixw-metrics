@@ -90,8 +90,23 @@ The gate exits 1 when an unsuppressed finding meets or exceeds the selected regi
 (`note`, `warning`, or `error`), after still writing the complete report. Usage or analysis
 failures remain exit 2, so policy failure is distinguishable from a broken run.
 
-To adopt metrics without making existing debt block every change, capture a native JSON report
-on the branch you want to treat as the baseline, commit it, and gate only regressions:
+For a new project, initialize the reviewed files and get the CI command in one step:
+
+```console
+$ ./flixw metrics init
+created .flixw-metrics.properties
+created metrics-baseline.json
+CI: ./flixw metrics report --baseline metrics-baseline.json --fail-on-new warning
+```
+
+The generated policy contains documented, commented examples and therefore leaves every default
+active. The baseline is the complete native JSON report from the normal compiler-backed analysis,
+including provenance and effective policy. `init` refuses to overwrite either file; move or remove
+an existing file explicitly before trying again. Review and commit both files, then use the printed
+command in CI.
+
+To adopt metrics manually without making existing debt block every change, capture a native JSON
+report on the branch you want to treat as the baseline, commit it, and gate only regressions:
 
 ```console
 ./flixw metrics report --format json > metrics-baseline.json
@@ -172,6 +187,9 @@ Configuration never changes cached measurements and is deliberately absent from 
 measurement-cache key: editing policy takes effect immediately on a warm run. Reports include the
 effective rule state, limits, exclusions, and policy digest. Nothing fails the build unless a
 caller supplies `--fail-on` or `--fail-on-new`.
+
+If you change policy after `init`, recapture `metrics-baseline.json` with `--format json` before
+committing: baseline comparison deliberately rejects reports produced under different policy.
 
 ## What the numbers mean
 
