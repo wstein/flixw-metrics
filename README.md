@@ -216,8 +216,10 @@ hundred readable lines and ten dense ones can total the same, and the second is 
 opening. Blank and comment-only padding cannot improve the ratio. It is the `densest` ranking
 and the `dense` finding. Rankings show every definition, but only definitions with at least four
 code lines are eligible for a `dense` finding; a tiny branch-heavy helper is useful context, not
-actionable density debt. Human reports state that boundary beside the ranking, and JSON/SARIF
-carry it as rule metadata.
+actionable density debt. Human reports mark each ranking entry's rule eligibility, and native JSON
+carries `eligible` plus an `ineligibilityReason`; `true` means no structural prerequisite excludes
+the entry, not that it crossed a threshold. SARIF carries the minimum-size condition in its rule
+metadata.
 
 **Parameters and crammed lines are attributed to the local definition that owns them.** In
 the sample above, `Json.size.loop` is blamed for its own crammed line — not `Json.size`, the

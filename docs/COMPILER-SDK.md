@@ -140,7 +140,10 @@ ones can score the same in total, and the second is the one worth opening. Blank
 comment-only lines are excluded, so padding the span cannot improve the score. The ranking includes
 every definition, while the finding requires at least four code lines so a one-expression helper
 does not become debt merely for containing a branch. That eligibility floor lives in the rule
-registry, is used by threshold evaluation, and is disclosed in native JSON and SARIF metadata.
+registry and is used by threshold evaluation. Each native JSON ranking carries structural
+`eligible` and `ineligibilityReason` fields, and human reports mark ineligible entries in place;
+eligibility does not mean that the threshold was crossed. SARIF discloses the floor in its rule
+metadata.
 
 Module coupling is deliberately narrower than general dependency coupling. An edge from A to B
 means a project definition in A contains a resolved direct call to a definition in B. Type,

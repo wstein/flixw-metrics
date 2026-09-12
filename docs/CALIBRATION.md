@@ -205,6 +205,7 @@ Ratings are confidence that the action improves signal, from 1 (speculative) to 
 | **4/5** | Automate the pinned calibration corpus as a scheduled workflow. **Done.** | The weekly read-only job verifies full source SHAs and exact per-target results without adding network-heavy calibration to every pull request. |
 | **4/5** | Add first-class exclusions for generated or embedded-data sources. **Done.** | Exclusions keep sources in the compiler while removing their line totals and located quality signals; every report discloses matched paths and reasons. |
 | **3/5** | Establish performance budgets from repeated CI measurements. **Done.** | The scheduled job records five cold and five warm samples, enforcing conservative median and cache-speedup ceilings while retaining raw CI evidence for later tuning. |
+| **3/5** | Mark individual ranking entries that cannot become findings. **Done.** | Native JSON and both human reports now identify structurally ineligible entries with a concrete reason, including tiny dense definitions and tests exempt from the length rule. |
 
 Re-run this calibration when the compiler adapter changes, when a default threshold changes, or
 when the corpus gains a materially different Flix style. Compare distributions and reviewed
