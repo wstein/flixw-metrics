@@ -59,7 +59,7 @@ public final class Main {
                         + "       jar: " + context.compilerJar() + "\n"
                         + "       missing: " + String.join(", ", capabilities.missing()));
             }
-            Metrics.Format format = parseFormat(args);
+            Options options = parseOptions(args);
             List<Path> sources = Metrics.projectFiles(context.projectRoot());
             MetricsConfig config = MetricsConfig.read(context.projectRoot());
             CompilerModel.Model hit = cached(context, sources);
@@ -67,9 +67,11 @@ public final class Main {
                 // Findings, rankings and formatting are recomputed from the cached
                 // measurements, so a changed threshold takes effect on the next run rather
                 // than on the next cache miss.
-                System.out.print(Metrics.of(sources.size(), hit,
-                    SourceMetrics.measure(context.projectRoot(), sources, config), config).render(format,
-                        Provenance.of(context, sources, version()), config));
+                Metrics.Report report = Metrics.of(sources.size(), hit,
+                    SourceMetrics.measure(context.projectRoot(), sources, config), config);
+                System.out.print(report.render(options.format(),
+                    Provenance.of(context, sources, version()), config));
+                if (options.shouldFail(report)) System.exit(1);
                 return;
             }
             System.exit(spawnBridge(context, args));
@@ -105,8 +107,10 @@ public final class Main {
             // phase inherits this process's stdout, so it never sees the report as a value --
             // and parsing it back out of a stream the compiler also writes to would be reading
             // our own output past whatever Flix chose to print alongside it.
-            System.out.print(report.render(parseFormat(args),
+            Options options = parseOptions(args);
+            System.out.print(report.render(options.format(),
                                            Provenance.of(context, sources, version()), config));
+            if (options.shouldFail(report)) System.exit(1);
         } catch (LinkageError e) {
             // The promise is a sentence, never a stack trace, and the capability probe cannot
             // enumerate every member the adapter touches. Whatever it misses arrives here: the
@@ -186,17 +190,45 @@ public final class Main {
         return version == null ? "development" : version;
     }
 
-    private static Metrics.Format parseFormat(String[] args) {
-        List<String> rest = Arrays.asList(args);
-        if (!rest.isEmpty() && "report".equals(rest.get(0))) rest = rest.subList(1, rest.size());
-        if (rest.isEmpty()) return Metrics.Format.TEXT;
-        if (rest.size() == 2 && "--format".equals(rest.get(0)))
-            return Metrics.Format.parse(rest.get(1));
-        throw new Usage("usage: ./flixw metrics [report] [--format text|json|md|sarif]");
+    record Options(Metrics.Format format, String failOn) {
+        boolean shouldFail(Metrics.Report report) {
+            if (failOn == null) return false;
+            int threshold = RuleDefinitions.levelRank(failOn);
+            return report.smells().stream().anyMatch(smell -> RuleDefinitions.levelRank(
+                RuleDefinitions.byId(smell.rule()).level()) >= threshold);
+        }
+    }
+
+    static Options parseOptions(String[] args) {
+        List<String> rest = new ArrayList<>(Arrays.asList(args));
+        if (!rest.isEmpty() && "report".equals(rest.get(0))) rest.remove(0);
+        Metrics.Format format = Metrics.Format.TEXT;
+        String failOn = null;
+        for (int i = 0; i < rest.size(); i += 2) {
+            if (i + 1 >= rest.size()) throw usageError();
+            switch (rest.get(i)) {
+                case "--format" -> format = Metrics.Format.parse(rest.get(i + 1));
+                case "--fail-on" -> {
+                    String level = rest.get(i + 1);
+                    if (!List.of("note", "warning", "error").contains(level))
+                        throw new Usage("unknown failure level " + level
+                            + " (expected note, warning or error)");
+                    failOn = level;
+                }
+                default -> throw usageError();
+            }
+        }
+        return new Options(format, failOn);
+    }
+
+    private static Usage usageError() {
+        return new Usage("usage: ./flixw metrics [report] [--format text|json|md|sarif]"
+            + " [--fail-on note|warning|error]");
     }
 
     private static void usage() {
-        System.out.println("usage: ./flixw metrics [report] [--format text|json|md|sarif]\n"
+        System.out.println("usage: ./flixw metrics [report] [--format text|json|md|sarif]"
+            + " [--fail-on note|warning|error]\n"
             + "       ./flixw metrics capabilities\n\n"
             + "Reads typed compiler data through a supported compiler adapter.\n"
             + "Results are cached under FLIXW_PLUGIN_CACHE and reused until the sources, the\n"

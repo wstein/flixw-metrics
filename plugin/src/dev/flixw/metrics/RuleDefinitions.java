@@ -57,6 +57,15 @@ final class RuleDefinitions {
         return rule;
     }
 
+    static int levelRank(String level) {
+        return switch (level) {
+            case "error" -> 3;
+            case "warning" -> 2;
+            case "note" -> 1;
+            default -> 0;
+        };
+    }
+
     private static Map<String, Rule> index() {
         Map<String, Rule> out = new LinkedHashMap<>();
         for (Rule rule : ALL)

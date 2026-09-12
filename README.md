@@ -80,7 +80,15 @@ smells: 10
 (Abridged — each ranking lists its top few, not one.)
 
 Every finding names what was exceeded and by how much, so the threshold is arguable rather
-than mysterious. Nothing here fails your build.
+than mysterious. Reporting alone never fails your build; CI can opt into a gate explicitly:
+
+```console
+./flixw metrics report --format sarif --fail-on warning
+```
+
+The gate exits 1 when an unsuppressed finding meets or exceeds the selected registry severity
+(`note`, `warning`, or `error`), after still writing the complete report. Usage or analysis
+failures remain exit 2, so policy failure is distinguishable from a broken run.
 
 Four output formats:
 
@@ -131,8 +139,7 @@ incomplete suppressions stop with a diagnostic instead of silently weakening the
 
 Configuration never changes measurements or rankings, and it is deliberately absent from the
 measurement-cache key: editing policy takes effect immediately on a warm run. Reports include
-the effective rule state and limits. Nothing fails the build unless a caller explicitly decides
-to gate on the JSON or SARIF findings.
+the effective rule state and limits. Nothing fails the build unless a caller supplies `--fail-on`.
 
 ## What the numbers mean
 

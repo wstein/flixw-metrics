@@ -11,8 +11,8 @@ import java.util.List;
  *
  * <p>Every number here is arbitrary in the way every such number is. What matters is that each
  * is stated once, in one place, with the reason next to it — and that crossing one is
- * <em>reported</em>, never enforced. This plugin measures and names; it does not fail anybody's
- * build, because the project that needs a 200-line definition exists and its author knows why.
+ * <em>reported</em> by default. A caller may explicitly opt into a severity gate, because the
+ * project that needs a 200-line definition exists and its author knows why.
  *
  * <p><b>Tests are judged differently, not exempted.</b> A test with no doc comment is not a gap
  * in a public API; a test that is long is usually a table of cases, which is the clearest way to

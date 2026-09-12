@@ -191,12 +191,7 @@ final class Formats {
     }
 
     private static int severity(SourceMetrics.Smell smell) {
-        return switch (RuleDefinitions.byId(smell.rule()).level()) {
-            case "error" -> 3;
-            case "warning" -> 2;
-            case "note" -> 1;
-            default -> 0;
-        };
+        return RuleDefinitions.levelRank(RuleDefinitions.byId(smell.rule()).level());
     }
 
     /**

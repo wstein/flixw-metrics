@@ -206,10 +206,12 @@ portable file, and source line. Native JSON exposes it as `id`; SARIF carries th
 `partialFingerprints.flixwMetricsFinding/v1`, so consumers can correlate a finding between
 formats and across unchanged source revisions without parsing its prose.
 
-### Findings are reported, never enforced
+### Findings are report-only unless a caller opts into a gate
 
-`Thresholds` is the single place a measurement becomes a finding, and nothing there fails a
-build. The project that needs a 200-line definition exists and its author knows why.
+`Thresholds` is the single place a measurement becomes a finding. The default command only
+reports: the project that needs a 200-line definition exists and its author knows why. A caller
+may explicitly choose `--fail-on note|warning|error`; the full report is still written and exit
+status 1 then means policy failure, distinct from usage or analysis failure at status 2.
 
 `RuleDefinitions` is the single catalog for stable IDs, categories, SARIF severity, descriptions,
 default limits, and remediation. A tracked `.flixw-metrics.properties` may override a numeric
