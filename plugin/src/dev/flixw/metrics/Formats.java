@@ -39,23 +39,19 @@ final class Formats {
      */
     private static final int SHOWN_PER_RULE = 10;
 
-    static String markdown(Metrics.Report r, Provenance p) {
+    static String markdown(Metrics.Report r, Provenance p, MetricsConfig config) {
         StringBuilder b = new StringBuilder("# Flix metrics\n\n");
+        b.append("| | |\n|---|---|\n");
         if (p != null) {
-            b.append("| | |\n|---|---|\n");
             b.append("| commit | `").append(p.commit()).append(p.dirty() ? "` **+ uncommitted changes**" : "`")
                     .append(" |\n");
             b.append("| analyzer | metrics ").append(p.version()).append(" |\n");
             b.append("| measured | ").append(p.when()).append(" |\n");
-            b.append("| thresholds | lines ").append(Thresholds.MAX_LINES)
-                    .append(", params ").append(Thresholds.MAX_PARAMETERS)
-                    .append(", nesting ").append(Thresholds.MAX_NESTING)
-                    .append(", fan-out ").append(Thresholds.MAX_FAN_OUT)
-                    .append(", tokens/line ").append(Thresholds.MAX_LINE_TOKENS).append(" |\n\n");
-            if (p.dirty())
-                b.append("> Measured over a working tree with uncommitted changes, so this"
-                        + " describes a state no commit contains. Not a baseline.\n\n");
         }
+        b.append("| policy | ").append(config.policySummary()).append(" |\n\n");
+        if (p != null && p.dirty())
+            b.append("> Measured over a working tree with uncommitted changes, so this"
+                    + " describes a state no commit contains. Not a baseline.\n\n");
 
         if (r.smells().isEmpty()) {
             b.append("No findings.\n\n");
@@ -132,9 +128,10 @@ final class Formats {
         b.append("| `cognitive` | each branch rule weighted by nesting, plus boolean operators"
                 + " and match guards | higher is worse |\n");
         b.append("| `dense` | `cognitive / lines` of one definition | higher is worse;"
-                + " flagged over 1.0 |\n");
+                + " flagged over ").append(config.limit(RuleDefinitions.DENSE)).append(" |\n");
         b.append("| `crammed` | most lexer tokens on any one line of a definition | higher is"
-                + " worse; flagged over ").append(Thresholds.MAX_LINE_TOKENS).append(" |\n");
+                + " worse; flagged over ").append(config.limit(RuleDefinitions.CRAMMED_LINE))
+                .append(" |\n");
         b.append("| `instability` | definition-call `fan-out / (fan-out + fan-in)` of a module"
                 + " | 0 is called by others, 1 calls others |\n");
         b.append("| `docCoveragePercent` | documented ÷ public definitions | higher is better;"
@@ -268,7 +265,7 @@ final class Formats {
         }
     }
 
-    static String sarif(Metrics.Report r, Provenance p) {
+    static String sarif(Metrics.Report r, Provenance p, MetricsConfig config) {
         StringBuilder b = new StringBuilder();
         b.append("{\n  \"$schema\": \"https://json.schemastore.org/sarif-2.1.0.json\",\n");
         b.append("  \"version\": \"2.1.0\",\n  \"runs\": [\n    {\n");
@@ -297,8 +294,10 @@ final class Formats {
             b.append(i == rules.size() - 1 ? "\n" : ",\n");
         }
         b.append("          ]\n        }\n      }");
+        b.append(",\n      \"properties\": {");
         if (p != null)
-            b.append(",\n      \"properties\": ").append(p.json());
+            b.append("\"provenance\": ").append(p.json()).append(", ");
+        b.append("\"configuration\": ").append(config.json()).append('}');
         b.append(",\n");
         b.append("      \"results\": [\n");
         for (int i = 0; i < r.smells().size(); i++) {

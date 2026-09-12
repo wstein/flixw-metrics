@@ -61,18 +61,19 @@ public final class Main {
             }
             Metrics.Format format = parseFormat(args);
             List<Path> sources = Metrics.projectFiles(context.projectRoot());
+            MetricsConfig config = MetricsConfig.read(context.projectRoot());
             CompilerModel.Model hit = cached(context, sources);
             if (hit != null) {
                 // Findings, rankings and formatting are recomputed from the cached
                 // measurements, so a changed threshold takes effect on the next run rather
                 // than on the next cache miss.
                 System.out.print(Metrics.of(sources.size(), hit,
-                    SourceMetrics.measure(context.projectRoot(), sources)).render(format,
-                        Provenance.of(context.projectRoot(), version())));
+                    SourceMetrics.measure(context.projectRoot(), sources, config), config).render(format,
+                        Provenance.of(context.projectRoot(), version()), config));
                 return;
             }
             System.exit(spawnBridge(context, args));
-        } catch (Usage | Metrics.Failure e) {
+        } catch (Usage | Metrics.Failure | MetricsConfig.Invalid e) {
             System.err.println("metrics: " + e.getMessage());
             System.exit(2);
         } catch (IOException e) {
@@ -97,14 +98,15 @@ public final class Main {
             if (context.pluginCache() != null)
                 ResultCache.write(context.pluginCache(),
                     ResultCache.key(context, sources, version()), Wire.encode(m));
-            SourceMetrics text = SourceMetrics.measure(context.projectRoot(), sources);
-            Metrics.Report report = Metrics.of(sources.size(), m, text);
+            MetricsConfig config = MetricsConfig.read(context.projectRoot());
+            SourceMetrics text = SourceMetrics.measure(context.projectRoot(), sources, config);
+            Metrics.Report report = Metrics.of(sources.size(), m, text, config);
             // Written before rendering, and by this phase rather than the outer one. The outer
             // phase inherits this process's stdout, so it never sees the report as a value --
             // and parsing it back out of a stream the compiler also writes to would be reading
             // our own output past whatever Flix chose to print alongside it.
             System.out.print(report.render(parseFormat(args),
-                                           Provenance.of(context.projectRoot(), version())));
+                                           Provenance.of(context.projectRoot(), version()), config));
         } catch (LinkageError e) {
             // The promise is a sentence, never a stack trace, and the capability probe cannot
             // enumerate every member the adapter touches. Whatever it misses arrives here: the
@@ -113,7 +115,7 @@ public final class Main {
             System.err.println("       " + e);
             System.err.println("       run: ./flixw metrics capabilities");
             System.exit(2);
-        } catch (Usage | Metrics.Failure | CompilerModel.ModelFailure e) {
+        } catch (Usage | Metrics.Failure | MetricsConfig.Invalid | CompilerModel.ModelFailure e) {
             System.err.println("metrics: " + e.getMessage());
             System.exit(2);
         } catch (IOException e) {
@@ -190,14 +192,14 @@ public final class Main {
         if (rest.isEmpty()) return Metrics.Format.TEXT;
         if (rest.size() == 2 && "--format".equals(rest.get(0)))
             return Metrics.Format.parse(rest.get(1));
-        throw new Usage("usage: ./flixw metrics [report] [--format text|json]");
+        throw new Usage("usage: ./flixw metrics [report] [--format text|json|md|sarif]");
     }
 
     private static void usage() {
-        System.out.println("usage: ./flixw metrics [report] [--format text|json]\n"
+        System.out.println("usage: ./flixw metrics [report] [--format text|json|md|sarif]\n"
             + "       ./flixw metrics capabilities\n\n"
-            + "Reads typed compiler data through a supported reflective API; formats are text or json.\n"
-            + "Results are cached under FLIXW_CACHE_HOME and reused until the sources, the\n"
+            + "Reads typed compiler data through a supported compiler adapter.\n"
+            + "Results are cached under FLIXW_PLUGIN_CACHE and reused until the sources, the\n"
             + "manifest, the pinned compiler or this plugin change.");
     }
 

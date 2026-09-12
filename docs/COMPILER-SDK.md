@@ -210,6 +210,12 @@ formats and across unchanged source revisions without parsing its prose.
 `Thresholds` is the single place a measurement becomes a finding, and nothing there fails a
 build. The project that needs a 200-line definition exists and its author knows why.
 
+`RuleDefinitions` is the single catalog for stable IDs, categories, SARIF severity, descriptions,
+default limits, and remediation. A tracked `.flixw-metrics.properties` may override a numeric
+limit, disable a rule, or suppress a scoped finding with a mandatory reason and optional expiry.
+This policy is applied after cached compiler measurements are read, so changing it takes effect
+without invalidating or contaminating the measurement cache.
+
 **Tests are judged differently, not exempted.** A long test is usually a table of cases, which
 is the clearest way to write it; an undocumented test is not a gap in a public API. Reporting
 those trains a reader to skim the whole list, and the finding that mattered goes with them.

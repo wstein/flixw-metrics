@@ -72,28 +72,42 @@ final class Thresholds {
     static final int MAX_RETURN_WIDTH = MAX_PARAMETERS;
 
     static List<SourceMetrics.Smell> apply(List<DefInfo> defs, List<ModuleInfo> modules) {
+        return apply(defs, modules, MetricsConfig.defaults());
+    }
+
+    static List<SourceMetrics.Smell> apply(List<DefInfo> defs, List<ModuleInfo> modules,
+                                           MetricsConfig config) {
         List<SourceMetrics.Smell> out = new ArrayList<>();
         for (DefInfo d : defs) {
-            if (!d.isTest() && d.lines() > MAX_LINES)
-                out.add(at(d, "definition-too-long", d.lines(), MAX_LINES, "lines", ""));
-            if (d.widestParameterList() > MAX_PARAMETERS)
-                out.add(at(d, "too-many-parameters", d.widestParameterList(), MAX_PARAMETERS,
+            double maxLines = config.limit(RuleDefinitions.DEFINITION_TOO_LONG);
+            if (config.enabled(RuleDefinitions.DEFINITION_TOO_LONG)
+                    && !d.isTest() && d.lines() > maxLines)
+                out.add(at(d, "definition-too-long", d.lines(), maxLines, "lines", ""));
+            double maxParameters = config.limit(RuleDefinitions.TOO_MANY_PARAMETERS);
+            if (config.enabled(RuleDefinitions.TOO_MANY_PARAMETERS)
+                    && d.widestParameterList() > maxParameters)
+                out.add(at(d, "too-many-parameters", d.widestParameterList(), maxParameters,
                     "parameters",
                     d.maxLocalParameters() > d.parameters()
                         ? "widest is a local definition, not the signature" : ""));
-            if (d.returnWidth() > MAX_RETURN_WIDTH)
-                out.add(at(d, "wide-return", d.returnWidth(), MAX_RETURN_WIDTH, "parts", ""));
-            if (d.nesting() > MAX_NESTING)
-                out.add(at(d, "deeply-nested", d.nesting(), MAX_NESTING, "levels", ""));
-            if (d.cognitiveDensity() > MAX_COGNITIVE_DENSITY && d.lines() > 3)
-                out.add(at(d, "dense", d.cognitiveDensity(), MAX_COGNITIVE_DENSITY,
+            double maxReturn = config.limit(RuleDefinitions.WIDE_RETURN);
+            if (config.enabled(RuleDefinitions.WIDE_RETURN) && d.returnWidth() > maxReturn)
+                out.add(at(d, "wide-return", d.returnWidth(), maxReturn, "parts", ""));
+            double maxNesting = config.limit(RuleDefinitions.DEEPLY_NESTED);
+            if (config.enabled(RuleDefinitions.DEEPLY_NESTED) && d.nesting() > maxNesting)
+                out.add(at(d, "deeply-nested", d.nesting(), maxNesting, "levels", ""));
+            double maxDensity = config.limit(RuleDefinitions.DENSE);
+            if (config.enabled(RuleDefinitions.DENSE)
+                    && d.cognitiveDensity() > maxDensity && d.lines() > 3)
+                out.add(at(d, "dense", d.cognitiveDensity(), maxDensity,
                     "complexity per line", ""));
             // Against the local that owns the line, not the definition it sits in: a crammed
             // line blamed on a long outer definition sends the reader to the wrong place. That
             // is why the subject is the owner while the location is the line itself.
-            if (d.maxLineTokens() > MAX_LINE_TOKENS)
+            double maxTokens = config.limit(RuleDefinitions.CRAMMED_LINE);
+            if (config.enabled(RuleDefinitions.CRAMMED_LINE) && d.maxLineTokens() > maxTokens)
                 out.add(new SourceMetrics.Smell("crammed-line", d.maxLineTokensOwner(), d.file(),
-                    d.maxLineTokensLine(), d.maxLineTokens(), MAX_LINE_TOKENS, "", "tokens"));
+                    d.maxLineTokensLine(), d.maxLineTokens(), maxTokens, "", "tokens"));
             // Public, not a test, and nobody wrote down what it is for. The one finding here
             // that is about the reader rather than the writer.
             //
@@ -103,14 +117,16 @@ final class Thresholds {
             // so a `pub` helper in test/ -- public for visibility from the test that uses it,
             // not because anyone outside will call it -- was reported as undocumented API and
             // counted against documentation coverage. The scope is stated in the report.
-            if (d.isPublic() && !d.isTest() && !inTests(d.file()) && !d.hasDoc())
+            if (config.enabled(RuleDefinitions.UNDOCUMENTED_PUBLIC)
+                    && d.isPublic() && !d.isTest() && !inTests(d.file()) && !d.hasDoc())
                 out.add(at(d, "undocumented-public", 1, 1, "", "public with no doc comment"));
         }
         for (ModuleInfo m : modules) {
-            if (m.fanOut() > MAX_FAN_OUT)
+            double maxFanOut = config.limit(RuleDefinitions.WIDE_COUPLING);
+            if (config.enabled(RuleDefinitions.WIDE_COUPLING) && m.fanOut() > maxFanOut)
                 // A module has no file of its own; it spans them by definition.
                 out.add(new SourceMetrics.Smell("wide-coupling", m.name(), "", 0,
-                    m.fanOut(), MAX_FAN_OUT, "", RuleDefinitions.WIDE_COUPLING.unit()));
+                    m.fanOut(), maxFanOut, "", RuleDefinitions.WIDE_COUPLING.unit()));
         }
         return out;
     }

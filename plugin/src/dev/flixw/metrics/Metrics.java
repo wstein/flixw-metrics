@@ -47,16 +47,20 @@ final class Metrics {
          * nothing reads this report back, so a schema change is a promise to a consumer rather
          * than a compatibility question for us. {@link Wire#VERSION} is the cache's own guard.
          */
-        static final int SCHEMA = 12;
+        static final int SCHEMA = 13;
 
 
-        String render(Format format) { return render(format, null); }
+        String render(Format format) { return render(format, null, MetricsConfig.defaults()); }
 
         String render(Format format, Provenance p) {
+            return render(format, p, MetricsConfig.defaults());
+        }
+
+        String render(Format format, Provenance p, MetricsConfig config) {
             return switch (format) {
-                case JSON -> json(p);
-                case MARKDOWN -> Formats.markdown(this, p);
-                case SARIF -> Formats.sarif(this, p);
+                case JSON -> json(p, config);
+                case MARKDOWN -> Formats.markdown(this, p, config);
+                case SARIF -> Formats.sarif(this, p, config);
                 case TEXT -> text();
             };
         }
@@ -112,11 +116,12 @@ final class Metrics {
             return fields(false);
         }
 
-        private String json(Provenance p) {
+        private String json(Provenance p, MetricsConfig config) {
             StringBuilder b = new StringBuilder("{\n");
             b.append("  \"schemaVersion\": ").append(SCHEMA).append(",\n");
             if (p != null)
                 b.append("  \"provenance\": ").append(p.json()).append(",\n");
+            b.append("  \"configuration\": ").append(config.json()).append(",\n");
             // Nested, because two of the totals are named for things that also have lists --
             // `definitions` and `modules` -- and a flat object emitted both. JSON allows a
             // duplicate key and parsers keep the last, so the count was silently replaced by
@@ -210,6 +215,10 @@ final class Metrics {
      * the declarations, so writing them once means a second adapter inherits all of it.
      */
     static Report of(int files, CompilerModel.Model m, SourceMetrics text) {
+        return of(files, m, text, MetricsConfig.defaults());
+    }
+
+    static Report of(int files, CompilerModel.Model m, SourceMetrics text, MetricsConfig config) {
         List<CompilerModel.DefInfo> defs = m.defs();
         int localDefs = defs.stream().mapToInt(CompilerModel.DefInfo::localDefs).sum();
         int effectful = (int) defs.stream().filter(d -> !d.isPure()).count();
@@ -220,7 +229,8 @@ final class Metrics {
         List<CompilerModel.DefInfo> api = defs.stream()
             .filter(d -> d.isPublic() && !d.isTest() && !Thresholds.inTests(d.file())).toList();
         List<SourceMetrics.Smell> smells = new java.util.ArrayList<>(text.smells());
-        smells.addAll(Thresholds.apply(defs, m.modules()));
+        smells.addAll(Thresholds.apply(defs, m.modules(), config));
+        smells.removeIf(config::isSuppressed);
         smells.sort(java.util.Comparator.comparing(SourceMetrics.Smell::file)
             .thenComparingInt(SourceMetrics.Smell::line)
             .thenComparing(SourceMetrics.Smell::rule));

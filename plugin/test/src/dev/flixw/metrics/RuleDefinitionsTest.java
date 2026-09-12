@@ -21,7 +21,8 @@ public final class RuleDefinitionsTest {
             require(RuleDefinitions.byId(rule.id()) == rule,
                 "a stable id resolves to its definition: " + rule.id());
         }
-        String sarif = Formats.sarif(FormatsTest.reportForOtherTests(), null);
+        String sarif = Formats.sarif(FormatsTest.reportForOtherTests(), null,
+            MetricsConfig.defaults());
         for (RuleDefinitions.Rule rule : rules)
             require(sarif.contains("\"id\": \"" + rule.id() + "\""),
                 "SARIF declares registry rule " + rule.id());

@@ -113,6 +113,7 @@ object plugin extends ScalaModule {
                        "dev.flixw.metrics.ThresholdsTest",
                        "dev.flixw.metrics.MetricsTest",
                        "dev.flixw.metrics.RuleDefinitionsTest",
+                       "dev.flixw.metrics.MetricsConfigTest",
                        "dev.flixw.metrics.FormatsTest")) {
         os.proc("java", "-cp", cp, main).call(stdout = os.Inherit, stderr = os.Inherit)
       }

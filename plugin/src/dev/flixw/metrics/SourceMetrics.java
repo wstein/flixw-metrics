@@ -35,6 +35,11 @@ record SourceMetrics(int lines, int longestLine, int linesOverLimit, List<Smell>
     static final int LINE_LIMIT = (int) RuleDefinitions.LINE_TOO_LONG.defaultLimit();
 
     static SourceMetrics measure(Path projectRoot, List<Path> sources) throws IOException {
+        return measure(projectRoot, sources, MetricsConfig.defaults());
+    }
+
+    static SourceMetrics measure(Path projectRoot, List<Path> sources, MetricsConfig config)
+            throws IOException {
         int lines = 0;
         int longest = 0;
         int over = 0;
@@ -47,12 +52,13 @@ record SourceMetrics(int lines, int longestLine, int linesOverLimit, List<Smell>
                 // depend on a setting the file does not carry.
                 int length = text.get(i).length();
                 if (length > longest) longest = length;
-                if (length > LINE_LIMIT) {
+                double lineLimit = config.limit(RuleDefinitions.LINE_TOO_LONG);
+                if (config.enabled(RuleDefinitions.LINE_TOO_LONG) && length > lineLimit) {
                     over++;
                     smells.add(new Smell("line-too-long",
                         projectRoot.relativize(source).toString() + ":" + (i + 1),
                         projectRoot.relativize(source).toString(), i + 1,
-                        length, LINE_LIMIT, "", RuleDefinitions.LINE_TOO_LONG.unit()));
+                        length, lineLimit, "", RuleDefinitions.LINE_TOO_LONG.unit()));
                 }
             }
         }

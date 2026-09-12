@@ -50,7 +50,7 @@ public final class FormatsTest {
             "findings come before totals: the reader arrived with a question, not a census");
         require(md.contains("_Invert a condition"), "each rule carries an action");
         // 20/12 is 1.7x and 5/4 is 1.3x, so the worse group leads regardless of group size.
-        require(md.indexOf("wide-coupling") < md.indexOf("deeply-nested"),
+        require(md.indexOf("### `wide-coupling`") < md.indexOf("### `deeply-nested`"),
             "groups are ordered by their worst instance, not by how many they hold");
         require(md.contains("1.7x"), "each finding shows how far over it is");
 
