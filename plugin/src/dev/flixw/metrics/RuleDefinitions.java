@@ -31,7 +31,7 @@ final class RuleDefinitions {
         "complexity per code line", 1.0, "warning");
     static final Rule CRAMMED_LINE = numeric("crammed-line", "Crammed line", "readability",
         "A source line contains more lexer tokens than the configured limit.",
-        "Break the line where it reads, not at a column limit.", "tokens", 30, "note");
+        "Break the line where it reads, not at a column limit.", "tokens", 35, "note");
     static final Rule LINE_TOO_LONG = numeric("line-too-long", "Line too long", "readability",
         "A source line contains more UTF-16 code units than the configured limit.",
         "Wrap it.", "UTF-16 code units", 100, "note");

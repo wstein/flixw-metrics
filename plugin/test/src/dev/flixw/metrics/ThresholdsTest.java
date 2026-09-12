@@ -63,6 +63,12 @@ public final class ThresholdsTest {
             && s.actual() == 44 && s.limit() == Thresholds.MAX_LINE_TOKENS),
             "a crammed line names the local that owns it, its line, and both numbers");
 
+        DefInfo calibratedBoundary = new DefInfo("Foo.combinator", "Foo", "src/Foo.flix", 1,
+            1, 1, 1, 0, 0, 0, 0, 35, 1, "Foo.combinator", 0, 0, 1,
+            false, false, true, List.of());
+        require(!has(Thresholds.apply(List.of(calibratedBoundary), List.of()), "crammed-line"),
+            "the calibrated 35-token boundary is not reported");
+
         require(has(Thresholds.apply(List.of(),
             List.of(new ModuleInfo("Wide", 3, 40, 0, 99))), "wide-coupling"),
             "a module depending on many others is reported");
