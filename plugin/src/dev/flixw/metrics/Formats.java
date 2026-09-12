@@ -59,16 +59,14 @@ final class Formats {
             // Grouped, because ten instances of one rule is one decision to make while ten
             // separate rules is ten, and an ungrouped list hides which it is.
             //
-            // Ordered by the worst instance in each group, not by how many there are:
-            // sixteen
-            // definitions one doc comment short is a chore, and one definition at four
-            // times the
-            // nesting limit is a problem. Counting alone puts the chore first every time.
+            // Ordered by registry severity, then the worst instance in each group. Threshold
+            // multiples are meaningful within a severity; they do not make unrelated rules
+            // scientifically comparable. Group size never decides priority.
             Map<String, List<SourceMetrics.Smell>> byRule = new LinkedHashMap<>();
             r.smells().stream()
                     .collect(java.util.stream.Collectors.groupingBy(SourceMetrics.Smell::rule))
                     .entrySet().stream()
-                    .sorted((x, y) -> Double.compare(worst(y.getValue()), worst(x.getValue())))
+                    .sorted((x, y) -> compareGroups(x.getValue(), y.getValue()))
                     .forEach(e -> byRule.put(e.getKey(),
                             e.getValue().stream()
                                     .sorted((a, c) -> Double.compare(c.overBy(), a.overBy())).toList()));
@@ -181,6 +179,22 @@ final class Formats {
     /** The worst instance in a group, which is what decides the group's place. */
     private static double worst(List<SourceMetrics.Smell> smells) {
         return smells.stream().mapToDouble(SourceMetrics.Smell::overBy).max().orElse(0);
+    }
+
+    /** Severity is comparable across rules; threshold multiples are only comparable within it. */
+    private static int compareGroups(List<SourceMetrics.Smell> left,
+                                     List<SourceMetrics.Smell> right) {
+        int severity = Integer.compare(severity(right.get(0)), severity(left.get(0)));
+        return severity != 0 ? severity : Double.compare(worst(right), worst(left));
+    }
+
+    private static int severity(SourceMetrics.Smell smell) {
+        return switch (RuleDefinitions.byId(smell.rule()).level()) {
+            case "error" -> 3;
+            case "warning" -> 2;
+            case "note" -> 1;
+            default -> 0;
+        };
     }
 
     /**

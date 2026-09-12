@@ -54,6 +54,16 @@ public final class FormatsTest {
             "groups are ordered by their worst instance, not by how many they hold");
         require(md.contains("1.7x"), "each finding shows how far over it is");
 
+        Metrics.Report priority = report(List.of(
+            new SourceMetrics.Smell("line-too-long", "src/A.flix:1", "src/A.flix", 1,
+                1000, 100, "", "UTF-16 code units"),
+            new SourceMetrics.Smell("deeply-nested", "A.deep", "src/A.flix", 2,
+                5, 4, "", "levels")));
+        String priorityMd = priority.render(Metrics.Format.MARKDOWN);
+        require(priorityMd.indexOf("### `deeply-nested`")
+                < priorityMd.indexOf("### `line-too-long`"),
+            "configured severity outranks incomparable threshold multiples");
+
         // The ranking heading names what the table is, not what to do about it -- a project
         // with findings still reads the extremes as plain fact, with no "nothing to act on"
         // caveat that would only make sense when nothing above found anything.

@@ -186,11 +186,11 @@ charting a number over time all mean parsing English back into figures somebody 
 So the measurement and the limit are fields, and **`detail` is derived from them** — which also
 means the two cannot drift apart.
 
-`overBy` is a **multiple**, so findings of different kinds order against each other: 12
-parameters against a limit of 5 and 180 lines against 60 are both 2.4x, and "how bad is this"
-means the same for both. The Markdown work plan uses it to order groups by their worst instance
-rather than by size — sixteen definitions one doc comment short is a chore; one definition at
-four times the nesting limit is a problem, and counting alone puts the chore first.
+`overBy` is a **multiple** used to order findings within one configured severity. It does not
+pretend that twice a line-length limit has the same consequence as twice a nesting limit. The
+Markdown work plan orders groups by registry severity first and their worst multiple second,
+rather than by group size — sixteen definitions one doc comment short is a chore; one deeply
+nested definition can be the more urgent problem, and counting alone puts the chore first.
 
 A finding with **no unit is categorical**: something is absent, and there is no amount by which
 it is absent. Those score exactly 1 and sort below anything that actually exceeded a limit.
