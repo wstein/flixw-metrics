@@ -15,8 +15,33 @@ public final class PluginIntegrationTest {
 
     public static void main(String[] args) throws Exception {
         Path project = Flix075AdapterTest.copyFixture(Path.of(args[0]));
+        Path initProject = Flix075AdapterTest.copyFixture(Path.of(args[0]));
         Path cache = Files.createTempDirectory("flixw-metrics-integration-cache-");
+        Path initCache = Files.createTempDirectory("flixw-metrics-init-cache-");
         try {
+            Path plugin = Path.of(args[1]);
+            Path compiler = Path.of(args[2]);
+            String initialized = runCommand(initProject, initCache, plugin, compiler,
+                System.getProperty("java.home"), "init");
+            require(initialized.contains("--fail-on-new warning")
+                    && Files.isRegularFile(initProject.resolve(MetricsConfig.FILE))
+                    && Files.isRegularFile(initProject.resolve(Initializer.BASELINE_FILE)),
+                "packaged init creates policy and baseline and prints the CI gate");
+            JsonObject initializedBaseline = JsonParser.parseString(Files.readString(
+                initProject.resolve(Initializer.BASELINE_FILE))).getAsJsonObject();
+            require(initializedBaseline.has("provenance")
+                    && initializedBaseline.has("configuration")
+                    && initializedBaseline.has("smells"),
+                "init captures the complete native report through the compiler pipeline");
+            String policyBefore = Files.readString(initProject.resolve(MetricsConfig.FILE));
+            String baselineBefore = Files.readString(initProject.resolve(Initializer.BASELINE_FILE));
+            runCommandExpecting(initProject, initCache, plugin, compiler,
+                System.getProperty("java.home"), 2, "init");
+            require(Files.readString(initProject.resolve(MetricsConfig.FILE)).equals(policyBefore)
+                    && Files.readString(initProject.resolve(Initializer.BASELINE_FILE))
+                        .equals(baselineBefore),
+                "packaged init refuses to overwrite either onboarding artifact");
+
             Path generated = project.resolve("src/generated/Data.flix");
             Files.createDirectories(generated.getParent());
             Files.writeString(generated, "pub def generated(): String = \"" + "x".repeat(200)
@@ -25,8 +50,6 @@ public final class PluginIntegrationTest {
                 exclusions.generated.file=src/generated/**
                 exclusions.generated.reason=generated integration fixture
                 """);
-            Path plugin = Path.of(args[1]);
-            Path compiler = Path.of(args[2]);
             verifyArtifact(plugin);
             String cold = run(project, cache, plugin, compiler, System.getProperty("java.home"),
                 "json");
@@ -89,7 +112,9 @@ public final class PluginIntegrationTest {
             System.out.println("PluginIntegrationTest: ok");
         } finally {
             Flix075AdapterTest.delete(project);
+            Flix075AdapterTest.delete(initProject);
             Flix075AdapterTest.delete(cache);
+            Flix075AdapterTest.delete(initCache);
         }
     }
 
@@ -125,6 +150,38 @@ public final class PluginIntegrationTest {
         env.put("FLIXW_JAVA_HOME", javaHome);
         env.put("FLIXW_PLUGIN_CACHE", cache.toString());
         Path errors = Files.createTempFile("flixw-metrics-stderr-", ".txt");
+        try {
+            Process process = builder.redirectError(errors.toFile()).start();
+            String stdout = new String(process.getInputStream().readAllBytes(),
+                java.nio.charset.StandardCharsets.UTF_8);
+            int status = process.waitFor();
+            if (status != expected)
+                throw new AssertionError("plugin exited " + status + " instead of " + expected
+                    + ": " + Files.readString(errors));
+            return stdout;
+        } finally {
+            Files.deleteIfExists(errors);
+        }
+    }
+
+    private static String runCommand(Path project, Path cache, Path plugin, Path compiler,
+                                     String javaHome, String... command) throws Exception {
+        return runCommandExpecting(project, cache, plugin, compiler, javaHome, 0, command);
+    }
+
+    private static String runCommandExpecting(Path project, Path cache, Path plugin, Path compiler,
+                                              String javaHome, int expected, String... command)
+            throws Exception {
+        ProcessBuilder builder = new ProcessBuilder(new java.util.ArrayList<>(List.of(
+            System.getProperty("java.home") + "/bin/java", "-jar", plugin.toString())));
+        builder.command().addAll(List.of(command));
+        Map<String, String> env = builder.environment();
+        env.put("FLIXW_ABI_VERSION", "1");
+        env.put("FLIXW_PROJECT_ROOT", project.toString());
+        env.put("FLIXW_COMPILER_JAR", compiler.toString());
+        env.put("FLIXW_JAVA_HOME", javaHome);
+        env.put("FLIXW_PLUGIN_CACHE", cache.toString());
+        Path errors = Files.createTempFile("flixw-metrics-init-stderr-", ".txt");
         try {
             Process process = builder.redirectError(errors.toFile()).start();
             String stdout = new String(process.getInputStream().readAllBytes(),

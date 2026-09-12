@@ -10,8 +10,14 @@ public final class MainOptionsTest {
     public static void main(String[] args) {
         Main.Options defaults = Main.parseOptions(new String[] {});
         require(defaults.format() == Metrics.Format.TEXT && defaults.failOn() == null
-                && defaults.baseline() == null && defaults.failOnNew() == null,
+                && defaults.baseline() == null && defaults.failOnNew() == null
+                && !defaults.init(),
             "the default remains report-only text");
+        Main.Options init = Main.parseOptions(new String[] {"init"});
+        require(init.init() && init.format() == Metrics.Format.JSON,
+            "init selects native JSON for the captured baseline");
+        expectUsage(new String[] {"init", "--format", "text"},
+            "init accepts no options");
         Main.Options configured = Main.parseOptions(new String[] {
             "report", "--fail-on", "warning", "--format", "sarif",
             "--baseline", "metrics-baseline.json", "--fail-on-new", "error"

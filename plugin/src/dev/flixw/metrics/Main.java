@@ -60,6 +60,7 @@ public final class Main {
                         + "       missing: " + String.join(", ", capabilities.missing()));
             }
             Options options = parseOptions(args);
+            if (options.init()) Initializer.preflight(context.projectRoot());
             List<Path> sources = Metrics.projectFiles(context.projectRoot());
             MetricsConfig config = MetricsConfig.read(context.projectRoot());
             CompilerModel.Model hit = cached(context, sources);
@@ -69,10 +70,7 @@ public final class Main {
                 // than on the next cache miss.
                 Metrics.Report report = Metrics.of(sources.size(), hit,
                     SourceMetrics.measure(context.projectRoot(), sources, config), config);
-                Baseline.Comparison comparison = options.compare(context.projectRoot(), report,
-                    config);
-                System.out.print(report.render(options.format(),
-                    Provenance.of(context, sources, version()), config, comparison));
+                Baseline.Comparison comparison = emit(context, sources, report, config, options);
                 if (options.shouldFail(report, comparison)) System.exit(1);
                 return;
             }
@@ -90,6 +88,8 @@ public final class Main {
     private static void bridge(String[] args) {
         try {
             Context context = Context.read();
+            Options options = parseOptions(args);
+            if (options.init()) Initializer.preflight(context.projectRoot());
             List<Path> sources = Metrics.projectFiles(context.projectRoot());
             // Resolved here, in the only JVM that has a compiler on its class path. The
             // adapter is what knows Flix's internals; nothing else in this plugin does.
@@ -109,10 +109,7 @@ public final class Main {
             // phase inherits this process's stdout, so it never sees the report as a value --
             // and parsing it back out of a stream the compiler also writes to would be reading
             // our own output past whatever Flix chose to print alongside it.
-            Options options = parseOptions(args);
-            Baseline.Comparison comparison = options.compare(context.projectRoot(), report, config);
-            System.out.print(report.render(options.format(),
-                Provenance.of(context, sources, version()), config, comparison));
+            Baseline.Comparison comparison = emit(context, sources, report, config, options);
             if (options.shouldFail(report, comparison)) System.exit(1);
         } catch (LinkageError e) {
             // The promise is a sentence, never a stack trace, and the capability probe cannot
@@ -130,6 +127,20 @@ public final class Main {
             System.err.println("metrics: " + e.getMessage());
             System.exit(2);
         }
+    }
+
+    private static Baseline.Comparison emit(Context context, List<Path> sources,
+                                             Metrics.Report report, MetricsConfig config,
+                                             Options options) throws IOException {
+        Provenance provenance = Provenance.of(context, sources, version());
+        if (options.init()) {
+            System.out.print(Initializer.write(context.projectRoot(),
+                report.render(Metrics.Format.JSON, provenance, config)));
+            return null;
+        }
+        Baseline.Comparison comparison = options.compare(context.projectRoot(), report, config);
+        System.out.print(report.render(options.format(), provenance, config, comparison));
+        return comparison;
     }
 
     /**
@@ -207,7 +218,8 @@ public final class Main {
         return version == null ? "development" : version;
     }
 
-    record Options(Metrics.Format format, String failOn, Path baseline, String failOnNew) {
+    record Options(Metrics.Format format, String failOn, Path baseline, String failOnNew,
+                   boolean init) {
         boolean shouldFail(Metrics.Report report, Baseline.Comparison comparison) {
             boolean existing = false;
             if (failOn != null) {
@@ -230,6 +242,10 @@ public final class Main {
 
     static Options parseOptions(String[] args) {
         List<String> rest = new ArrayList<>(Arrays.asList(args));
+        if (!rest.isEmpty() && "init".equals(rest.get(0))) {
+            if (rest.size() != 1) throw new Usage("init accepts no options");
+            return new Options(Metrics.Format.JSON, null, null, null, true);
+        }
         if (!rest.isEmpty() && "report".equals(rest.get(0))) rest.remove(0);
         Metrics.Format format = Metrics.Format.TEXT;
         String failOn = null;
@@ -259,19 +275,21 @@ public final class Main {
         }
         if (failOnNew != null && baseline == null)
             throw new Usage("--fail-on-new requires --baseline");
-        return new Options(format, failOn, baseline, failOnNew);
+        return new Options(format, failOn, baseline, failOnNew, false);
     }
 
     private static Usage usageError() {
         return new Usage("usage: ./flixw metrics [report] [--format text|json|md|sarif]"
             + " [--fail-on note|warning|error] [--baseline report.json]"
-            + " [--fail-on-new note|warning|error]");
+            + " [--fail-on-new note|warning|error]\n"
+            + "       ./flixw metrics init");
     }
 
     private static void usage() {
         System.out.println("usage: ./flixw metrics [report] [--format text|json|md|sarif]"
             + " [--fail-on note|warning|error] [--baseline report.json]"
             + " [--fail-on-new note|warning|error]\n"
+            + "       ./flixw metrics init\n"
             + "       ./flixw metrics capabilities\n\n"
             + "Reads typed compiler data through a supported compiler adapter.\n"
             + "Results are cached under FLIXW_PLUGIN_CACHE and reused until the sources, the\n"
