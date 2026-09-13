@@ -81,6 +81,24 @@ public final class Flix075AdapterTest {
             require(definition(polymorphic, "polymorphicEffect").effects()
                     .equals(java.util.List.of("Outer")),
                 "a polymorphic effect is atomic and does not expose effects in its arguments");
+
+            Files.writeString(project.resolve("src/JavaInterop.flix"), """
+                import java.io.File
+                import java.io.IOException
+
+                def javaInterop(): Unit \\ IO =
+                    try {
+                        let file = new File("foo.txt");
+                        if ((file instanceof File) and file.exists()) () else ()
+                    } catch {
+                        case _: IOException => ()
+                    }
+                """);
+            Model javaInterop = new Flix075Adapter().measure(project);
+            DefInfo interop = definition(javaInterop, "javaInterop");
+            require(interop.effects().equals(java.util.List.of("IO"))
+                    && interop.cognitive() == 3,
+                "descriptor-backed Java nodes preserve effects and nested branch measurement");
             System.out.println("Flix075AdapterTest: ok");
         } finally {
             delete(project);
