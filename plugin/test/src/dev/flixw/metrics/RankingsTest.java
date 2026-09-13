@@ -1,6 +1,7 @@
 package dev.flixw.metrics;
 
 import dev.flixw.metrics.sdk.CompilerModel.DefInfo;
+import dev.flixw.metrics.sdk.CompilerModel.ModuleInfo;
 
 import java.util.List;
 
@@ -57,6 +58,13 @@ public final class RankingsTest {
         require(rank(semanticRanks, "most-recursive-datalog", "A.orchestrate").value()
                 .equals("2 recursive predicates"),
             "recursive predicate participation has its own ranking");
+
+        List<Rankings.Rank> impactRanks = Rankings.of(List.of(), List.of(
+            new ModuleInfo("Foundation", 10, 100, 7, 1),
+            new ModuleInfo("Leaf", 2, 20, 1, 4)));
+        require(rank(impactRanks, "highest-change-impact", "Foundation").value()
+                .equals("7 dependent modules, definition-call fan-in"),
+            "module fan-in has an explicitly scoped change-impact ranking");
 
         System.out.println("RankingsTest: ok");
     }

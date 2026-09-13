@@ -123,6 +123,11 @@ final class Rankings {
                 m.fanOut() + " modules called, call-instability "
                     + String.format(Locale.ROOT, "%.2f", m.instability())));
         }
+        for (ModuleInfo m : sorted(modules, ModuleInfo::fanIn)) {
+            out.add(new Rank("highest-change-impact", m.name(), "", 0,
+                m.fanIn() + " dependent module" + (m.fanIn() == 1 ? "" : "s")
+                    + ", definition-call fan-in"));
+        }
         return out;
     }
 

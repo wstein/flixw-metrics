@@ -90,6 +90,12 @@ public final class PluginIntegrationTest {
                     element.getAsJsonObject().get("measure").getAsString()
                         .equals("longest-flixdoc-result")),
                 "the packaged report ranks compiler-rendered FlixDoc result types");
+            require(coldJson.getAsJsonArray("rankings").asList().stream().anyMatch(element -> {
+                JsonObject rank = element.getAsJsonObject();
+                return rank.get("measure").getAsString().equals("highest-change-impact")
+                    && rank.get("subject").getAsString().equals("Alpha")
+                    && rank.get("value").getAsString().contains("2 dependent modules");
+            }), "the packaged report ranks resolved definition-call fan-in");
             JsonObject datalog = coldJson.getAsJsonArray("definitions").asList().stream()
                 .map(element -> element.getAsJsonObject())
                 .filter(definition -> definition.get("name").getAsString().equals("Alpha.datalog"))
