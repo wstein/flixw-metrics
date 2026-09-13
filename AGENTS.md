@@ -2,10 +2,10 @@
 
 ## Project Structure & Module Organization
 
-The analyzer is one mixed Java/Scala Mill module. Compiler-neutral reporting, configuration,
-caching, and CLI code live in `plugin/src/dev/flixw/metrics/`. The version-specific Flix adapter
+The analyzer is a mixed Java/Scala Mill module. Compiler-neutral code lives in
+`plugin/src/dev/flixw/metrics/`. The version-specific Flix adapter
 is isolated in `plugin/src/dev/flixw/metrics/flix075/`; the stable boundary is under `sdk/`.
-Tests mirror the package in `plugin/test/src/` and use the real Flix fixture in
+Tests live in `plugin/test/src/` and use the Flix fixture in
 `plugin/test/fixtures/semantic/`. Calibration inputs and budgets live in `calibration/`, project
 documentation in `docs/`, automation in `scripts/`, and CI workflows in `.github/workflows/`.
 Do not commit generated `out/`, `dist/`, or the downloaded `plugin/lib/flix.jar`.
@@ -21,8 +21,7 @@ Do not commit generated `out/`, `dist/`, or the downloaded `plugin/lib/flix.jar`
 - `sh scripts/calibrate-corpus.sh /tmp/results` remeasures the pinned external corpus; use it when
   changing adapter logic or default thresholds.
 
-Java 21 is required. `./mill` bootstraps the pinned build tool; network access may be needed on the
-first build to fetch Flix and dependencies.
+Java 21 is required. `./mill` bootstraps the build; the first build fetches Flix and dependencies.
 
 ## Coding Style & Naming Conventions
 
@@ -44,6 +43,8 @@ but does not replace, regression coverage.
 
 Follow the existing focused subject style: `fix: ...`, `feat: ...`, `test: ...`, `docs: ...`,
 `refactor: ...`, `perf: ...`, or `ci: ...`. Keep each commit independently buildable and limited
-to one concern. Pull requests should explain the behavior change, cite calibration evidence for
-metric or threshold changes, list verification commands, and note report-schema, wire-format, SDK,
-or capability-JSON compatibility impacts. Screenshots are only useful for rendered documentation.
+to one concern. After completing and verifying each logical step, create its Conventional Commit
+before starting the next step; do not accumulate unrelated completed work in the working tree.
+Pull requests should explain the behavior change, cite calibration evidence for metric or threshold
+changes, list verification commands, and note report-schema, wire-format, SDK, or capability-JSON
+compatibility impacts. Screenshots are only useful for rendered documentation.
