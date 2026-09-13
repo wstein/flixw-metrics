@@ -4,7 +4,7 @@
 
 The analyzer is a mixed Java/Scala Mill build. Compiler-neutral code and the current Flix adapter
 live in `plugin/src/dev/flixw/metrics/`; older adapters are compiled in isolation under
-`adapter0680/src/`, `adapter0672/src/`, and `adapter0661/src/`. The stable boundary is under
+`adapter0680/src/`, `adapter0672/src/`, `adapter0661/src/`, and `adapter0610/src/`. The stable boundary is under
 `plugin/src/dev/flixw/metrics/sdk/`. Tests live in `plugin/test/src/` and use the Flix fixture in
 `plugin/test/fixtures/semantic/`. Calibration inputs and budgets live in `calibration/`, project
 documentation in `docs/`, automation in `scripts/`, and CI workflows in `.github/workflows/`.
@@ -15,7 +15,8 @@ Do not commit generated `out/`, `dist/`, or downloaded `plugin/lib/flix*.jar` fi
 The Java/Scala split is load-bearing, not incidental. `Bootstrap`/`TypedAst`/etc. in `flix.jar` carry no
 ABI compatibility promise between releases. All knowledge of those types is confined to one file
 per family: `flix0753/Flix0753Adapter.scala`, `flix0680/Flix0680Adapter.scala`, or
-`flix0672/Flix0672Adapter.scala`, or `flix0661/Flix0661Adapter.scala`. Everything else — `Main`, `Metrics`, `ResultCache`, `SourceMetrics`, and
+`flix0672/Flix0672Adapter.scala`, `flix0661/Flix0661Adapter.scala`, or
+`flix0610/Flix0610Adapter.scala`. Everything else — `Main`, `Metrics`, `ResultCache`, `SourceMetrics`, and
 the stable `sdk.CompilerModel`/`sdk.Adapters` boundary — stays plain Java that knows nothing about Flix.
 `CompilerModel` returns counts and strings only, deliberately, never compiler types or an AST cursor.
 
@@ -27,7 +28,7 @@ reflective predecessor classified nodes by simple class name and silently ignore
 anywhere. That failure mode is why the AST-facing half of the plugin is Scala at all; see
 `docs/COMPILER-SDK.md` and `docs/compiler-compatibility/` for the full contract and release evidence.
 
-`Flix0661Adapter` is verified with Flix 0.66.1 and 0.67.1; `Flix0672Adapter` with Flix 0.67.2;
+`Flix0610Adapter` is verified with Flix 0.61.0 and 0.65.0; `Flix0661Adapter` with Flix 0.66.1 and 0.67.1; `Flix0672Adapter` with Flix 0.67.2;
 `Flix0680Adapter` with Flix 0.68.0 and 0.75.2; and `Flix0753Adapter` with Flix 0.75.3 and 0.76.0.
 Each name records the oldest verified release in its linkage family.
 Supporting an incompatible Flix generation means
@@ -71,7 +72,8 @@ independently, so the two can't drift apart.
 - `make lint` fetches the pinned compiler and compiles with all warnings fatal.
 - `make test` runs linting, calibration and performance-contract tests, all executable unit tests,
   the real-compiler fixture, integration tests, and the 0.66.0/0.66.1 runtime boundary. It
-  also verifies packaged operation on 0.67.1, 0.67.2, 0.68.0, 0.75.2, and 0.75.3. Historical compiler jars are downloaded
+  also verifies packaged operation on 0.61.0, 0.65.0, 0.67.1, 0.67.2, 0.68.0, 0.75.2,
+  and 0.75.3. Historical compiler jars are downloaded
   into ignored `out/` storage when absent. Its packaging
   check deliberately builds twice with a two-second gap to prove reproducibility; that pause is expected.
 - `sh scripts/test-one.sh MetricsTest` compiles as needed and runs one test main. The wrapper also supplies
