@@ -42,6 +42,7 @@ final class Rankings {
      * @param ineligibilityReason empty when eligible, otherwise the prerequisite that was missed
      */
     record Rank(String measure, String subject, String file, int line, String value,
+                double actual, String unit, String ruleId,
                 boolean eligible, String ineligibilityReason) {
 
         Rank {
@@ -51,18 +52,90 @@ final class Rankings {
         }
 
         Rank(String measure, String subject, String file, int line, String value) {
-            this(measure, subject, file, line, value, true, "");
+            this(measure, subject, file, line, value, inferredActual(value), unit(measure),
+                ruleId(measure), true, "");
+        }
+
+        Rank(String measure, String subject, String file, int line, String value,
+             boolean eligible, String ineligibilityReason) {
+            this(measure, subject, file, line, value, inferredActual(value), unit(measure),
+                ruleId(measure), eligible, ineligibilityReason);
         }
 
         String json() {
+            return json(MetricsConfig.defaults(), 1);
+        }
+
+        String json(MetricsConfig config, int ordinal) {
+            RuleDefinitions.Rule rule = ruleId.isEmpty() ? null : RuleDefinitions.byId(ruleId);
+            String limit = rule == null || rule.categorical() ? "null" : number(config.limit(rule));
+            String crossed = rule == null || rule.categorical() ? "null"
+                : String.valueOf(eligible && config.enabled(rule) && actual > config.limit(rule));
             return "{\"measure\": " + SourceMetrics.Smell.quote(measure)
                  + ", \"subject\": " + SourceMetrics.Smell.quote(subject)
                  + ", \"file\": " + SourceMetrics.Smell.quote(file)
                  + ", \"line\": " + line
                  + ", \"value\": " + SourceMetrics.Smell.quote(value)
+                 + ", \"actual\": " + number(actual)
+                 + ", \"unit\": " + SourceMetrics.Smell.quote(unit)
+                 + ", \"ordinal\": " + ordinal
+                 + ", \"ruleId\": " + (ruleId.isEmpty() ? "null"
+                     : SourceMetrics.Smell.quote(ruleId))
+                 + ", \"limit\": " + limit
+                 + ", \"crossedThreshold\": " + crossed
                  + ", \"eligible\": " + eligible
                  + ", \"ineligibilityReason\": "
                  + SourceMetrics.Smell.quote(ineligibilityReason) + "}";
+        }
+
+        private static String number(double value) {
+            return value == Math.rint(value) ? String.valueOf((long) value)
+                : String.format(Locale.ROOT, "%.3f", value);
+        }
+
+        private static double inferredActual(String value) {
+            int end = value.indexOf(' ');
+            try {
+                return Double.parseDouble(end < 0 ? value : value.substring(0, end));
+            } catch (NumberFormatException ignored) {
+                return 0;
+            }
+        }
+
+        private static String unit(String measure) {
+            return switch (measure) {
+                case "longest" -> "lines";
+                case "densest" -> "complexity per code line";
+                case "most-complex" -> "complexity";
+                case "deepest" -> "levels";
+                case "widest" -> "parameters";
+                case "widest-effect-surface" -> "declared effects";
+                case "widest-datalog-dependency" -> "body predicates";
+                case "deepest-datalog-dependency" -> "predicate levels";
+                case "most-recursive-datalog" -> "recursive predicates";
+                case "longest-flixdoc-parameters", "longest-flixdoc-result" ->
+                    "rendered characters";
+                case "widest-return" -> "parts returned";
+                case "crammed-line" -> "tokens";
+                case "most-coupled" -> "modules called";
+                case "highest-change-impact" -> "dependent modules";
+                default -> "";
+            };
+        }
+
+        private static String ruleId(String measure) {
+            return switch (measure) {
+                case "longest" -> RuleDefinitions.DEFINITION_TOO_LONG.id();
+                case "densest" -> RuleDefinitions.DENSE.id();
+                case "deepest" -> RuleDefinitions.DEEPLY_NESTED.id();
+                case "widest" -> RuleDefinitions.TOO_MANY_PARAMETERS.id();
+                case "longest-flixdoc-parameters" ->
+                    RuleDefinitions.NOISY_FLIXDOC_PARAMETERS.id();
+                case "widest-return" -> RuleDefinitions.WIDE_RETURN.id();
+                case "crammed-line" -> RuleDefinitions.CRAMMED_LINE.id();
+                case "most-coupled" -> RuleDefinitions.WIDE_COUPLING.id();
+                default -> "";
+            };
         }
 
         String text() {
@@ -115,18 +188,22 @@ final class Rankings {
         // Reported against the local that owns the line, not the definition it happens to sit in.
         for (DefInfo d : sortedBy(defs, DefInfo::maxLineTokens)) {
             out.add(new Rank("crammed-line", d.maxLineTokensOwner(), d.file(),
-                d.maxLineTokensLine(), d.maxLineTokens() + " tokens on one line"));
+                d.maxLineTokensLine(), d.maxLineTokens() + " tokens on one line",
+                d.maxLineTokens(), Rank.unit("crammed-line"), Rank.ruleId("crammed-line"),
+                true, ""));
         }
         // Modules carry no file of their own; a module spans files by definition.
         for (ModuleInfo m : sorted(modules, ModuleInfo::fanOut)) {
             out.add(new Rank("most-coupled", m.name(), "", 0,
                 m.fanOut() + " modules called, call-instability "
-                    + String.format(Locale.ROOT, "%.2f", m.instability())));
+                    + String.format(Locale.ROOT, "%.2f", m.instability()), m.fanOut(),
+                Rank.unit("most-coupled"), Rank.ruleId("most-coupled"), true, ""));
         }
         for (ModuleInfo m : sorted(modules, ModuleInfo::fanIn)) {
             out.add(new Rank("highest-change-impact", m.name(), "", 0,
                 m.fanIn() + " dependent module" + (m.fanIn() == 1 ? "" : "s")
-                    + ", definition-call fan-in"));
+                    + ", definition-call fan-in", m.fanIn(), Rank.unit("highest-change-impact"),
+                Rank.ruleId("highest-change-impact"), true, ""));
         }
         return out;
     }
@@ -145,8 +222,9 @@ final class Rankings {
                                                       Function<DefInfo, String> reason) {
         for (DefInfo d : sorted(defs, by)) {
             String why = reason.apply(d);
+            double actual = ((Number) by.apply(d)).doubleValue();
             out.add(new Rank(measure, d.name(), d.file(), d.line(), value.apply(d),
-                why.isEmpty(), why));
+                actual, Rank.unit(measure), Rank.ruleId(measure), why.isEmpty(), why));
         }
     }
 

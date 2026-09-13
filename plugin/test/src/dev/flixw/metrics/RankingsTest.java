@@ -24,6 +24,17 @@ public final class RankingsTest {
         Rankings.Rank enoughDensity = rank(ranks, "densest", "A.enough");
         require(enoughDensity.eligible() && enoughDensity.ineligibilityReason().isEmpty(),
             "a four-code-line density rank is eligible without a stale reason");
+        String densityJson = enoughDensity.json(MetricsConfig.defaults(), 2);
+        require(densityJson.contains("\"actual\": 2")
+                && densityJson.contains("\"unit\": \"complexity per code line\"")
+                && densityJson.contains("\"ordinal\": 2")
+                && densityJson.contains("\"ruleId\": \"dense\"")
+                && densityJson.contains("\"limit\": 1")
+                && densityJson.contains("\"crossedThreshold\": true"),
+            "rank JSON exposes typed values and its related effective policy");
+        require(tinyDensity.json(MetricsConfig.defaults(), 1)
+                .contains("\"crossedThreshold\": false"),
+            "structurally ineligible ranks do not claim to cross a finding threshold");
 
         Rankings.Rank longestTest = rank(ranks, "longest", "A.longTest");
         require(!longestTest.eligible() && longestTest.ineligibilityReason().contains("test"),
@@ -51,6 +62,9 @@ public final class RankingsTest {
         require(rank(semanticRanks, "widest-effect-surface", "A.orchestrate").value()
                 .equals("3 declared effects"),
             "declared effect-set width has its own ranking");
+        require(rank(semanticRanks, "widest-effect-surface", "A.orchestrate")
+                .json(MetricsConfig.defaults(), 1).contains("\"ruleId\": null"),
+            "a measurement without a finding rule says so explicitly");
         require(rank(semanticRanks, "widest-datalog-dependency", "A.orchestrate").value()
                 .equals("3 body predicates"),
             "distinct Datalog body-predicate breadth has its own ranking");

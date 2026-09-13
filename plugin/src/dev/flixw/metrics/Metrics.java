@@ -5,10 +5,12 @@ import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import dev.flixw.metrics.sdk.CompilerModel;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 /** A deliberately small semantic metrics engine over Flix's runtime-checked typed root. */
 final class Metrics {
@@ -266,8 +268,12 @@ final class Metrics {
                 }
                 b.append(modulesList.isEmpty() ? "]" : "\n  ]");
                 b.append(",\n  \"rankings\": [");
+                Map<String, Integer> ordinals = new HashMap<>();
                 for (int i = 0; i < ranks.size(); i++) {
-                    b.append(i == 0 ? "\n" : ",\n").append("    ").append(ranks.get(i).json());
+                    Rankings.Rank rank = ranks.get(i);
+                    int ordinal = ordinals.merge(rank.measure(), 1, Integer::sum);
+                    b.append(i == 0 ? "\n" : ",\n").append("    ")
+                        .append(rank.json(config, ordinal));
                 }
                 b.append(ranks.isEmpty() ? "]" : "\n  ]");
             }
