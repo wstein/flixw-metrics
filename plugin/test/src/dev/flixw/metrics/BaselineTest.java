@@ -3,6 +3,7 @@ package dev.flixw.metrics;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import dev.flixw.metrics.sdk.CompilerModel;
 
 /** Exercises report-baseline compatibility and observation lifecycle semantics. */
 public final class BaselineTest {
@@ -10,6 +11,7 @@ public final class BaselineTest {
 
     public static void main(String[] args) throws Exception {
         stableFindingIdentity();
+        measurementDeltas();
 
         SourceMetrics.Smell kept = smell("dense", "A.kept", 3, 1.1, 1);
         SourceMetrics.Smell worsenedBefore = smell("deeply-nested", "A.changed", 7, 5, 4);
@@ -70,6 +72,48 @@ public final class BaselineTest {
             Files.deleteIfExists(baseline);
         }
         System.out.println("BaselineTest: ok");
+    }
+
+    private static void measurementDeltas() throws Exception {
+        Metrics.Report before = deltaReport(10, 20, 1);
+        Metrics.Report after = deltaReport(7, 15, 3);
+        Path baseline = Files.createTempFile("flixw-metrics-measurements-", ".json");
+        try {
+            Files.writeString(baseline, before.render(Metrics.Format.JSON));
+            Baseline.Comparison comparison = Baseline.compare(
+                baseline, after, MetricsConfig.defaults());
+            require(comparison.measurementDeltas().stream().anyMatch(d ->
+                    d.scope().equals("summary") && d.metric().equals("cognitive")
+                    && d.before().doubleValue() == 10 && d.after().doubleValue() == 7),
+                "summary measurements change even when no threshold finding changes");
+            require(comparison.measurementDeltas().stream().anyMatch(d ->
+                    d.scope().equals("definition") && d.subject().equals("A.f")
+                    && d.metric().equals("lines") && d.delta().doubleValue() == -5),
+                "definition measurement changes retain their semantic owner");
+            require(comparison.measurementDeltas().stream().anyMatch(d ->
+                    d.scope().equals("module") && d.subject().equals("A")
+                    && d.metric().equals("fanIn") && d.delta().doubleValue() == 2),
+                "module coupling changes are visible below finding thresholds");
+            String json = comparison.json();
+            require(json.contains("\"measurementDeltas\": [")
+                    && json.contains("\"scope\": \"definition\"")
+                    && json.contains("\"delta\": -5"),
+                "native baseline output exposes typed measurement deltas");
+        } finally {
+            Files.deleteIfExists(baseline);
+        }
+    }
+
+    private static Metrics.Report deltaReport(int cognitive, int definitionLines, int fanIn) {
+        CompilerModel.DefInfo def = CompilerModel.DefInfo.builder(
+                "A.f", "A", "src/A.flix", 10)
+            .lines(definitionLines).codeLines(definitionLines).cognitive(cognitive)
+            .hasDoc(true).build();
+        CompilerModel.ModuleInfo module = new CompilerModel.ModuleInfo(
+            "A", 1, definitionLines, fanIn, 1);
+        return new Metrics.Report(1, 1, 1, 0, 0, cognitive, 0, 0, 0, 0, 0, 0,
+            definitionLines, definitionLines, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 100, 100, List.of(), List.of(), List.of(), List.of(def), List.of(module));
     }
 
     private static void stableFindingIdentity() throws Exception {

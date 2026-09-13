@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /** Compares a current report with a previously emitted native JSON report. */
 final class Baseline {
@@ -32,12 +33,35 @@ final class Baseline {
 
     record Change(Snapshot before, SourceMetrics.Smell after) { }
 
+    /** A raw measurement change, independent of whether either value crosses a rule threshold. */
+    record MeasurementDelta(String scope, String subject, String file, String metric,
+                            BigDecimal before, BigDecimal after) {
+        BigDecimal delta() { return after.subtract(before).stripTrailingZeros(); }
+
+        String json() {
+            return "{\"scope\": " + SourceMetrics.Smell.quote(scope)
+                + ", \"subject\": " + SourceMetrics.Smell.quote(subject)
+                + ", \"file\": " + SourceMetrics.Smell.quote(file)
+                + ", \"metric\": " + SourceMetrics.Smell.quote(metric)
+                + ", \"before\": " + number(before)
+                + ", \"after\": " + number(after)
+                + ", \"delta\": " + number(delta()) + "}";
+        }
+    }
+
     record Comparison(Path path, List<SourceMetrics.Smell> added, List<Change> worsened,
-                      List<Snapshot> resolved, int retained) {
+                      List<Snapshot> resolved, int retained,
+                      List<MeasurementDelta> measurementDeltas) {
+        Comparison(Path path, List<SourceMetrics.Smell> added, List<Change> worsened,
+                   List<Snapshot> resolved, int retained) {
+            this(path, added, worsened, resolved, retained, List.of());
+        }
+
         Comparison {
             added = List.copyOf(added);
             worsened = List.copyOf(worsened);
             resolved = List.copyOf(resolved);
+            measurementDeltas = List.copyOf(measurementDeltas);
         }
 
         boolean crosses(String level) {
@@ -78,6 +102,11 @@ final class Baseline {
                 if (i > 0) out.append(", ");
                 out.append(resolved.get(i).json());
             }
+            out.append("], \"measurementDeltas\": [");
+            for (int i = 0; i < measurementDeltas.size(); i++) {
+                if (i > 0) out.append(", ");
+                out.append(measurementDeltas.get(i).json());
+            }
             return out.append("]}").toString();
         }
 
@@ -99,6 +128,14 @@ final class Baseline {
                     .append(finding.where().isEmpty() ? finding.subject() : finding.where())
                     .append("  ").append(finding.rule())
                     .append("  [").append(finding.subject()).append("]\n");
+            if (!measurementDeltas.isEmpty()) {
+                out.append("  measurement changes: ").append(measurementDeltas.size()).append('\n');
+                for (MeasurementDelta delta : measurementDeltas)
+                    out.append("    ").append(delta.scope()).append("  ")
+                        .append(delta.subject()).append("  ").append(delta.metric()).append("  ")
+                        .append(number(delta.before())).append(" -> ")
+                        .append(number(delta.after())).append('\n');
+            }
             return out.toString();
         }
 
@@ -137,6 +174,18 @@ final class Baseline {
                         .append('\n');
                 out.append('\n');
             }
+            if (!measurementDeltas.isEmpty()) {
+                out.append("### Measurement changes\n\n")
+                    .append("| Scope | Subject | Metric | Before | After | Delta |\n")
+                    .append("| --- | --- | --- | ---: | ---: | ---: |\n");
+                for (MeasurementDelta delta : measurementDeltas)
+                    out.append("| ").append(delta.scope()).append(" | `")
+                        .append(delta.subject()).append("` | `").append(delta.metric())
+                        .append("` | ").append(number(delta.before())).append(" | ")
+                        .append(number(delta.after())).append(" | ")
+                        .append(number(delta.delta())).append(" |\n");
+                out.append('\n');
+            }
             return out.toString();
         }
 
@@ -162,6 +211,11 @@ final class Baseline {
         Object currentConfig = new Json(config.json()).parse();
         if (!baselineConfig.equals(currentConfig))
             throw invalid(path, "configuration differs from the current effective policy");
+
+        Map<String, Object> currentRoot = object(
+            new Json(current.render(Metrics.Format.JSON, null, config)).parse(), path,
+            "current report");
+        List<MeasurementDelta> measurementDeltas = measurements(root, currentRoot, path);
 
         List<Object> values = array(required(root, "smells", path), path, "smells");
         Map<String, Snapshot> previous = new LinkedHashMap<>();
@@ -199,7 +253,58 @@ final class Baseline {
                 retained++;
             }
         }
-        return new Comparison(path, added, worsened, new ArrayList<>(previous.values()), retained);
+        return new Comparison(path, added, worsened, new ArrayList<>(previous.values()), retained,
+            measurementDeltas);
+    }
+
+    private static List<MeasurementDelta> measurements(Map<String, Object> before,
+                                                        Map<String, Object> after, Path path) {
+        List<MeasurementDelta> result = new ArrayList<>();
+        numericDeltas(result, "summary", "project", "",
+            object(required(before, "summary", path), path, "summary"),
+            object(required(after, "summary", path), path, "current summary"), Set.of());
+        entityDeltas(result, "definition", "definitions", before, after, path,
+            Set.of("line", "maxLineTokensLine"));
+        entityDeltas(result, "module", "modules", before, after, path, Set.of());
+        return List.copyOf(result);
+    }
+
+    private static void entityDeltas(List<MeasurementDelta> result, String scope, String field,
+                                     Map<String, Object> before, Map<String, Object> after,
+                                     Path path, Set<String> excluded) {
+        Map<String, Map<String, Object>> previous = entities(before, field, path);
+        for (Object item : array(required(after, field, path), path, "current " + field)) {
+            Map<String, Object> current = object(item, path, "current " + scope);
+            String subject = string(required(current, "name", path), path, scope + " name");
+            String file = scope.equals("definition")
+                ? string(required(current, "file", path), path, scope + " file") : "";
+            Map<String, Object> old = previous.get(subject + '\0' + file);
+            if (old != null) numericDeltas(result, scope, subject, file, old, current, excluded);
+        }
+    }
+
+    private static Map<String, Map<String, Object>> entities(Map<String, Object> root,
+                                                              String field, Path path) {
+        Map<String, Map<String, Object>> result = new LinkedHashMap<>();
+        for (Object item : array(required(root, field, path), path, field)) {
+            Map<String, Object> entity = object(item, path, field + " entry");
+            String subject = string(required(entity, "name", path), path, field + " name");
+            String file = field.equals("definitions")
+                ? string(required(entity, "file", path), path, field + " file") : "";
+            result.put(subject + '\0' + file, entity);
+        }
+        return result;
+    }
+
+    private static void numericDeltas(List<MeasurementDelta> result, String scope,
+                                      String subject, String file, Map<String, Object> before,
+                                      Map<String, Object> after, Set<String> excluded) {
+        for (Map.Entry<String, Object> entry : before.entrySet()) {
+            if (excluded.contains(entry.getKey()) || !(entry.getValue() instanceof BigDecimal old)
+                    || !(after.get(entry.getKey()) instanceof BigDecimal current)
+                    || old.compareTo(current) == 0) continue;
+            result.add(new MeasurementDelta(scope, subject, file, entry.getKey(), old, current));
+        }
     }
 
     private static Snapshot snapshot(Map<String, Object> value, Path path) {
@@ -260,6 +365,10 @@ final class Baseline {
 
     private static String number(double value) {
         return BigDecimal.valueOf(value).stripTrailingZeros().toPlainString();
+    }
+
+    private static String number(BigDecimal value) {
+        return value.stripTrailingZeros().toPlainString();
     }
 
     /** Compare the precision promised by report JSON, not hidden floating-point digits. */
