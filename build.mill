@@ -112,7 +112,8 @@ object plugin extends ScalaModule {
     def check() = Task.Command {
       val cp = (runClasspath() ++ Seq(compile().classes)).map(_.path).mkString(":")
       val sourceRoot = moduleDir / "src"
-      val special = Set("dev.flixw.metrics.Flix075AdapterTest",
+      val special = Set("dev.flixw.metrics.CompilerCapabilitiesTest",
+                        "dev.flixw.metrics.Flix075AdapterTest",
                         "dev.flixw.metrics.PluginIntegrationTest")
       val mains = os.walk(sourceRoot)
         .filter(path => path.ext == "java" && path.last.endsWith("Test.java"))
@@ -125,6 +126,8 @@ object plugin extends ScalaModule {
       val fixture = moduleDir / "fixtures" / "semantic"
       val compiler = plugin.flixJar().head.path
       val integrationCp = cp + java.io.File.pathSeparator + compiler
+      os.proc("java", "-cp", cp, "dev.flixw.metrics.CompilerCapabilitiesTest", compiler)
+        .call(stdout = os.Inherit, stderr = os.Inherit)
       os.proc("java", "-cp", integrationCp, "dev.flixw.metrics.Flix075AdapterTest", fixture)
         .call(stdout = os.Inherit, stderr = os.Inherit)
       os.proc("java", "-cp", integrationCp, "dev.flixw.metrics.PluginIntegrationTest", fixture,

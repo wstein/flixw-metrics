@@ -5,6 +5,8 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.spi.ToolProvider;
 
 /** Checks that capability detection is based on loadable compiler classes, not filenames. */
@@ -20,6 +22,16 @@ public final class CompilerCapabilitiesTest {
             require(!noApi.hasFlixApi() && !noApi.hasEngineApi() && !noApi.hasNativeMetrics(),
                 "empty jar has no capabilities");
             require(!noApi.missing().isEmpty(), "an empty jar reports what it is missing");
+            Set<String> linked = AdapterAbi.references().stream()
+                .map(AdapterAbi.Reference::display).collect(Collectors.toSet());
+            require(noApi.missing().containsAll(linked),
+                "the capability gate covers every Flix reference linked by the adapter");
+            require(linked.stream().anyMatch(r -> r.contains("formatType$default$2:()")),
+                "the bytecode contract includes Scala default-argument accessors");
+            require(linked.stream().anyMatch(r -> r.contains("MODULE$:") && r.contains("FormatType$")),
+                "the bytecode contract includes Scala singleton fields");
+            require(linked.stream().anyMatch(r -> r.contains("formatType:(Lca/uwaterloo/flix/language/ast/Type;")),
+                "the bytecode contract includes full JVM method descriptors");
 
             Path source = work.resolve("source");
             write(source, "ca/uwaterloo/flix/api/Flix.java",
@@ -31,7 +43,9 @@ public final class CompilerCapabilitiesTest {
             write(source, "ca/uwaterloo/flix/language/ast/TokenKind.java",
                 "package ca.uwaterloo.flix.language.ast; public interface TokenKind { }");
             write(source, "ca/uwaterloo/flix/language/fmt/FormatType$.java",
-                "package ca.uwaterloo.flix.language.fmt; public final class FormatType$ { }");
+                "package ca.uwaterloo.flix.language.fmt; public final class FormatType$ { "
+                + "public Object formatType(Object a, Object b, Object c, Object d, Object e) "
+                + "{ return null; } }");
             Path classes = work.resolve("classes");
             Files.createDirectories(classes);
             int compiled = ToolProvider.findFirst("javac").orElseThrow()
@@ -57,12 +71,15 @@ public final class CompilerCapabilitiesTest {
                 "the gate requires Options$, which the engine calls");
             require(found.missing().stream().noneMatch(m -> m.contains("addFile")),
                 "the gate does not require addFile, which the engine never calls");
-            require(found.missing().stream().anyMatch(m -> m.contains("Lexer$.lex/1")),
+            require(found.missing().stream().anyMatch(m -> m.contains("Lexer$.lex:(")),
                 "the gate requires the lexer entry point used for source metrics");
-            require(found.missing().stream().anyMatch(m -> m.contains("TokenKind.isComment/0")),
+            require(found.missing().stream().anyMatch(m -> m.contains("TokenKind.isComment:()Z")),
                 "the gate requires token comment classification");
-            require(found.missing().stream().anyMatch(m -> m.contains("FormatType$.formatType/5")),
-                "the gate requires the compiler formatter used for FlixDoc widths");
+            String formatter = linked.stream()
+                .filter(r -> r.contains("FormatType$.formatType:("))
+                .findFirst().orElseThrow();
+            require(found.missing().contains(formatter),
+                "a same-arity formatter with the wrong JVM descriptor fails the gate");
             require(found.missing().stream().anyMatch(m -> m.contains("TypedAst$Constraint")),
                 "the gate requires typed Datalog nodes");
             require(found.missing().stream().anyMatch(m -> m.contains("TypedAst$CatchRule")),
@@ -73,6 +90,12 @@ public final class CompilerCapabilitiesTest {
                 "the gate requires the call-site node module coupling resolves through");
             require(found.missing().stream().anyMatch(m -> m.contains("FormalParam")),
                 "the gate requires the formal parameter node used for names and FlixDoc width");
+
+            if (args.length == 1) {
+                CompilerCapabilities stock = inspect(Path.of(args[0]));
+                require(stock.hasEngineApi() && stock.missing().isEmpty(),
+                    "the pinned compiler satisfies every bytecode-derived adapter requirement");
+            }
         } finally {
             delete(work);
         }

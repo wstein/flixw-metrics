@@ -62,27 +62,29 @@ and answer on a machine where the adapter would not link at all.
 
 ## The gate names what the engine links against
 
-The capability gate lists the members `Flix075Adapter` links against:
+The capability gate reads the packaged `Flix075Adapter` class files and checks every Flix class,
+field, constructor, and method they link against using its exact JVM descriptor. Following generated
+nested adapter classes keeps Scala's closure placement from creating an unchecked call. The resulting
+contract includes:
 
 | member | why |
 |---|---|
 | `TypedAst` definitions, branch/rule nodes, constraints and predicates | the AST the adapter pattern-matches |
 | `Type`, `TypeConstructor` and the tuple/record/pure shapes | return widths and effect surfaces |
 | `Input$RealFile`, `Input$VirtualFile` | how project and compiler-library files are selected |
-| `Lexer$.lex/1`, `TokenKind.isComment/0` | line and token measurements |
-| `FormatType$.formatType/5` | browser-visible FlixDoc widths |
-| `ca.uwaterloo.flix.api.Flix` + `check/0` + `setOptions/1` | the typed root comes from here |
-| `ca.uwaterloo.flix.api.Bootstrap` + `check/1` | loads the project and its dependencies |
-| `Bootstrap.bootstrap(Path, …, PrintStream)` | the static entry point, matched by shape |
-| `ca.uwaterloo.flix.util.Options$.Default/0` | the options the run is configured with |
-| `ca.uwaterloo.flix.util.Formatter$.getDefault/0` | passed to `bootstrap` |
+| `Lexer$.lex`, `TokenKind.isComment` | line and token measurements |
+| `FormatType$.formatType` and its default-argument accessors | browser-visible FlixDoc widths |
+| `ca.uwaterloo.flix.api.Flix.check` and `setOptions` | the typed root comes from here |
+| `ca.uwaterloo.flix.api.Bootstrap.check` and `Bootstrap$.bootstrap` | loads the project and its dependencies |
+| `Options$.Default`, `Formatter$.getDefault`, and Scala `MODULE$` fields | compiler setup and singleton linkage |
 
 This list is not decoration. An earlier gate checked `Flix.check()` and a two-argument
 `addFile` — and the engine calls neither `addFile` nor anything else that gate covered. A
 compiler that kept `addFile` while changing `Bootstrap.bootstrap` therefore **passed the gate
-and then failed mid-run with a reflection error**, which is exactly the outcome the gate
-exists to turn into a sentence. If the engine starts calling something new, it goes in the
-gate in the same commit.
+and then failed mid-run with a linkage error**, which is exactly the outcome the gate
+exists to turn into a sentence. The gate is derived from the adapter bytecode, and its regression
+test checks the pinned compiler against that complete contract. A new adapter call therefore becomes
+a capability requirement automatically instead of depending on a parallel handwritten edit.
 
 A version string is never evidence. The gate asks the JAR.
 
