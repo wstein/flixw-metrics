@@ -73,6 +73,25 @@ public final class ThresholdsTest {
         require(!has(Thresholds.apply(List.of(calibratedBoundary), List.of()), "crammed-line"),
             "the calibrated 35-token boundary is not reported");
 
+        DefInfo noisyDocs = documentedApi(141, List.of("xs", "f"), """
+            - `xs`: the given argument xs.
+            - `f`: the function f.
+            """);
+        List<SourceMetrics.Smell> docFindings = Thresholds.apply(List.of(noisyDocs), List.of());
+        require(has(docFindings, "noisy-flixdoc-parameters"),
+            "an over-limit public FlixDoc parameter span is reported");
+        require(has(docFindings, "redundant-parameter-doc"),
+            "a strict two-entry parameter mirror is reported");
+        DefInfo docBoundary = documentedApi(140, List.of("xs", "f"), """
+            - `xs`: values traversed from left to right.
+            - `f`: transforms each value.
+            """);
+        List<SourceMetrics.Smell> boundaryFindings =
+            Thresholds.apply(List.of(docBoundary), List.of());
+        require(!has(boundaryFindings, "noisy-flixdoc-parameters")
+                && !has(boundaryFindings, "redundant-parameter-doc"),
+            "the width boundary and useful parameter prose are not findings");
+
         require(has(Thresholds.apply(List.of(),
             List.of(new ModuleInfo("Wide", 3, 40, 0, 99))), "wide-coupling"),
             "a module depending on many others is reported");
@@ -85,6 +104,13 @@ public final class ThresholdsTest {
                                int cognitive, boolean isPublic, boolean isTest, boolean hasDoc) {
         return new DefInfo(name, "Foo", "src/Foo.flix", 1, lines, lines, params, localParams, 0, nesting,
             cognitive, 0, 1, name, 0, 0, 1, isPublic, isTest, hasDoc, List.of());
+    }
+
+    private static DefInfo documentedApi(int parameterCharacters, List<String> parameterNames,
+                                         String docText) {
+        return new DefInfo("Foo.api", "Foo", "src/Foo.flix", 1, 4, 4, parameterNames.size(),
+            0, 0, 0, 0, 0, 1, "Foo.api", 0, 0, 1, true, false, true, List.of(),
+            parameterCharacters, parameterNames, docText);
     }
 
     private static boolean has(List<SourceMetrics.Smell> smells, String rule) {

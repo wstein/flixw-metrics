@@ -28,6 +28,14 @@ public final class RankingsTest {
         require(!longestTest.eligible() && longestTest.ineligibilityReason().contains("test"),
             "a ranked test discloses its definition-too-long exemption");
 
+        DefInfo publicApi = new DefInfo("A.publicApi", "A", "src/A.flix", 1, 1, 1,
+            2, 0, 0, 0, 0, 0, 1, "A.publicApi", 0, 0, 1, true, false, true, List.of(),
+            120, List.of("input", "predicate"), "Returns matching values.");
+        List<Rankings.Rank> apiRanks = Rankings.of(List.of(publicApi), List.of());
+        require(rank(apiRanks, "longest-flixdoc-parameters", "A.publicApi").value()
+                .equals("120 rendered characters"),
+            "public FlixDoc parameter spans have their own ranking");
+
         System.out.println("RankingsTest: ok");
     }
 

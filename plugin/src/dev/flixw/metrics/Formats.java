@@ -147,6 +147,11 @@ final class Formats {
         b.append("| `crammed` | most lexer tokens on any one line of a definition | higher is"
                 + " worse; flagged over ").append(config.limit(RuleDefinitions.CRAMMED_LINE))
                 .append(" |\n");
+        b.append("| `flixdocParameterCharacters` | Unicode characters in a public function's"
+                + " generated formal-parameter span | higher is noisier; flagged over ")
+                .append(config.limit(RuleDefinitions.NOISY_FLIXDOC_PARAMETERS)).append(" |\n");
+        b.append("| `redundantParameterDocEntries` | recognized parameter-list entries whose"
+                + " descriptions add only names and boilerplate | two or more are flagged |\n");
         b.append("| `instability` | definition-call `fan-out / (fan-out + fan-in)` of a module"
                 + " | 0 is called by others, 1 calls others |\n");
         b.append("| `docCoveragePercent` | documented ÷ public definitions | higher is better;"

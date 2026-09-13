@@ -8,11 +8,13 @@ public final class RuleDefinitionsTest {
 
     public static void main(String[] args) {
         var rules = RuleDefinitions.all();
-        require(rules.size() == 9, "the public rule set stays explicit");
+        require(rules.size() == 11, "the public rule set stays explicit");
         require(new HashSet<>(rules.stream().map(RuleDefinitions.Rule::id).toList()).size()
                 == rules.size(), "rule ids are unique");
         require(RuleDefinitions.DENSE.minimumCodeLines() == 4,
             "dense findings disclose their minimum eligible definition size");
+        require(RuleDefinitions.NOISY_FLIXDOC_PARAMETERS.defaultLimit() == 140,
+            "the FlixDoc parameter-span boundary is explicit and configurable");
         require(rules.stream().filter(rule -> rule != RuleDefinitions.DENSE)
                 .allMatch(rule -> rule.minimumCodeLines() == 0),
             "rules without a size floor do not invent one");

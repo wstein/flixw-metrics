@@ -67,8 +67,8 @@
       "lines": 2330,
       "datalogRules": 0,
       "datalogFacts": 0,
-      "findings": 245,
-      "rules": {"crammed-line": 21, "deeply-nested": 1, "line-too-long": 50, "too-many-parameters": 1, "undocumented-public": 170, "wide-coupling": 2}
+      "findings": 246,
+      "rules": {"crammed-line": 21, "deeply-nested": 1, "line-too-long": 50, "noisy-flixdoc-parameters": 1, "too-many-parameters": 1, "undocumented-public": 170, "wide-coupling": 2}
     },
     "flix-semver2": {
       "files": 2,
@@ -94,8 +94,8 @@
       "lines": 33171,
       "datalogRules": 0,
       "datalogFacts": 0,
-      "findings": 1172,
-      "rules": {"crammed-line": 109, "deeply-nested": 15, "definition-too-long": 23, "dense": 72, "line-too-long": 725, "too-many-parameters": 89, "undocumented-public": 122, "wide-coupling": 16, "wide-return": 1}
+      "findings": 1200,
+      "rules": {"crammed-line": 109, "deeply-nested": 15, "definition-too-long": 23, "dense": 72, "line-too-long": 725, "noisy-flixdoc-parameters": 28, "too-many-parameters": 89, "undocumented-public": 122, "wide-coupling": 16, "wide-return": 1}
     },
     "qual-effect-system": {
       "files": 19,

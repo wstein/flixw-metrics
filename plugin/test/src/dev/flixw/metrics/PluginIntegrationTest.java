@@ -64,6 +64,18 @@ public final class PluginIntegrationTest {
             require(coldJson.getAsJsonObject("summary").get("datalogRules").getAsInt() == 1
                     && coldJson.getAsJsonObject("summary").get("datalogFacts").getAsInt() == 1,
                 "packaged reports preserve separate Datalog rule and fact counts");
+            JsonObject documented = coldJson.getAsJsonArray("definitions").asList().stream()
+                .map(element -> element.getAsJsonObject())
+                .filter(definition -> definition.get("name").getAsString()
+                    .equals("Alpha.documented"))
+                .findFirst().orElseThrow();
+            require(documented.get("flixdocParameterCharacters").getAsInt() == 20
+                    && documented.get("parameterDocEntries").getAsInt() == 2
+                    && documented.get("redundantParameterDocEntries").getAsInt() == 2
+                    && coldJson.getAsJsonArray("smells").asList().stream().anyMatch(element ->
+                        element.getAsJsonObject().get("rule").getAsString()
+                            .equals("redundant-parameter-doc")),
+                "packaged JSON carries both FlixDoc metrics and their conservative finding");
             require(coldJson.has("provenance") && coldJson.has("configuration")
                     && coldJson.getAsJsonObject("provenance").has("inputDigest")
                     && coldJson.getAsJsonObject("provenance").has("compilerArtifact"),

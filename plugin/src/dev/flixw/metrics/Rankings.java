@@ -88,6 +88,13 @@ final class Rankings {
         top(out, defs, "deepest", DefInfo::nesting, d -> d.nesting() + " levels nested");
         top(out, defs, "widest", DefInfo::widestParameterList,
             d -> d.widestParameterList() + " parameters");
+        // FlixDoc exposes only the public API. Rank its generated parameter span rather than the
+        // source line, which may have been wrapped without making the rendered signature simpler.
+        List<DefInfo> documentedApi = defs.stream()
+            .filter(d -> d.isPublic() && !d.isTest() && !Thresholds.inTests(d.file())).toList();
+        top(out, documentedApi, "longest-flixdoc-parameters",
+            DefInfo::flixdocParameterCharacters,
+            d -> d.flixdocParameterCharacters() + " rendered characters");
         // Only when it is more than one part; every definition returns something, and a ranking
         // of "returns 1 thing" three times over is noise where a place to look should be.
         top(out, defs, "widest-return", d -> d.returnWidth() > 1 ? d.returnWidth() : 0,

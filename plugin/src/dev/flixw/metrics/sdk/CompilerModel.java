@@ -96,12 +96,31 @@ public interface CompilerModel {
      *     direction: wide for the same reason, read for the same reason, and invisible to every
      *     other measure here
      * @param effects the declared effects, empty when pure
+     * @param flixdocParameterCharacters Unicode code points in FlixDoc's rendered formal-parameter
+     *     span, or zero
+     *     for a nullary definition
+     * @param formalParameterNames outer formal names in source order, excluding nullary Unit
+     * @param docText the declaration's raw Markdown documentation, empty when undocumented
      */
     record DefInfo(String name, String module, String file, int line, int lines, int codeLines,
                    int parameters, int maxLocalParameters, int localDefs, int nesting, int cognitive,
                    int maxLineTokens, int maxLineTokensLine, String maxLineTokensOwner,
                    int datalogRules, int datalogFacts, int returnWidth,
-                   boolean isPublic, boolean isTest, boolean hasDoc, List<String> effects) {
+                   boolean isPublic, boolean isTest, boolean hasDoc, List<String> effects,
+                   int flixdocParameterCharacters, List<String> formalParameterNames,
+                   String docText) {
+
+        public DefInfo(String name, String module, String file, int line, int lines, int codeLines,
+                       int parameters, int maxLocalParameters, int localDefs, int nesting,
+                       int cognitive, int maxLineTokens, int maxLineTokensLine,
+                       String maxLineTokensOwner, int datalogRules, int datalogFacts,
+                       int returnWidth, boolean isPublic, boolean isTest, boolean hasDoc,
+                       List<String> effects) {
+            this(name, module, file, line, lines, codeLines, parameters, maxLocalParameters,
+                localDefs, nesting, cognitive, maxLineTokens, maxLineTokensLine,
+                maxLineTokensOwner, datalogRules, datalogFacts, returnWidth, isPublic, isTest,
+                hasDoc, effects, 0, List.of(), "");
+        }
 
         /** Complexity per code line; blank or comment-only padding cannot lower it. */
         public double cognitiveDensity() {

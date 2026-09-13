@@ -17,15 +17,20 @@ public final class Flix075AdapterTest {
         try {
             Model model = new Flix075Adapter().measure(project);
             require(model.defs().size() == 6, "fixture definitions are measured");
-            require(model.lines().code() == 19 && model.lines().docComment() == 2,
+            require(model.lines().code() == 19 && model.lines().docComment() == 4,
                 "the real lexer classifies fixture lines");
             DefInfo select = definition(model, "Alpha.selectValue");
             require(select.localDefs() == 1 && select.maxLocalParameters() == 2,
                 "local definitions cross the compiler adapter boundary");
             require(select.cognitive() == 2 && select.codeLines() == 4,
                 "branches, booleans, and definition code lines are measured");
-            require(definition(model, "Alpha.documented").returnWidth() == 2,
+            DefInfo documented = definition(model, "Alpha.documented");
+            require(documented.returnWidth() == 2,
                 "typed return shape is measured");
+            require(documented.flixdocParameterCharacters() == 20
+                    && documented.formalParameterNames().equals(java.util.List.of("x", "y"))
+                    && documented.docText().contains("given argument x"),
+                "FlixDoc's rendered formal span and raw documentation cross the adapter boundary");
             require(definition(model, "Alpha.nestedRecord").returnWidth() == 2,
                 "return width counts top-level record fields, not their nested fields");
             DefInfo datalog = definition(model, "Alpha.datalog");

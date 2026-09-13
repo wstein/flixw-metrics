@@ -18,6 +18,11 @@ final class RuleDefinitions {
     static final Rule TOO_MANY_PARAMETERS = numeric("too-many-parameters", "Too many parameters",
         "maintainability", "A definition or one of its locals has a wide parameter list.",
         "Group related parameters into a record, or thread less state.", "parameters", 5, "warning");
+    static final Rule NOISY_FLIXDOC_PARAMETERS = numeric("noisy-flixdoc-parameters",
+        "Noisy FlixDoc parameter list", "documentation",
+        "A public function's rendered FlixDoc formal-parameter span exceeds the configured limit.",
+        "Name a parameter shape or simplify the public API boundary.", "rendered characters", 140,
+        "note");
     static final Rule WIDE_RETURN = numeric("wide-return", "Wide return value", "maintainability",
         "A returned tuple or record has more parts than the configured limit.",
         "Name the shape: a record with a type alias reads better than a wide tuple.", "parts", 5,
@@ -41,14 +46,19 @@ final class RuleDefinitions {
         "Undocumented public definition", "documentation",
         "A production public definition has no doc comment.",
         "Say what it is for; it is part of someone else's surface.", "note");
+    static final Rule REDUNDANT_PARAMETER_DOC = categorical("redundant-parameter-doc",
+        "Redundant parameter documentation", "documentation",
+        "At least two formal-parameter list entries repeat names with only boilerplate.",
+        "Document constraints, relationships, or behavior; the signature already names and types"
+            + " each parameter.", "note");
     static final Rule WIDE_COUPLING = numeric("wide-coupling", "Wide definition-call coupling",
         "coupling", "A module directly calls definitions in more modules than the configured limit.",
         "This module calls many others; consider what it is really responsible for.",
         "modules called", 12, "warning");
 
     private static final List<Rule> ALL = List.of(DEFINITION_TOO_LONG, TOO_MANY_PARAMETERS,
-        WIDE_RETURN, DEEPLY_NESTED, DENSE, CRAMMED_LINE, LINE_TOO_LONG, UNDOCUMENTED_PUBLIC,
-        WIDE_COUPLING);
+        NOISY_FLIXDOC_PARAMETERS, WIDE_RETURN, DEEPLY_NESTED, DENSE, CRAMMED_LINE, LINE_TOO_LONG,
+        UNDOCUMENTED_PUBLIC, REDUNDANT_PARAMETER_DOC, WIDE_COUPLING);
     private static final Map<String, Rule> BY_ID = index();
 
     static List<Rule> all() { return ALL; }

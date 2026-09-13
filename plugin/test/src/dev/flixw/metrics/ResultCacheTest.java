@@ -77,7 +77,8 @@ public final class ResultCacheTest {
             // the format itself uses to separate fields.
             var def = new dev.flixw.metrics.sdk.CompilerModel.DefInfo(
                 "Foo.od\td", "Foo", "src/A.flix", 3, 40, 30, 2, 9, 1, 4, 12, 31, 7, "Foo.odd.loop",
-                2, 5, 6, true, false, true, List.of("IO", "Net"));
+                2, 5, 6, true, false, true, List.of("IO", "Net"), 47,
+                List.of("left", "right"), "First line.\nSecond line with a tab:\tend.");
             var mod = new dev.flixw.metrics.sdk.CompilerModel.ModuleInfo("Foo", 1, 40, 2, 3);
             var sourceInfo = new dev.flixw.metrics.sdk.CompilerModel.SourceInfo("src/A.flix",
                 new dev.flixw.metrics.sdk.CompilerModel.LineInfo(40, 30, 4, 3, 3));

@@ -37,7 +37,7 @@ final class Wire {
     private Wire() { }
 
     /** Bumped when a record's field order changes; a mismatch is a cache miss, never a guess. */
-    static final int VERSION = 3;
+    static final int VERSION = 4;
 
     static String encode(Model m) {
         StringBuilder b = new StringBuilder();
@@ -54,7 +54,8 @@ final class Wire {
                 d.maxLocalParameters(), d.localDefs(), d.nesting(), d.cognitive(),
                 d.maxLineTokens(), d.maxLineTokensLine(), d.maxLineTokensOwner(),
                 d.datalogRules(), d.datalogFacts(), d.returnWidth(), d.isPublic(), d.isTest(),
-                d.hasDoc(), String.join(",", d.effects()));
+                d.hasDoc(), String.join(",", d.effects()), d.flixdocParameterCharacters(),
+                String.join(",", d.formalParameterNames()), d.docText());
         }
         for (ModuleInfo mi : m.modules()) {
             row(b, "m", mi.name(), mi.definitions(), mi.lines(), mi.fanIn(), mi.fanOut());
@@ -94,7 +95,9 @@ final class Wire {
                     case "d" -> defs.add(new DefInfo(un(f[1]), un(f[2]), un(f[3]), i(f[4]),
                         i(f[5]), i(f[6]), i(f[7]), i(f[8]), i(f[9]), i(f[10]), i(f[11]), i(f[12]),
                         i(f[13]), un(f[14]), i(f[15]), i(f[16]), i(f[17]), b(f[18]), b(f[19]),
-                        b(f[20]), un(f[21]).isEmpty() ? List.of() : List.of(un(f[21]).split(","))));
+                        b(f[20]), un(f[21]).isEmpty() ? List.of() : List.of(un(f[21]).split(",")),
+                        i(f[22]), un(f[23]).isEmpty() ? List.of() : List.of(un(f[23]).split(",")),
+                        un(f[24])));
                     case "m" -> modules.add(new ModuleInfo(un(f[1]), i(f[2]), i(f[3]), i(f[4]),
                         i(f[5])));
                     default -> { }

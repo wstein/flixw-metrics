@@ -32,7 +32,7 @@ public final class FormatsTest {
         require(sarif.contains("\"startLine\": 12"), "SARIF keeps a real line");
         require(count(sarif, "\"ruleId\"") == 2, "every finding becomes a result");
         // Declared even when unfired, so a consumer's rule list does not change per run.
-        require(count(sarif, "\"id\": ") == 9, "every rule is declared, fired or not");
+        require(count(sarif, "\"id\": ") == 11, "every rule is declared, fired or not");
         require(sarif.trim().startsWith("{") && sarif.trim().endsWith("}"), "SARIF is one object");
         String firstId = report.smells().get(0).id();
         require(sarif.contains("\"partialFingerprints\": {\"flixwMetricsFinding/v1\": \""

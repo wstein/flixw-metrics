@@ -51,7 +51,7 @@ final class Metrics {
         // A method so javac cannot inline yesterday's value into Baseline. Incremental builds
         // must ask the current report class which contract it emits.
         static int schemaVersion() {
-            return 19;
+            return 20;
         }
 
 
@@ -90,6 +90,13 @@ final class Metrics {
                 if (i > 0) e.append(", ");
                 e.append(SourceMetrics.Smell.quote(d.effects().get(i)));
             }
+            StringBuilder parameterNames = new StringBuilder("[");
+            for (int i = 0; i < d.formalParameterNames().size(); i++) {
+                if (i > 0) parameterNames.append(", ");
+                parameterNames.append(SourceMetrics.Smell.quote(d.formalParameterNames().get(i)));
+            }
+            DocumentationMetrics.ParameterDocs parameterDocs =
+                DocumentationMetrics.parameters(d.formalParameterNames(), d.docText());
             return "{\"name\": " + SourceMetrics.Smell.quote(d.name())
                  + ", \"module\": " + SourceMetrics.Smell.quote(d.module())
                  + ", \"file\": " + SourceMetrics.Smell.quote(d.file())
@@ -107,6 +114,11 @@ final class Metrics {
                  + ", \"datalogRules\": " + d.datalogRules()
                  + ", \"datalogFacts\": " + d.datalogFacts()
                  + ", \"returnWidth\": " + d.returnWidth()
+                 + ", \"flixdocParameterCharacters\": " + d.flixdocParameterCharacters()
+                 + ", \"formalParameterNames\": " + parameterNames.append(']')
+                 + ", \"parameterDocEntries\": " + parameterDocs.entries()
+                 + ", \"redundantParameterDocEntries\": "
+                 + parameterDocs.redundantEntries()
                  + ", \"isPublic\": " + d.isPublic()
                  + ", \"isTest\": " + d.isTest()
                  + ", \"hasDoc\": " + d.hasDoc()

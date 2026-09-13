@@ -5,6 +5,7 @@ import dev.flixw.metrics.sdk.CompilerModel.{DefInfo, LineInfo, Model, ModelFailu
 
 import ca.uwaterloo.flix.api.{Bootstrap, Flix}
 import ca.uwaterloo.flix.language.ast.shared.{Input, Source}
+import ca.uwaterloo.flix.language.fmt.FormatType
 import ca.uwaterloo.flix.language.phase.Lexer
 import ca.uwaterloo.flix.language.ast.{SourceLocation, Symbol, Type, TypeConstructor, TypedAst}
 import ca.uwaterloo.flix.util.{Formatter, Options}
@@ -53,6 +54,7 @@ final class Flix075Adapter extends CompilerModel {
 
   private def measureSelected(projectRoot: Path, include: Source => Boolean): Model = {
     val flix = new Flix()
+    implicit val currentFlix: Flix = flix
     flix.setOptions(Options.Default)
 
     // Formatter and the stream are implicit parameters, not positional ones. Erasure makes an
@@ -177,7 +179,7 @@ final class Flix075Adapter extends CompilerModel {
   // ---- one definition -------------------------------------------------------------------
 
   private def measureDef(d: TypedAst.Def, projectRoot: Path,
-                         tokens: Map[String, Map[Int, Int]]): DefInfo = {
+                         tokens: Map[String, Map[Int, Int]])(implicit flix: Flix): DefInfo = {
     val tally = new Tally
     walk(d.exp, tally)
     val onLines = tokens.getOrElse(d.loc.source.name, Map.empty)
@@ -201,7 +203,8 @@ final class Flix075Adapter extends CompilerModel {
       cognitive(tally), crammedTokens, crammedLine, owner,
       tally.datalogRules, tally.datalogFacts, shapeWidth(d.spec.retTpe),
       d.spec.mod.isPublic, d.spec.ann.isTest, hasDoc(d),
-      effectsOf(d.spec.eff).asJava)
+      effectsOf(d.spec.eff).asJava, flixdocParameterCharacters(d.spec.fparams.toList),
+      sourceFormalParams(d.spec.fparams.toList).map(_.bnd.sym.text).asJava, d.spec.doc.text)
   }
 
   /**
@@ -257,6 +260,29 @@ final class Flix075Adapter extends CompilerModel {
     // is a spelling and not an argument anyone passes.
     case one :: Nil if one.tpe == Type.Unit => 0
     case ps => ps.length
+  }
+
+  /** The parameters FlixDoc actually renders, in the same source order and spelling. */
+  private def sourceFormalParams(fparams: List[TypedAst.FormalParam]): List[TypedAst.FormalParam] =
+    fparams match {
+      case one :: Nil if one.tpe == Type.Unit => Nil
+      case ps => ps.sortBy(_.loc)
+    }
+
+  /**
+   * Browser-visible Unicode characters in FlixDoc's parenthesized formal-parameter span.
+   *
+   * HtmlDocumentor writes `name: Type` separated by comma-space. Counting the same formatted
+   * type here makes this a property of the generated API surface, not of how the source happened
+   * to wrap its declaration.
+   */
+  private def flixdocParameterCharacters(fparams: List[TypedAst.FormalParam])
+                                        (implicit flix: Flix): Int = {
+    val rendered = sourceFormalParams(fparams).map { p =>
+      val label = s"${p.bnd.sym.text}: ${FormatType.formatType(p.tpe)}"
+      label.codePointCount(0, label.length)
+    }
+    if (rendered.isEmpty) 0 else 2 + rendered.sum + 2 * (rendered.length - 1)
   }
 
   private def spannedLines(loc: SourceLocation): Int = loc.endLine - loc.startLine + 1

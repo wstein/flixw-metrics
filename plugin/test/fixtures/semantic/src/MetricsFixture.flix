@@ -1,5 +1,7 @@
 mod Alpha {
     /// Returns both arguments.
+    /// - `x`: the given argument x.
+    /// - `y`: the given parameter y.
     pub def documented(x: Int32, y: Int32): (Int32, Int32) = (x, y)
 
     pub def nestedRecord():
