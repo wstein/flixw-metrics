@@ -47,6 +47,16 @@ public final class BaselineTest {
             require(!comparison.crosses("error"),
                 "new or worsened warnings do not cross an error-only gate");
 
+            String previousSchema = before.render(Metrics.Format.JSON)
+                .replaceFirst("\"schemaVersion\": [0-9]+", "\"schemaVersion\": 24")
+                .replace("\"id\": \"" + kept.id() + "\"",
+                    "\"id\": \"" + kept.legacyId() + "\"");
+            Files.writeString(baseline, previousSchema);
+            Baseline.Comparison migrated = Baseline.compare(
+                baseline, after, MetricsConfig.defaults());
+            require(migrated.retained() == comparison.retained(),
+                "schema 24 baselines and their location-sensitive IDs migrate in place");
+
             String changedSchema = before.render(Metrics.Format.JSON)
                 .replaceFirst("\"schemaVersion\": [0-9]+", "\"schemaVersion\": 0");
             Files.writeString(baseline, changedSchema);

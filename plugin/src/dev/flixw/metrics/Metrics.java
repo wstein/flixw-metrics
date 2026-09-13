@@ -72,7 +72,7 @@ final class Metrics {
         // A method so javac cannot inline yesterday's value into Baseline. Incremental builds
         // must ask the current report class which contract it emits.
         static int schemaVersion() {
-            return 24;
+            return 25;
         }
 
 
@@ -212,12 +212,7 @@ final class Metrics {
         }
 
         private static String findingJson(SourceMetrics.Smell smell, String baselineState) {
-            String json = smell.json();
-            String suffix = ", \"severity\": "
-                + SourceMetrics.Smell.quote(RuleDefinitions.byId(smell.rule()).level())
-                + (baselineState == null ? "" : ", \"baselineState\": "
-                    + SourceMetrics.Smell.quote(baselineState));
-            return json.substring(0, json.length() - 1) + suffix + "}";
+            return smell.json(baselineState);
         }
 
         private String json(Provenance p, MetricsConfig config, Baseline.Comparison comparison,
