@@ -62,13 +62,15 @@ and answer on a machine where the adapter would not link at all.
 
 ## The gate names what the engine links against
 
-The capability gate lists the exact members `ReflectionEngine` reflects against, and nothing
-else:
+The capability gate lists the members `Flix075Adapter` links against:
 
 | member | why |
 |---|---|
-| `TypedAst$Root`, `$Def`, `$Expr$IfThenElse`, `$Expr$LocalDef`, `$MatchRule`, `$ExtMatchRule` | the AST the adapter pattern-matches |
-| `Input$RealFile` | how a project file is told from the standard library |
+| `TypedAst` definitions, branch/rule nodes, constraints and predicates | the AST the adapter pattern-matches |
+| `Type`, `TypeConstructor` and the tuple/record/pure shapes | return widths and effect surfaces |
+| `Input$RealFile`, `Input$VirtualFile` | how project and compiler-library files are selected |
+| `Lexer$.lex/1`, `TokenKind.isComment/0` | line and token measurements |
+| `FormatType$.formatType/5` | browser-visible FlixDoc widths |
 | `ca.uwaterloo.flix.api.Flix` + `check/0` + `setOptions/1` | the typed root comes from here |
 | `ca.uwaterloo.flix.api.Bootstrap` + `check/1` | loads the project and its dependencies |
 | `Bootstrap.bootstrap(Path, …, PrintStream)` | the static entry point, matched by shape |

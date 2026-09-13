@@ -54,8 +54,8 @@ public final class Main {
                     System.out.println(capabilities.json(context));
                     return;
                 }
-                if (!capabilities.hasReflectionApi())
-                    throw new Usage("the pinned compiler has no supported reflection API\n"
+                if (!capabilities.hasEngineApi())
+                    throw new Usage("the pinned compiler has no supported engine API\n"
                         + "       jar: " + context.compilerJar() + "\n"
                         + "       missing: " + String.join(", ", capabilities.missing()));
             }

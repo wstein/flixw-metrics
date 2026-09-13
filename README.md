@@ -314,7 +314,7 @@ $ ./flixw metrics capabilities
 {
   "compilerJar": "/Users/you/Library/Caches/flixw/compilers/flix-0.75.3-bf123cdb....jar",
   "hasFlixApi": true,
-  "hasReflectionApi": true,
+  "hasEngineApi": true,
   "hasNativeMetrics": false,
   "missing": []
 }

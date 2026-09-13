@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /** Facts established by inspecting, but not initializing, classes in the pinned compiler JAR. */
-record CompilerCapabilities(boolean hasFlixApi, boolean hasReflectionApi, boolean hasNativeMetrics,
+record CompilerCapabilities(boolean hasFlixApi, boolean hasEngineApi, boolean hasNativeMetrics,
                             List<String> missing) {
 
     /**
@@ -16,12 +16,12 @@ record CompilerCapabilities(boolean hasFlixApi, boolean hasReflectionApi, boolea
      * <p>Since the engine moved to Scala the gate matters more, not less. A reflective engine
      * limped along and produced something; a linked one throws {@code NoSuchMethodError} from
      * inside the JVM's verifier, with a message written for whoever wrote the JVM. Everything
-     * below is a type or member {@code MetricsEngine} binds to at compile time, so a compiler
+     * below is a type or member {@code Flix075Adapter} binds to at compile time, so a compiler
      * that fails this list is one the engine could not have run against -- and it is told so
      * in a sentence instead.
      *
      * <p>This class stays Java for exactly that reason. It has to load and answer on a machine
-     * where {@code MetricsEngine} would not link at all.
+     * where {@code Flix075Adapter} would not link at all.
      */
     static CompilerCapabilities inspect(ClassLoader compiler, Path compilerJar) {
         if (!Files.isRegularFile(compilerJar))
@@ -33,11 +33,18 @@ record CompilerCapabilities(boolean hasFlixApi, boolean hasReflectionApi, boolea
         requireClass(compiler, missing, "ca.uwaterloo.flix.api.Bootstrap");
         requireClass(compiler, missing, "ca.uwaterloo.flix.util.Options$");
         requireClass(compiler, missing, "ca.uwaterloo.flix.util.Formatter$");
+        requireClass(compiler, missing, "ca.uwaterloo.flix.language.phase.Lexer$");
+        requireClass(compiler, missing, "ca.uwaterloo.flix.language.ast.TokenKind");
+        requireClass(compiler, missing, "ca.uwaterloo.flix.language.fmt.FormatType$");
         requireMethod(compiler, missing, "ca.uwaterloo.flix.api.Flix", "check", 0);
         requireMethod(compiler, missing, "ca.uwaterloo.flix.api.Flix", "setOptions", 1);
         requireMethod(compiler, missing, "ca.uwaterloo.flix.api.Bootstrap", "check", 1);
         requireMethod(compiler, missing, "ca.uwaterloo.flix.util.Options$", "Default", 0);
         requireMethod(compiler, missing, "ca.uwaterloo.flix.util.Formatter$", "getDefault", 0);
+        requireMethod(compiler, missing, "ca.uwaterloo.flix.language.phase.Lexer$", "lex", 1);
+        requireMethod(compiler, missing, "ca.uwaterloo.flix.language.ast.TokenKind", "isComment", 0);
+        requireMethod(compiler, missing, "ca.uwaterloo.flix.language.fmt.FormatType$",
+                      "formatType", 5);
         requireBootstrapEntry(compiler, missing);
         // The AST the engine pattern-matches on. These are what actually break when a compiler
         // reorganises its internals, and none of them were checked while the engine reflected
@@ -46,12 +53,44 @@ record CompilerCapabilities(boolean hasFlixApi, boolean hasReflectionApi, boolea
         requireClass(compiler, missing, "ca.uwaterloo.flix.language.ast.TypedAst$Def");
         requireClass(compiler, missing, "ca.uwaterloo.flix.language.ast.TypedAst$Expr$IfThenElse");
         requireClass(compiler, missing, "ca.uwaterloo.flix.language.ast.TypedAst$Expr$LocalDef");
+        requireClass(compiler, missing, "ca.uwaterloo.flix.language.ast.TypedAst$Expr$Binary");
         requireClass(compiler, missing, "ca.uwaterloo.flix.language.ast.TypedAst$MatchRule");
         requireClass(compiler, missing, "ca.uwaterloo.flix.language.ast.TypedAst$ExtMatchRule");
+        requireClass(compiler, missing, "ca.uwaterloo.flix.language.ast.TypedAst$CatchRule");
+        requireClass(compiler, missing, "ca.uwaterloo.flix.language.ast.TypedAst$HandlerRule");
+        requireClass(compiler, missing, "ca.uwaterloo.flix.language.ast.TypedAst$SelectChannelRule");
+        requireClass(compiler, missing, "ca.uwaterloo.flix.language.ast.TypedAst$Constraint");
+        requireClass(compiler, missing,
+                     "ca.uwaterloo.flix.language.ast.TypedAst$Predicate$Body$Atom");
+        requireClass(compiler, missing,
+                     "ca.uwaterloo.flix.language.ast.TypedAst$Predicate$Head$Atom");
+        requireClass(compiler, missing, "ca.uwaterloo.flix.language.ast.Type");
+        requireClass(compiler, missing, "ca.uwaterloo.flix.language.ast.Type$Cst");
+        requireClass(compiler, missing, "ca.uwaterloo.flix.language.ast.TypeConstructor");
+        requireClass(compiler, missing,
+                     "ca.uwaterloo.flix.language.ast.TypeConstructor$RecordRowExtend");
+        requireClass(compiler, missing, "ca.uwaterloo.flix.language.ast.TypeConstructor$Tuple");
+        requireClass(compiler, missing, "ca.uwaterloo.flix.language.ast.TypeConstructor$Pure$");
+        requireClass(compiler, missing, "ca.uwaterloo.flix.language.ast.SemanticOp$BoolOp$And$");
+        requireClass(compiler, missing, "ca.uwaterloo.flix.language.ast.SemanticOp$BoolOp$Or$");
         requireClass(compiler, missing, "ca.uwaterloo.flix.language.ast.shared.Input$RealFile");
+        requireClass(compiler, missing, "ca.uwaterloo.flix.language.ast.shared.Input$VirtualFile");
         requireMethod(compiler, missing, "ca.uwaterloo.flix.language.ast.TypedAst$Root", "defs", 0);
         requireMethod(compiler, missing, "ca.uwaterloo.flix.language.ast.TypedAst$Def", "exp", 0);
         requireMethod(compiler, missing, "ca.uwaterloo.flix.language.ast.TypedAst$Def", "sym", 0);
+        requireMethod(compiler, missing, "ca.uwaterloo.flix.language.ast.TypedAst$Constraint",
+                      "body", 0);
+        requireMethod(compiler, missing, "ca.uwaterloo.flix.language.ast.TypedAst$Constraint",
+                      "head", 0);
+        requireMethod(compiler, missing,
+                      "ca.uwaterloo.flix.language.ast.TypedAst$Predicate$Body$Atom", "pred", 0);
+        requireMethod(compiler, missing,
+                      "ca.uwaterloo.flix.language.ast.TypedAst$Predicate$Head$Atom", "pred", 0);
+        requireMethod(compiler, missing, "ca.uwaterloo.flix.language.ast.Type", "effects", 0);
+        requireMethod(compiler, missing, "ca.uwaterloo.flix.language.ast.Type",
+                      "typeConstructor", 0);
+        requireMethod(compiler, missing, "ca.uwaterloo.flix.language.ast.Type",
+                      "typeArguments", 0);
         // Return types, not just names. An accessor can keep its name and arity and change
         // what it hands back, which the loop above cannot see and the JVM resolves at the
         // call site: a fork whose Spec.fparams returns Nel rather than List passed every
@@ -146,7 +185,7 @@ record CompilerCapabilities(boolean hasFlixApi, boolean hasReflectionApi, boolea
         StringBuilder b = new StringBuilder("{\n");
         b.append("  \"compilerJar\": ").append(quote(context.compilerJar().toString())).append(",\n");
         b.append("  \"hasFlixApi\": ").append(hasFlixApi).append(",\n");
-        b.append("  \"hasReflectionApi\": ").append(hasReflectionApi).append(",\n");
+        b.append("  \"hasEngineApi\": ").append(hasEngineApi).append(",\n");
         b.append("  \"hasNativeMetrics\": ").append(hasNativeMetrics).append(",\n");
         b.append("  \"missing\": [");
         for (int i = 0; i < missing.size(); i++) {
