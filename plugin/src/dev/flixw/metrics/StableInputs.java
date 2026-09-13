@@ -20,7 +20,7 @@ final class StableInputs {
         T run(List<Path> sources, String digest) throws IOException, CompilerModel.ModelFailure;
     }
 
-    record Result<T>(T value, String digest) { }
+    record Result<T>(T value, String digest, int retries) { }
 
     static <T> Result<T> run(Main.Context context, String version, Digester digester, Work<T> work)
             throws IOException, CompilerModel.ModelFailure {
@@ -30,7 +30,7 @@ final class StableInputs {
             T value = work.run(beforeSources, before);
             List<Path> afterSources = Metrics.projectFiles(context.projectRoot());
             String after = digester.digest(context, afterSources, version);
-            if (Objects.equals(before, after)) return new Result<>(value, before);
+            if (Objects.equals(before, after)) return new Result<>(value, before, attempt);
         }
         throw new Main.Usage("sources changed during measurement; retry when edits have settled");
     }

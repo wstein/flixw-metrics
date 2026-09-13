@@ -47,6 +47,7 @@ public final class Main {
             System.out.println("metrics " + version());
             return;
         }
+        long startedAt = System.nanoTime();
         try {
             Context context = Context.read();
             // The gate inspects without initialising, so an isolated loader is right *here* --
@@ -78,6 +79,7 @@ public final class Main {
                 Metrics.Report report = cached.value().orElseThrow();
                 Baseline.Comparison comparison = emit(context, report, config, options,
                     cached.digest());
+                emitDiagnostics(options, cacheState(context, true), cached.retries(), startedAt);
                 if (options.shouldFail(report, comparison)) System.exit(1);
                 return;
             }
@@ -94,6 +96,7 @@ public final class Main {
 
     /** The second phase: this JVM has the compiler on its class path. */
     private static void bridge(String[] args) {
+        long startedAt = System.nanoTime();
         try {
             Context context = Context.read();
             Options options = parseOptions(args);
@@ -122,6 +125,7 @@ public final class Main {
             // our own output past whatever Flix chose to print alongside it.
             Baseline.Comparison comparison = emit(context, measured.report(), measured.config(),
                 options, stable.digest());
+            emitDiagnostics(options, cacheState(context, false), stable.retries(), startedAt);
             if (options.shouldFail(measured.report(), comparison)) System.exit(1);
         } catch (LinkageError e) {
             // The promise is a sentence, never a stack trace. The descriptor gate covers the
@@ -182,6 +186,22 @@ public final class Main {
         } finally {
             Files.deleteIfExists(temporary);
         }
+    }
+
+    private static String cacheState(Context context, boolean hit) {
+        return context.pluginCache() == null ? "disabled" : hit ? "hit" : "miss";
+    }
+
+    private static void emitDiagnostics(Options options, String cache, int retries,
+                                        long startedAt) {
+        if (!options.diagnostics()) return;
+        long elapsedMillis = (System.nanoTime() - startedAt) / 1_000_000;
+        System.err.println(diagnostic(cache, retries, elapsedMillis));
+    }
+
+    static String diagnostic(String cache, int retries, long elapsedMillis) {
+        return "metrics diagnostics: cache=" + cache + " elapsedMs=" + elapsedMillis
+            + " retries=" + retries;
     }
 
     /**
@@ -259,7 +279,8 @@ public final class Main {
     }
 
     record Options(Metrics.Format format, String failOn, Path baseline, String failOnNew,
-                   Path output, Metrics.View view, boolean init, boolean allowDirty) {
+                   Path output, Metrics.View view, boolean init, boolean allowDirty,
+                   boolean diagnostics) {
         boolean shouldFail(Metrics.Report report, Baseline.Comparison comparison) {
             boolean existing = false;
             if (failOn != null) {
@@ -283,12 +304,15 @@ public final class Main {
     static Options parseOptions(String[] args) {
         List<String> rest = new ArrayList<>(Arrays.asList(args));
         if (!rest.isEmpty() && "init".equals(rest.get(0))) {
-            if (rest.size() > 2 || rest.size() == 2 && !"--allow-dirty".equals(rest.get(1)))
-                throw new Usage("unknown init option " + rest.get(1));
+            rest.remove(0);
+            boolean allowDirty = takeFlag(rest, "--allow-dirty");
+            boolean diagnostics = takeFlag(rest, "--diagnostics");
+            if (!rest.isEmpty()) throw new Usage("unknown init option " + rest.get(0));
             return new Options(Metrics.Format.JSON, null, null, null, null, Metrics.View.FULL, true,
-                rest.size() == 2);
+                allowDirty, diagnostics);
         }
         if (!rest.isEmpty() && "report".equals(rest.get(0))) rest.remove(0);
+        boolean diagnostics = takeFlag(rest, "--diagnostics");
         Metrics.Format format = Metrics.Format.TEXT;
         String failOn = null;
         Path baseline = null;
@@ -334,7 +358,16 @@ public final class Main {
             throw new Usage("--view requires --format json");
         if (view == Metrics.View.CHANGES && baseline == null)
             throw new Usage("--view changes requires --baseline");
-        return new Options(format, failOn, baseline, failOnNew, output, view, false, false);
+        return new Options(format, failOn, baseline, failOnNew, output, view, false, false,
+            diagnostics);
+    }
+
+    private static boolean takeFlag(List<String> args, String flag) {
+        int first = args.indexOf(flag);
+        if (first < 0) return false;
+        if (args.lastIndexOf(flag) != first) throw new Usage("repeated option " + flag);
+        args.remove(first);
+        return true;
     }
 
     static String help(String[] args) {
@@ -345,9 +378,9 @@ public final class Main {
                 + " [--format text|json|md|sarif]"
                 + " [--fail-on note|warning|error] [--baseline report.json]"
                 + " [--fail-on-new note|warning|error] [--view full|summary|findings|changes]"
-                + " [--output path]\n\n"
+                + " [--output path] [--diagnostics]\n\n"
                 + "Measures the project and writes a report to stdout or atomically to --output.";
-            case "init" -> "usage: ./flixw metrics init [--allow-dirty]\n\n"
+            case "init" -> "usage: ./flixw metrics init [--allow-dirty] [--diagnostics]\n\n"
                 + "Creates a starter policy and clean-tree metrics baseline without overwriting"
                 + " files.";
             case "capabilities" -> "usage: ./flixw metrics capabilities\n\n"
@@ -360,8 +393,8 @@ public final class Main {
         return "usage: ./flixw metrics [report] [--format text|json|md|sarif]"
             + " [--fail-on note|warning|error] [--baseline report.json]"
             + " [--fail-on-new note|warning|error] [--view full|summary|findings|changes]"
-            + " [--output path]\n"
-            + "       ./flixw metrics init [--allow-dirty]\n"
+            + " [--output path] [--diagnostics]\n"
+            + "       ./flixw metrics init [--allow-dirty] [--diagnostics]\n"
             + "       ./flixw metrics capabilities\n\n"
             + "Reads typed compiler data through a supported compiler adapter.\n"
             + "Results are cached under FLIXW_PLUGIN_CACHE and reused until the sources, the\n"

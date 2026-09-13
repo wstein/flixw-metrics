@@ -21,7 +21,8 @@ public final class StableInputsTest {
             StableInputs.Result<Integer> retried = StableInputs.run(context, "test",
                 (ignoredContext, ignoredSources, ignoredVersion) -> once.removeFirst(),
                 (ignoredSources, ignoredDigest) -> ++runs[0]);
-            require(runs[0] == 2 && retried.value() == 2 && retried.digest().equals("new"),
+            require(runs[0] == 2 && retried.value() == 2 && retried.digest().equals("new")
+                    && retried.retries() == 1,
                 "one changing snapshot is discarded and retried");
 
             ArrayDeque<String> twice = new ArrayDeque<>(List.of("a", "b", "c", "d"));

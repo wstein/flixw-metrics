@@ -167,6 +167,8 @@ destination directory must already exist.
 Agent consumers can reduce context usage with JSON-only `--view summary`, `--view findings`, or
 `--view changes`; the default `full` view remains schema-compatible. The changes view requires a
 baseline. Views affect presentation only, never measurement, caching, or quality-gate semantics.
+Add `--diagnostics` when profiling an invocation; one line on stderr reports `cache=hit|miss|disabled`,
+elapsed milliseconds, and the number of stable-input retries without contaminating report output.
 
 Markdown, JSON, and SARIF reports identify the source commit, dirty working-tree state,
 analyzer version, compiler artifact, complete measurement-input digest, and measurement time.

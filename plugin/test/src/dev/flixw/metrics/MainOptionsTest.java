@@ -24,13 +24,18 @@ public final class MainOptionsTest {
         require(defaults.format() == Metrics.Format.TEXT && defaults.failOn() == null
                 && defaults.baseline() == null && defaults.failOnNew() == null
                 && defaults.output() == null && defaults.view() == Metrics.View.FULL
-                && !defaults.init(),
+                && !defaults.init() && !defaults.diagnostics(),
             "the default remains report-only text");
         Main.Options init = Main.parseOptions(new String[] {"init"});
         require(init.init() && init.format() == Metrics.Format.JSON && !init.allowDirty(),
             "init selects native JSON for the captured baseline");
         require(Main.parseOptions(new String[] {"init", "--allow-dirty"}).allowDirty(),
             "init requires an explicit opt-in for a dirty baseline");
+        Main.Options diagnosedInit = Main.parseOptions(new String[] {
+            "init", "--diagnostics", "--allow-dirty"
+        });
+        require(diagnosedInit.diagnostics() && diagnosedInit.allowDirty(),
+            "init diagnostics compose with dirty-tree opt-in");
         expectUsage(new String[] {"init", "--format", "text"},
             "unknown init option --format");
         Main.Options configured = Main.parseOptions(new String[] {
@@ -78,6 +83,11 @@ public final class MainOptionsTest {
         require(Main.parseOptions(new String[] {"report", "--format", "json", "--view",
                 "findings"}).view() == Metrics.View.FINDINGS,
             "agents can request a compact findings projection");
+        require(Main.parseOptions(new String[] {"report", "--diagnostics"}).diagnostics(),
+            "diagnostics are an opt-in flag rather than a value option");
+        require(Main.diagnostic("hit", 1, 42).equals(
+                "metrics diagnostics: cache=hit elapsedMs=42 retries=1"),
+            "diagnostics expose stable machine-readable cache and timing fields");
         require(Main.parseOptions(new String[] {"report", "--format", "json", "--baseline",
                 "baseline.json", "--view", "changes"}).view() == Metrics.View.CHANGES,
             "the changes projection composes with a baseline");
@@ -87,6 +97,8 @@ public final class MainOptionsTest {
         expectUsage(new String[] {"report", "--unknown"}, "unknown option --unknown");
         expectUsage(new String[] {"report", "--format"}, "--format requires a value");
         expectUsage(new String[] {"unknown"}, "unknown command or option unknown");
+        expectUsage(new String[] {"--diagnostics", "--diagnostics"},
+            "repeated option --diagnostics");
         for (String option : List.of("--format", "--fail-on", "--baseline", "--fail-on-new",
                 "--output", "--view")) {
             String value = option.equals("--format") ? "json"
