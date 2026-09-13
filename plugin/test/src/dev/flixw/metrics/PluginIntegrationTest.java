@@ -105,6 +105,7 @@ public final class PluginIntegrationTest {
                 .filter(definition -> definition.get("name").getAsString().equals("Alpha.datalog"))
                 .findFirst().orElseThrow();
             require(datalog.get("effectCount").getAsInt() == 0
+                    && datalog.getAsJsonArray("effectDetails").isEmpty()
                     && datalog.get("handlers").getAsInt() == 0
                     && datalog.get("handledOperations").getAsInt() == 0
                     && datalog.get("maxHandlerOperations").getAsInt() == 0

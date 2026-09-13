@@ -1,6 +1,7 @@
 package dev.flixw.metrics.adapter
 
 import dev.flixw.metrics.sdk.CompilerModel
+import dev.flixw.metrics.sdk.CompilerModel.DefInfo.EffectDetail
 import dev.flixw.metrics.DatalogGraph
 import dev.flixw.metrics.sdk.CompilerModel.{DefInfo, EffectInfo, EffectOperationInfo, LineInfo, Model, ModelFailure, ModuleInfo, SourceInfo}
 
@@ -231,6 +232,7 @@ final class Flix0753Adapter extends CompilerModel {
       .isTest(d.spec.ann.isTest)
       .hasDoc(hasDoc(d))
       .effects(effectsOf(d.spec.eff).asJava)
+      .effectDetails(effectDetailsOf(d.spec.eff).asJava)
       .flixdocParameterCharacters(flixdocParameterCharacters(d.spec.fparams.toList))
       .formalParameterNames(sourceFormalParams(d.spec.fparams.toList).map(_.bnd.sym.text).asJava)
       .docText(d.spec.doc.text)
@@ -301,6 +303,27 @@ final class Flix0753Adapter extends CompilerModel {
         case _ => Nil
       }
       visit(eff).distinct.sorted
+  }
+
+  /** Instantiated capabilities, retaining arguments without widening the capability set. */
+  private def effectDetailsOf(eff: Type)(implicit flix: Flix): List[EffectDetail] = {
+    def visit(tpe: Type): List[(String, List[String])] = tpe match {
+      case Type.Cst(TypeConstructor.Effect(sym, _), _) => (sym.name, Nil) :: Nil
+      case app: Type.Apply if app.kind == Kind.Eff => app.baseType match {
+        case Type.Cst(TypeConstructor.Effect(sym, _), _) =>
+          (sym.name, app.typeArguments.map(FormatType.formatType(_))) :: Nil
+        case _ => visit(app.tpe1) ::: visit(app.tpe2)
+      }
+      case app: Type.Apply => visit(app.tpe1) ::: visit(app.tpe2)
+      case Type.Alias(_, _, tpe, _) => visit(tpe)
+      case _ => Nil
+    }
+    eff match {
+      case Type.Cst(TypeConstructor.Pure, _) => Nil
+      case _ => visit(eff).distinct.sortBy { case (name, arguments) =>
+        (name, arguments.mkString("\u0000"))
+      }.map { case (name, arguments) => new EffectDetail(name, arguments.asJava) }
+    }
   }
 
   private def declaredParameters(fparams: List[TypedAst.FormalParam]): Int = fparams match {

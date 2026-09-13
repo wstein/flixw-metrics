@@ -100,11 +100,23 @@ public final class Flix0753AdapterTest {
 
                 def polymorphicEffect(): Unit \\ Outer[Inner[Int32]] =
                     Outer.perform(_ -> Inner.touch(1))
+
+                def otherPolymorphicEffect(): Unit \\ Outer[Inner[String]] =
+                    Outer.perform(_ -> Inner.touch("value"))
                 """);
             Model polymorphic = new Flix0753Adapter().measure(project);
-            require(definition(polymorphic, "polymorphicEffect").effects()
-                    .equals(java.util.List.of("Outer")),
+            DefInfo firstEffect = definition(polymorphic, "polymorphicEffect");
+            DefInfo secondEffect = definition(polymorphic, "otherPolymorphicEffect");
+            require(firstEffect.effects().equals(java.util.List.of("Outer"))
+                    && secondEffect.effects().equals(java.util.List.of("Outer")),
                 "a polymorphic effect is atomic and does not expose effects in its arguments");
+            require(firstEffect.effectDetails().get(0).name().equals("Outer")
+                    && firstEffect.effectDetails().get(0).argumentCount() == 1
+                    && firstEffect.effectDetails().get(0).arguments()
+                        .equals(java.util.List.of("Inner[Int32]"))
+                    && secondEffect.effectDetails().get(0).arguments()
+                        .equals(java.util.List.of("Inner[String]")),
+                "rendered arguments distinguish equal-arity effect instantiations");
 
             Files.writeString(project.resolve("src/JavaInterop.flix"), """
                 import java.io.File
@@ -224,6 +236,15 @@ public final class Flix0753AdapterTest {
         try (var paths = Files.walk(root)) {
             for (Path path : paths.sorted(Comparator.reverseOrder()).toList()) Files.delete(path);
         }
+    }
+
+    static void assertLegacyEffectDetails(Model model) {
+        require(model.defs().stream().allMatch(definition ->
+                definition.effectDetails().stream().allMatch(detail ->
+                    detail.arguments().isEmpty())
+                && definition.effectDetails().stream().map(detail -> detail.name()).toList()
+                    .equals(definition.effects())),
+            "legacy adapters expose constructor names with explicit empty argument lists");
     }
 
     private static void require(boolean condition, String message) {
