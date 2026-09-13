@@ -54,6 +54,11 @@ record CompilerCapabilities(boolean hasFlixApi, boolean hasEngineApi, boolean ha
         requireClass(compiler, missing, "ca.uwaterloo.flix.language.ast.TypedAst$Expr$IfThenElse");
         requireClass(compiler, missing, "ca.uwaterloo.flix.language.ast.TypedAst$Expr$LocalDef");
         requireClass(compiler, missing, "ca.uwaterloo.flix.language.ast.TypedAst$Expr$Binary");
+        requireClass(compiler, missing, "ca.uwaterloo.flix.language.ast.TypedAst$Expr$ApplyDef");
+        requireClass(compiler, missing, "ca.uwaterloo.flix.language.ast.TypedAst$FormalParam");
+        requireClass(compiler, missing, "ca.uwaterloo.flix.language.ast.TypedAst$Binder");
+        requireClass(compiler, missing,
+                     "ca.uwaterloo.flix.language.ast.shared.SymUse$DefSymUse");
         requireClass(compiler, missing, "ca.uwaterloo.flix.language.ast.TypedAst$MatchRule");
         requireClass(compiler, missing, "ca.uwaterloo.flix.language.ast.TypedAst$ExtMatchRule");
         requireClass(compiler, missing, "ca.uwaterloo.flix.language.ast.TypedAst$CatchRule");
@@ -78,6 +83,19 @@ record CompilerCapabilities(boolean hasFlixApi, boolean hasEngineApi, boolean ha
         requireMethod(compiler, missing, "ca.uwaterloo.flix.language.ast.TypedAst$Root", "defs", 0);
         requireMethod(compiler, missing, "ca.uwaterloo.flix.language.ast.TypedAst$Def", "exp", 0);
         requireMethod(compiler, missing, "ca.uwaterloo.flix.language.ast.TypedAst$Def", "sym", 0);
+        // Module coupling (fanIn/fanOut) resolves a direct call through this chain; an earlier
+        // gate did not cover it and a renamed accessor anywhere along it would have broken
+        // coupling silently mid-run instead of failing the gate.
+        requireMethod(compiler, missing, "ca.uwaterloo.flix.language.ast.TypedAst$Expr$ApplyDef",
+                      "symUse", 0);
+        requireMethod(compiler, missing,
+                      "ca.uwaterloo.flix.language.ast.shared.SymUse$DefSymUse", "sym", 0);
+        requireMethod(compiler, missing, "ca.uwaterloo.flix.language.ast.TypedAst$FormalParam",
+                      "bnd", 0);
+        requireMethod(compiler, missing, "ca.uwaterloo.flix.language.ast.TypedAst$FormalParam",
+                      "tpe", 0);
+        requireMethod(compiler, missing, "ca.uwaterloo.flix.language.ast.TypedAst$Binder",
+                      "sym", 0);
         requireMethod(compiler, missing, "ca.uwaterloo.flix.language.ast.TypedAst$Constraint",
                       "body", 0);
         requireMethod(compiler, missing, "ca.uwaterloo.flix.language.ast.TypedAst$Constraint",

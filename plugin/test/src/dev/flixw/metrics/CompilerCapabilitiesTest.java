@@ -69,6 +69,10 @@ public final class CompilerCapabilitiesTest {
                 "the gate requires every control-flow rule class the adapter matches");
             require(found.missing().stream().anyMatch(m -> m.contains("TypeConstructor")),
                 "the gate requires typed return-shape constructors");
+            require(found.missing().stream().anyMatch(m -> m.contains("Expr$ApplyDef")),
+                "the gate requires the call-site node module coupling resolves through");
+            require(found.missing().stream().anyMatch(m -> m.contains("FormalParam")),
+                "the gate requires the formal parameter node used for names and FlixDoc width");
         } finally {
             delete(work);
         }
