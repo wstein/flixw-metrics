@@ -27,6 +27,9 @@ public final class Flix0753AdapterTest {
                 "the widest local's symbol and declaration line cross the adapter boundary");
             require(select.cognitive() == 2 && select.codeLines() == 4,
                 "branches, booleans, and definition code lines are measured");
+            require(select.handlers() == 0 && select.handledOperations() == 0
+                    && select.maxHandlerOperations() == 0 && select.resumptions() == 0,
+                "ordinary branches are not counted as effect handlers");
             DefInfo documented = definition(model, "Alpha.documented");
             require(documented.returnWidth() == 2
                     && documented.flixdocResultCharacters() == 14,
@@ -57,6 +60,9 @@ public final class Flix0753AdapterTest {
             require(beta.dependencies().equals(java.util.List.of("Alpha"))
                     && beta.dependents().isEmpty(),
                 "resolved module edge names cross the adapter boundary");
+
+            writeHandlerFixture(project);
+            assertHandlerMetrics(new Flix0753Adapter().measure(project));
 
             Model prelude = new Flix0753Adapter().measureCompilerSource(project, "Prelude.flix");
             require(!prelude.defs().isEmpty(), "an exact compiler source can be calibrated");
@@ -103,6 +109,45 @@ public final class Flix0753AdapterTest {
         } finally {
             delete(project);
         }
+    }
+
+    static void writeHandlerFixture(Path project) throws Exception {
+        Files.writeString(project.resolve("src/HandlerMetrics.flix"), """
+            eff InnerHandler {
+                def inner(): Int32
+            }
+
+            eff OuterHandler {
+                def first(x: Int32): Int32
+                def second(): Int32
+            }
+
+            def handlerMetrics(x: Int32): Int32 =
+                run {
+                    let outer = run {
+                        OuterHandler.first(x) + OuterHandler.second()
+                    } with handler OuterHandler {
+                        def first(value, resume) = resume(value) + resume(value)
+                        def second(_resume) = 0
+                    };
+                    InnerHandler.inner() + outer
+                } with handler InnerHandler {
+                    def inner(resume) = resume(1)
+                }
+            """);
+    }
+
+    static void assertHandlerMetrics(Model model) {
+        DefInfo definition = definition(model, "handlerMetrics");
+        require(definition.handlers() == 2
+                && definition.handledOperations() == 3
+                && definition.maxHandlerOperations() == 2,
+            "nested handlers and their operation clauses are measured");
+        require(definition.resumptions() == 3,
+            "zero and multiple direct continuation invocations are measured");
+        require(definition.cognitive() == 3,
+            "handler metrics do not change cognitive-complexity semantics: "
+                + definition.cognitive());
     }
 
     private static DefInfo definition(Model model, String name) {

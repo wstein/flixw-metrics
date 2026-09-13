@@ -215,6 +215,10 @@ final class Flix0753Adapter extends CompilerModel {
       .maxLineTokensOwner(owner)
       .datalogRules(tally.datalogRules)
       .datalogFacts(tally.datalogFacts)
+      .handlers(tally.handlers)
+      .handledOperations(tally.handledOperations)
+      .maxHandlerOperations(tally.maxHandlerOperations)
+      .resumptions(tally.resumptions)
       .returnWidth(shapeWidth(d.spec.retTpe))
       .isPublic(d.spec.mod.isPublic)
       .isTest(d.spec.ann.isTest)
@@ -357,6 +361,10 @@ final class Flix0753Adapter extends CompilerModel {
     var guards = 0
     var datalogRules = 0
     var datalogFacts = 0
+    var handlers = 0
+    var handledOperations = 0
+    var maxHandlerOperations = 0
+    var resumptions = 0
     val datalogEdges = scala.collection.mutable.Set.empty[(String, String)]
   }
 
@@ -412,6 +420,11 @@ final class Flix0753Adapter extends CompilerModel {
         if (r.guard.isDefined) tally.guards += 1
       case r: TypedAst.ExtMatchRule => tally.branches += r.exp.loc
       case r: TypedAst.CatchRule => tally.branches += r.exp.loc
+      case e: TypedAst.Expr.Handler =>
+        tally.handlers += 1
+        tally.handledOperations += e.rules.size
+        tally.maxHandlerOperations = math.max(tally.maxHandlerOperations, e.rules.size)
+        tally.resumptions += e.rules.map(directResumptions).sum
       case r: TypedAst.HandlerRule => tally.branches += r.exp.loc
       case r: TypedAst.SelectChannelRule => tally.branches += r.exp.loc
       case e: TypedAst.Expr.LocalDef =>
@@ -457,6 +470,29 @@ final class Flix0753Adapter extends CompilerModel {
     }
     descend(node, tally)
   }
+
+  /** Counts direct calls to an operation clause's continuation parameter. */
+  private def directResumptions(rule: TypedAst.HandlerRule): Int =
+    rule.fparams.toList.lastOption.map { parameter =>
+      val continuation = parameter.bnd.sym
+      def count(node: Any): Int = {
+        val here = node match {
+          case e: TypedAst.Expr.ApplyClo => e.exp1 match {
+            case v: TypedAst.Expr.Var if v.sym == continuation => 1
+            case _ => 0
+          }
+          case _ => 0
+        }
+        here + (node match {
+          case _: Type => 0
+          case _: Symbol => 0
+          case it: Iterable[_] => it.map(count).sum
+          case p: Product => p.productIterator.map(count).sum
+          case _ => 0
+        })
+      }
+      count(rule.exp)
+    }.getOrElse(0)
 
   /**
    * Generic descent, so an unclassified construct still has its contents measured.
