@@ -86,7 +86,8 @@ public final class ResultCacheTest {
                 .docText("First line.\nSecond line with a tab:\tend.")
                 .datalogDependencies(List.of("Edge", "Path")).datalogDependencyDepth(3)
                 .recursiveDatalogPredicates(List.of("Path", "Reach"))
-                .flixdocResultCharacters(88).build();
+                .flixdocResultCharacters(88).handlers(2).handledOperations(5)
+                .maxHandlerOperations(3).resumptions(4).build();
             var mod = new dev.flixw.metrics.sdk.CompilerModel.ModuleInfo("Foo", 1, 40, 2, 3,
                 List.of("Bar"), List.of("Baz", "Qux"));
             var sourceInfo = new dev.flixw.metrics.sdk.CompilerModel.SourceInfo("src/A.flix",

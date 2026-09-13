@@ -19,7 +19,8 @@ public final class CompilerModelTest {
             .flixdocParameterCharacters(41).formalParameterNames(List.of("x", "y"))
             .docText("docs").datalogDependencies(List.of("Edge", "Path"))
             .datalogDependencyDepth(3).recursiveDatalogPredicates(List.of("Path"))
-            .flixdocResultCharacters(17).build();
+            .flixdocResultCharacters(17).handlers(2).handledOperations(5)
+            .maxHandlerOperations(3).resumptions(4).build();
 
         require(def.line() == 7 && def.lines() == 30 && def.codeLines() == 20,
             "source span fields retain their named values");
@@ -37,6 +38,9 @@ public final class CompilerModelTest {
                 && def.recursiveDatalogPredicates().equals(List.of("Path"))
                 && def.flixdocResultCharacters() == 17,
             "new tail fields remain explicit rather than constructor-position dependent");
+        require(def.handlers() == 2 && def.handledOperations() == 5
+                && def.maxHandlerOperations() == 3 && def.resumptions() == 4,
+            "effect-handler fields retain their named values");
         ModuleInfo module = new ModuleInfo("A", 2, 30, 2, 1,
             List.of("Z", "B"), List.of("C", "B"));
         require(module.dependencies().equals(List.of("B", "Z"))

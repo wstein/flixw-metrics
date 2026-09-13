@@ -101,6 +101,10 @@ public interface CompilerModel {
      * @param recursiveDatalogPredicates predicates participating in a self or mutual dependency
      *     cycle, sorted by name
      * @param flixdocResultCharacters Unicode code points in the compiler-rendered result type
+     * @param handlers effect-handler literals in this definition
+     * @param handledOperations operation clauses across those handlers
+     * @param maxHandlerOperations most operation clauses in one handler
+     * @param resumptions direct invocations of handler-rule continuation parameters
      */
     record DefInfo(String name, String module, String file, int line, int lines, int codeLines,
                    int parameters, int maxLocalParameters, String maxLocalParametersOwner,
@@ -110,7 +114,9 @@ public interface CompilerModel {
                    boolean isPublic, boolean isTest, boolean hasDoc, List<String> effects,
                    int flixdocParameterCharacters, List<String> formalParameterNames,
                    String docText, List<String> datalogDependencies, int datalogDependencyDepth,
-                   List<String> recursiveDatalogPredicates, int flixdocResultCharacters) {
+                   List<String> recursiveDatalogPredicates, int flixdocResultCharacters,
+                   int handlers, int handledOperations, int maxHandlerOperations,
+                   int resumptions) {
 
         /** Starts a definition whose remaining measurements are assigned by name. */
         public static Builder builder(String name, String module, String file, int line) {
@@ -152,6 +158,10 @@ public interface CompilerModel {
             private int datalogDependencyDepth;
             private List<String> recursiveDatalogPredicates = List.of();
             private int flixdocResultCharacters;
+            private int handlers;
+            private int handledOperations;
+            private int maxHandlerOperations;
+            private int resumptions;
 
             private Builder(String name, String module, String file, int line) {
                 this.name = name;
@@ -212,6 +222,14 @@ public interface CompilerModel {
             public Builder flixdocResultCharacters(int value) {
                 flixdocResultCharacters = value; return this;
             }
+            public Builder handlers(int value) { handlers = value; return this; }
+            public Builder handledOperations(int value) {
+                handledOperations = value; return this;
+            }
+            public Builder maxHandlerOperations(int value) {
+                maxHandlerOperations = value; return this;
+            }
+            public Builder resumptions(int value) { resumptions = value; return this; }
 
             public DefInfo build() {
                 return new DefInfo(name, module, file, line, lines, codeLines, parameters,
@@ -220,7 +238,8 @@ public interface CompilerModel {
                     maxLineTokensLine, maxLineTokensOwner, datalogRules, datalogFacts,
                     returnWidth, isPublic, isTest, hasDoc, effects, flixdocParameterCharacters,
                     formalParameterNames, docText, datalogDependencies, datalogDependencyDepth,
-                    recursiveDatalogPredicates, flixdocResultCharacters);
+                    recursiveDatalogPredicates, flixdocResultCharacters, handlers,
+                    handledOperations, maxHandlerOperations, resumptions);
             }
         }
 
