@@ -1,13 +1,14 @@
 package dev.flixw.metrics;
 
 import java.nio.file.Path;
+import java.nio.file.Files;
 import java.util.List;
 
 /** Checks opt-in quality-gate parsing and severity semantics without launching a JVM. */
 public final class MainOptionsTest {
     private MainOptionsTest() { }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         require(Main.help(new String[] {"--help"}).contains("metrics capabilities"),
             "top-level help lists the available commands");
         require(Main.help(new String[] {"report", "--help"}).contains("--fail-on-new"),
@@ -22,6 +23,7 @@ public final class MainOptionsTest {
         Main.Options defaults = Main.parseOptions(new String[] {});
         require(defaults.format() == Metrics.Format.TEXT && defaults.failOn() == null
                 && defaults.baseline() == null && defaults.failOnNew() == null
+                && defaults.output() == null
                 && !defaults.init(),
             "the default remains report-only text");
         Main.Options init = Main.parseOptions(new String[] {"init"});
@@ -31,12 +33,29 @@ public final class MainOptionsTest {
             "init accepts no options");
         Main.Options configured = Main.parseOptions(new String[] {
             "report", "--fail-on", "warning", "--format", "sarif",
-            "--baseline", "metrics-baseline.json", "--fail-on-new", "error"
+            "--baseline", "metrics-baseline.json", "--fail-on-new", "error",
+            "--output", "reports/metrics.sarif"
         });
         require(configured.format() == Metrics.Format.SARIF && "warning".equals(configured.failOn())
                 && Path.of("metrics-baseline.json").equals(configured.baseline())
+                && Path.of("reports/metrics.sarif").equals(configured.output())
                 && "error".equals(configured.failOnNew()),
             "format, absolute gate and baseline gate compose in any order");
+        Path outputRoot = Files.createTempDirectory("flixw-metrics-output-");
+        try {
+            Path output = outputRoot.resolve("metrics.json");
+            Main.writeOutput(outputRoot, Path.of("metrics.json"), "first\n");
+            Main.writeOutput(outputRoot, Path.of("metrics.json"), "second\n");
+            require(Files.readString(output).equals("second\n"),
+                "output atomically replaces an existing report");
+            try (var files = Files.list(outputRoot)) {
+                require(files.toList().equals(List.of(output)),
+                    "successful output leaves no temporary file behind");
+            }
+        } finally {
+            Files.deleteIfExists(outputRoot.resolve("metrics.json"));
+            Files.delete(outputRoot);
+        }
 
         Metrics.Report warning = FormatsTest.reportWithSmells(List.of(new SourceMetrics.Smell(
             "deeply-nested", "A.f", "src/A.flix", 1, 5, 4, "", "levels")));
@@ -57,9 +76,11 @@ public final class MainOptionsTest {
         expectUsage(new String[] {"report", "--unknown"}, "unknown option --unknown");
         expectUsage(new String[] {"report", "--format"}, "--format requires a value");
         expectUsage(new String[] {"unknown"}, "unknown command or option unknown");
-        for (String option : List.of("--format", "--fail-on", "--baseline", "--fail-on-new")) {
+        for (String option : List.of("--format", "--fail-on", "--baseline", "--fail-on-new",
+                "--output")) {
             String value = option.equals("--format") ? "json"
-                : option.equals("--baseline") ? "baseline.json" : "warning";
+                : option.equals("--baseline") ? "baseline.json"
+                : option.equals("--output") ? "metrics.json" : "warning";
             expectUsage(new String[] {option, value, option, value},
                 "repeated option " + option);
         }

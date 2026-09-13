@@ -10,6 +10,9 @@ import dev.flixw.metrics.sdk.Adapters;
 import dev.flixw.metrics.sdk.CompilerModel;
 
 import java.nio.file.Path;
+import java.nio.file.Files;
+import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -150,8 +153,35 @@ public final class Main {
             return null;
         }
         Baseline.Comparison comparison = options.compare(context.projectRoot(), report, config);
-        System.out.print(report.render(options.format(), provenance, config, comparison));
+        writeOutput(context.projectRoot(), options.output(),
+            report.render(options.format(), provenance, config, comparison));
         return comparison;
+    }
+
+    /** Writes a report beside a temporary file, then publishes it with one atomic rename. */
+    static void writeOutput(Path projectRoot, Path requested, String contents) throws IOException {
+        if (requested == null) {
+            System.out.print(contents);
+            return;
+        }
+        Path target = (requested.isAbsolute() ? requested : projectRoot.resolve(requested))
+            .toAbsolutePath().normalize();
+        Path parent = target.getParent();
+        if (parent == null || !Files.isDirectory(parent))
+            throw new IOException("output directory does not exist: " + parent);
+        Path temporary = Files.createTempFile(parent, ".flixw-metrics-", ".tmp");
+        try {
+            Files.writeString(temporary, contents);
+            try {
+                Files.move(temporary, target, StandardCopyOption.ATOMIC_MOVE,
+                    StandardCopyOption.REPLACE_EXISTING);
+            } catch (AtomicMoveNotSupportedException e) {
+                throw new IOException("output filesystem does not support atomic replacement: "
+                    + target, e);
+            }
+        } finally {
+            Files.deleteIfExists(temporary);
+        }
     }
 
     /**
@@ -229,7 +259,7 @@ public final class Main {
     }
 
     record Options(Metrics.Format format, String failOn, Path baseline, String failOnNew,
-                   boolean init) {
+                   Path output, boolean init) {
         boolean shouldFail(Metrics.Report report, Baseline.Comparison comparison) {
             boolean existing = false;
             if (failOn != null) {
@@ -254,19 +284,20 @@ public final class Main {
         List<String> rest = new ArrayList<>(Arrays.asList(args));
         if (!rest.isEmpty() && "init".equals(rest.get(0))) {
             if (rest.size() != 1) throw new Usage("init accepts no options");
-            return new Options(Metrics.Format.JSON, null, null, null, true);
+            return new Options(Metrics.Format.JSON, null, null, null, null, true);
         }
         if (!rest.isEmpty() && "report".equals(rest.get(0))) rest.remove(0);
         Metrics.Format format = Metrics.Format.TEXT;
         String failOn = null;
         Path baseline = null;
         String failOnNew = null;
+        Path output = null;
         java.util.Set<String> seen = new java.util.HashSet<>();
         for (int i = 0; i < rest.size(); i += 2) {
             String option = rest.get(i);
             if (!option.startsWith("--"))
                 throw new Usage("unknown command or option " + option);
-            if (!List.of("--format", "--fail-on", "--baseline", "--fail-on-new")
+            if (!List.of("--format", "--fail-on", "--baseline", "--fail-on-new", "--output")
                     .contains(option))
                 throw new Usage("unknown option " + option);
             if (i + 1 >= rest.size()) throw new Usage(option + " requires a value");
@@ -281,6 +312,7 @@ public final class Main {
                     failOn = level;
                 }
                 case "--baseline" -> baseline = Path.of(rest.get(i + 1));
+                case "--output" -> output = Path.of(rest.get(i + 1));
                 case "--fail-on-new" -> {
                     String level = rest.get(i + 1);
                     if (!List.of("note", "warning", "error").contains(level))
@@ -293,7 +325,7 @@ public final class Main {
         }
         if (failOnNew != null && baseline == null)
             throw new Usage("--fail-on-new requires --baseline");
-        return new Options(format, failOn, baseline, failOnNew, false);
+        return new Options(format, failOn, baseline, failOnNew, output, false);
     }
 
     static String help(String[] args) {
@@ -303,8 +335,8 @@ public final class Main {
             case "report" -> "usage: ./flixw metrics report"
                 + " [--format text|json|md|sarif]"
                 + " [--fail-on note|warning|error] [--baseline report.json]"
-                + " [--fail-on-new note|warning|error]\n\n"
-                + "Measures the project and writes a report to stdout.";
+                + " [--fail-on-new note|warning|error] [--output path]\n\n"
+                + "Measures the project and writes a report to stdout or atomically to --output.";
             case "init" -> "usage: ./flixw metrics init\n\n"
                 + "Creates a starter policy and metrics baseline without overwriting files.";
             case "capabilities" -> "usage: ./flixw metrics capabilities\n\n"
@@ -316,7 +348,7 @@ public final class Main {
     private static String usage() {
         return "usage: ./flixw metrics [report] [--format text|json|md|sarif]"
             + " [--fail-on note|warning|error] [--baseline report.json]"
-            + " [--fail-on-new note|warning|error]\n"
+            + " [--fail-on-new note|warning|error] [--output path]\n"
             + "       ./flixw metrics init\n"
             + "       ./flixw metrics capabilities\n\n"
             + "Reads typed compiler data through a supported compiler adapter.\n"
