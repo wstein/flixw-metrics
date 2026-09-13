@@ -15,9 +15,8 @@ Do not commit generated `out/`, `dist/`, or downloaded `plugin/lib/flix*.jar` fi
 
 The Java/Scala split is load-bearing, not incidental. `Bootstrap`/`TypedAst`/etc. in `flix.jar` carry no
 ABI compatibility promise between releases. All knowledge of those types is confined to one file
-per family: `adapter/Flix0753Adapter.scala`, `adapter/Flix0680Adapter.scala`,
-`adapter/Flix0672Adapter.scala`, `adapter/Flix0661Adapter.scala`,
-`adapter/Flix0610Adapter.scala`, or `adapter/Flix0600Adapter.scala`. Everything else — `Main`, `Metrics`, `ResultCache`, `SourceMetrics`, and
+per family under `flixNNNN/src/dev/flixw/metrics/adapter/`, for example
+`flix0753/src/dev/flixw/metrics/adapter/Flix0753Adapter.scala`. Everything else — `Main`, `Metrics`, `ResultCache`, `SourceMetrics`, and
 the stable `sdk.CompilerModel`/`sdk.Adapters` boundary — stays plain Java that knows nothing about Flix.
 `CompilerModel` returns counts and strings only, deliberately, never compiler types or an AST cursor.
 

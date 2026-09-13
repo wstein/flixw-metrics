@@ -13,9 +13,9 @@ import java.util.List;
  *
  * <p>So the instability is confined instead. This interface is the only thing the rest of the
  * plugin knows about a compiler, and it is <b>Java, and versionless on purpose</b>: everything
- * crossing it is a string, a number or a boolean. One implementation per Flix generation sits
- * behind it, written against that generation's AST, and nothing outside those implementations
- * imports {@code ca.uwaterloo.flix}.
+ * crossing it is a string, a number or a boolean. One implementation per compatible Flix family
+ * sits behind it, written against that family's oldest verified AST, and nothing outside those
+ * implementations imports {@code ca.uwaterloo.flix}.
  *
  * <p><b>Per declaration, not aggregate.</b> An earlier version returned totals, which was enough
  * to print a summary and useless for anything else: a finding has to name a file and a line, a
@@ -37,13 +37,14 @@ public interface CompilerModel {
      *
      * <p>It is here because it will be needed and is cheap now: the moment an adapter ships
      * separately from this jar -- built by someone else, for a Flix generation this build has
-     * never seen -- the two need a way to say whether they agree. While every adapter is
-     * compiled in the same module, they cannot disagree, so nothing checks it.
+     * never seen -- the two need a way to say whether they agree. Today each adapter is compiled
+     * in its own versioned sibling module and every adapter is packaged with this SDK in the same
+     * plugin jar, so they cannot disagree and nothing checks the declared version.
      *
-     * <p>Today's scope is deliberately narrower than that: <b>Flix 0.75.3 and 0.76.0</b>, one
-     * in-tree adapter compatibility family. Versioning the SDK before there is a second party
-     * to version against would be ceremony; leaving no version at all would make the first one
-     * a breaking change.
+     * <p>The verified scope is <b>Flix 0.60.0, 0.61.0, 0.65.0, 0.66.1, 0.67.1, 0.67.2,
+     * 0.68.0, 0.75.2, 0.75.3, and 0.76.0</b> across six in-tree adapter families. Versioning
+     * the SDK before there is a second party to version against would be ceremony; leaving no
+     * version at all would make the first one a breaking change.
      */
     int SDK_VERSION = 1;
 

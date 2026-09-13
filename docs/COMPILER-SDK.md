@@ -20,12 +20,12 @@ would put compiler concepts straight back into the callers it exists to protect.
 |---|---|---|
 | `Main`, `Metrics`, `ResultCache`, `SourceMetrics` | nothing | Java |
 | `sdk.CompilerModel`, `sdk.Adapters` | nothing | Java |
-| `flix0600`: `adapter.Flix0600Adapter` | everything | Scala |
-| `flix0610`: `adapter.Flix0610Adapter` | everything | Scala |
-| `flix0661`: `adapter.Flix0661Adapter` | everything | Scala |
-| `flix0672`: `adapter.Flix0672Adapter` | everything | Scala |
-| `flix0680`: `adapter.Flix0680Adapter` | everything | Scala |
-| `flix0753`: `adapter.Flix0753Adapter` | everything | Scala |
+| `flix0600`: `dev.flixw.metrics.adapter.Flix0600Adapter` | everything | Scala |
+| `flix0610`: `dev.flixw.metrics.adapter.Flix0610Adapter` | everything | Scala |
+| `flix0661`: `dev.flixw.metrics.adapter.Flix0661Adapter` | everything | Scala |
+| `flix0672`: `dev.flixw.metrics.adapter.Flix0672Adapter` | everything | Scala |
+| `flix0680`: `dev.flixw.metrics.adapter.Flix0680Adapter` | everything | Scala |
+| `flix0753`: `dev.flixw.metrics.adapter.Flix0753Adapter` | everything | Scala |
 
 Every adapter, including the newest family, is a peer module compiled against only its own compiler
 generation. Supporting another Flix generation is an isolated adapter module and a line in `Adapters.KNOWN`.
@@ -34,8 +34,8 @@ module compiles against the oldest verified compiler in its family; none of thos
 
 `SDK_VERSION` is declared and unused. The moment an adapter ships separately from this jar,
 the two need a way to say whether they agree; while every adapter is compiled by this build and
-packaged in the same jar
-they cannot disagree, so nothing checks it. Today's verified scope is **Flix 0.60.0 via
+packaged in the same jar, they cannot disagree, so nothing checks it. Today's verified scope is
+**Flix 0.60.0 via
 `Flix0600Adapter`; Flix 0.61.0 and 0.65.0 via `Flix0610Adapter`; Flix 0.66.1 and 0.67.1 via
 `Flix0661Adapter`; Flix 0.67.2 via
 `Flix0672Adapter`; Flix 0.68.0 and 0.75.2 via
