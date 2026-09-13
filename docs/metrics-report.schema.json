@@ -7,7 +7,7 @@
   "required": ["schemaVersion", "configuration", "ruleCatalog", "excludedSources", "summary"],
   "properties": {
     "$schema": {"const": "https://raw.githubusercontent.com/wstein/flixw-metrics/main/docs/metrics-report.schema.json"},
-    "schemaVersion": {"const": 33},
+    "schemaVersion": {"const": 34},
     "presentationFilter": {
       "type": "object",
       "required": ["rule", "minimumSeverity", "file"],
@@ -27,6 +27,7 @@
     },
     "excludedSources": {"type": "array", "items": {"type": "object"}},
     "summary": {"type": "object"},
+    "sources": {"type": "array", "items": {"$ref": "#/$defs/source"}},
     "definitions": {"type": "array", "items": {"$ref": "#/$defs/definition"}},
     "effectDeclarations": {"type": "array", "items": {"$ref": "#/$defs/effect"}},
     "modules": {
@@ -44,6 +45,19 @@
   },
   "additionalProperties": false,
   "$defs": {
+    "source": {
+      "type": "object",
+      "required": ["file", "lines", "codeLines", "commentLines", "docCommentLines", "blankLines"],
+      "properties": {
+        "file": {"type": "string"},
+        "lines": {"type": "integer", "minimum": 0},
+        "codeLines": {"type": "integer", "minimum": 0},
+        "commentLines": {"type": "integer", "minimum": 0},
+        "docCommentLines": {"type": "integer", "minimum": 0},
+        "blankLines": {"type": "integer", "minimum": 0}
+      },
+      "additionalProperties": false
+    },
     "effectDetail": {
       "type": "object",
       "required": ["name", "argumentCount", "arguments"],

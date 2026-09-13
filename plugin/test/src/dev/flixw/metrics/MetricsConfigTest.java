@@ -85,7 +85,11 @@ public final class MetricsConfigTest {
             Metrics.Report excluded = Metrics.of(2, generatedModel, excludedText, config);
             require(excluded.definitions() == 1 && excluded.lines() == 1
                     && excluded.codeLines() == 1 && excluded.smells().isEmpty()
-                    && excluded.ranks().stream().noneMatch(rank -> !rank.file().isEmpty()),
+                    && excluded.ranks().stream().noneMatch(rank ->
+                        rank.file().equals("src/generated/Data.flix"))
+                    && excluded.ranks().stream().anyMatch(rank ->
+                        rank.measure().equals("largest-file")
+                            && rank.file().equals("src/Long.flix")),
                 "compiler totals retain definitions while source totals, findings and ranks exclude");
             require(excluded.render(Metrics.Format.JSON, null, config)
                     .contains("src/generated/Data.flix"),

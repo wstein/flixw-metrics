@@ -2,6 +2,7 @@ package dev.flixw.metrics;
 
 import dev.flixw.metrics.sdk.CompilerModel.DefInfo;
 import dev.flixw.metrics.sdk.CompilerModel.ModuleInfo;
+import dev.flixw.metrics.sdk.CompilerModel.SourceInfo;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -119,6 +120,7 @@ final class Rankings {
                 case "crammed-line" -> "tokens";
                 case "most-coupled" -> "modules called";
                 case "highest-change-impact" -> "dependent modules";
+                case "largest-file" -> "lines";
                 default -> "";
             };
         }
@@ -140,12 +142,18 @@ final class Rankings {
 
         String text() {
             return String.format(Locale.ROOT, "  %-18s %-34s %s", measure, value, subject
-                + (file.isEmpty() ? "" : "  (" + file + ":" + line + ")")
+                + (file.isEmpty() || file.equals(subject) && line == 1
+                    ? "" : "  (" + file + ":" + line + ")")
                 + (eligible ? "" : "  [ineligible: " + ineligibilityReason + "]"));
         }
     }
 
     static List<Rank> of(List<DefInfo> defs, List<ModuleInfo> modules) {
+        return of(defs, modules, List.of());
+    }
+
+    static List<Rank> of(List<DefInfo> defs, List<ModuleInfo> modules,
+                         List<SourceInfo> sources) {
         List<Rank> out = new ArrayList<>();
         // Tests are ranked with everything else here, unlike in Thresholds. A long test is not a
         // defect, but if it is the longest thing in the project that is worth knowing.
@@ -204,6 +212,11 @@ final class Rankings {
                 m.fanIn() + " dependent module" + (m.fanIn() == 1 ? "" : "s")
                     + ", definition-call fan-in", m.fanIn(), Rank.unit("highest-change-impact"),
                 Rank.ruleId("highest-change-impact"), true, ""));
+        }
+        for (SourceInfo source : sorted(sources, s -> s.lines().total())) {
+            out.add(new Rank("largest-file", source.file(), source.file(), 1,
+                source.lines().total() + " lines", source.lines().total(),
+                Rank.unit("largest-file"), Rank.ruleId("largest-file"), true, ""));
         }
         return out;
     }

@@ -164,6 +164,7 @@ child loader parented to the platform loader.
 | `recursiveDatalogPredicateCount`, `recursiveDatalogPredicates` | predicates participating in direct or mutual dependency cycles |
 | `tests`, `docCoveragePercent` | `@Test` annotations and doc comments on the production public surface |
 | `lines`, `codeLines`, `commentLines`, `docCommentLines`, `blankLines` | the compiler's own lexer |
+| per-source line metrics and `largest-file` | the same lexer counts retained by project-relative source path; configured exclusions are omitted |
 | `longestLine`, `linesOverLimit` | the source text |
 | `smells` | thresholds over all of the above |
 

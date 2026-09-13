@@ -3,6 +3,7 @@ package dev.flixw.metrics;
 import dev.flixw.metrics.sdk.CompilerModel.DefInfo;
 import dev.flixw.metrics.sdk.CompilerModel.LineInfo;
 import dev.flixw.metrics.sdk.CompilerModel.Model;
+import dev.flixw.metrics.sdk.CompilerModel.SourceInfo;
 
 import java.nio.file.Path;
 import java.util.List;
@@ -63,6 +64,24 @@ public final class MetricsTest {
         require(orderedJson.indexOf("\"name\": \"A.first\"")
                 < orderedJson.indexOf("\"name\": \"Z.last\""),
             "machine output orders definitions independently of compiler map iteration");
+
+        Model sourceModel = new Model(List.of(), List.of(), new LineInfo(15, 10, 2, 1, 2),
+            0, 0, 0, 0, 0, 0, List.of(
+                new SourceInfo("src/Z.flix", new LineInfo(5, 3, 1, 0, 1)),
+                new SourceInfo("src/A.flix", new LineInfo(10, 7, 1, 1, 1))), List.of());
+        Metrics.Report bySource = Metrics.of(2, sourceModel, emptyText());
+        String sourceJson = bySource.render(Metrics.Format.JSON);
+        require(sourceJson.contains("\"sources\": [")
+                && sourceJson.contains("\"file\": \"src/A.flix\", \"lines\": 10,"
+                    + " \"codeLines\": 7, \"commentLines\": 1,"
+                    + " \"docCommentLines\": 1, \"blankLines\": 1")
+                && sourceJson.indexOf("\"file\": \"src/A.flix\"")
+                    < sourceJson.indexOf("\"file\": \"src/Z.flix\""),
+            "native JSON exposes deterministic per-source line measurements");
+        require(bySource.ranks().stream().anyMatch(rank ->
+                rank.measure().equals("largest-file")
+                    && rank.subject().equals("src/A.flix") && rank.actual() == 10),
+            "the largest-file ranking locates the biggest physical source");
         System.out.println("MetricsTest: ok");
     }
 

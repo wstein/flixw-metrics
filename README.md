@@ -170,7 +170,7 @@ Four output formats:
 | | for |
 |---|---|
 | `--format text` | a terminal (the default) |
-| `--format json` | a program — full per-definition and per-module lists, `schemaVersion` and a [JSON Schema](docs/metrics-report.schema.json) at the top |
+| `--format json` | a program — full per-source, per-definition, and per-module lists, `schemaVersion` and a [JSON Schema](docs/metrics-report.schema.json) at the top |
 | `--format md` | pasting into a pull request, ordered as a work plan |
 | `--format sarif` | GitHub code scanning, so findings land inline on the diff |
 

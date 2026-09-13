@@ -2,6 +2,8 @@ package dev.flixw.metrics;
 
 import dev.flixw.metrics.sdk.CompilerModel.DefInfo;
 import dev.flixw.metrics.sdk.CompilerModel.ModuleInfo;
+import dev.flixw.metrics.sdk.CompilerModel.LineInfo;
+import dev.flixw.metrics.sdk.CompilerModel.SourceInfo;
 
 import java.util.List;
 
@@ -81,6 +83,15 @@ public final class RankingsTest {
         require(rank(impactRanks, "highest-change-impact", "Foundation").value()
                 .equals("7 dependent modules, definition-call fan-in"),
             "module fan-in has an explicitly scoped change-impact ranking");
+
+        List<Rankings.Rank> sourceRanks = Rankings.of(List.of(), List.of(), List.of(
+            new SourceInfo("src/Small.flix", new LineInfo(10, 8, 0, 0, 2)),
+            new SourceInfo("src/Large.flix", new LineInfo(40, 20, 8, 4, 8))));
+        Rankings.Rank largest = rank(sourceRanks, "largest-file", "src/Large.flix");
+        require(largest.actual() == 40 && largest.unit().equals("lines")
+                && largest.file().equals("src/Large.flix") && largest.line() == 1
+                && largest.ruleId().isEmpty(),
+            "source size is ranked by physical lines without inventing a finding rule");
 
         System.out.println("RankingsTest: ok");
     }

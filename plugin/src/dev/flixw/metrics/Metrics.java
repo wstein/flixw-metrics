@@ -65,7 +65,8 @@ final class Metrics {
                   int purityPercent, List<MetricsConfig.ExcludedSource> excludedSources,
                   List<SourceMetrics.Smell> smells, List<Rankings.Rank> ranks,
                   List<CompilerModel.DefInfo> defs, List<CompilerModel.ModuleInfo> modulesList,
-                  List<CompilerModel.EffectInfo> effectDeclarations) {
+                  List<CompilerModel.EffectInfo> effectDeclarations,
+                  List<CompilerModel.SourceInfo> sources) {
 
         /**
          * The output schema, for consumers. It is deliberately not what the cache checks:
@@ -75,7 +76,7 @@ final class Metrics {
         // A method so javac cannot inline yesterday's value into Baseline. Incremental builds
         // must ask the current report class which contract it emits.
         static int schemaVersion() {
-            return 33;
+            return 34;
         }
 
         /** A finding's physical span and compiler-level owner, ready for editor tooling. */
@@ -152,7 +153,7 @@ final class Metrics {
                 widestReturn, widestEffectSurface, widestDatalogDependencyBreadth,
                 deepestDatalogDependency, mostRecursiveDatalogPredicates,
                 longestFlixdocResultCharacters, tests, docCoveragePercent, purityPercent,
-                excludedSources, selected, ranks, defs, modulesList, effectDeclarations);
+                excludedSources, selected, ranks, defs, modulesList, effectDeclarations, sources);
         }
 
         /**
@@ -255,6 +256,16 @@ final class Metrics {
                  + ", \"dependencies\": " + stringList(m.dependencies())
                  + ", \"dependents\": " + stringList(m.dependents())
                  + ", \"instability\": " + String.format(Locale.ROOT, "%.3f", m.instability()) + "}";
+        }
+
+        private static String sourceJson(CompilerModel.SourceInfo source) {
+            CompilerModel.LineInfo lines = source.lines();
+            return "{\"file\": " + SourceMetrics.Smell.quote(source.file())
+                 + ", \"lines\": " + lines.total()
+                 + ", \"codeLines\": " + lines.code()
+                 + ", \"commentLines\": " + lines.comment()
+                 + ", \"docCommentLines\": " + lines.docComment()
+                 + ", \"blankLines\": " + lines.blank() + "}";
         }
 
         private static String effectJson(CompilerModel.EffectInfo effect) {
@@ -377,6 +388,12 @@ final class Metrics {
             b.append("  }");
             if (view == View.SUMMARY) return b.append("\n}\n").toString();
             if (view == View.FULL) {
+                b.append(",\n  \"sources\": [");
+                for (int i = 0; i < sources.size(); i++) {
+                    b.append(i == 0 ? "\n" : ",\n").append("    ")
+                        .append(sourceJson(sources.get(i)));
+                }
+                b.append(sources.isEmpty() ? "]" : "\n  ]");
                 b.append(",\n  \"definitions\": [");
                 for (int i = 0; i < defs.size(); i++) {
                     b.append(i == 0 ? "\n" : ",\n").append("    ").append(defJson(defs.get(i)));
@@ -514,7 +531,11 @@ final class Metrics {
         List<CompilerModel.EffectInfo> effects = m.effectDeclarations().stream()
             .sorted(java.util.Comparator.comparing(CompilerModel.EffectInfo::file)
                 .thenComparingInt(CompilerModel.EffectInfo::line)
-                .thenComparing(CompilerModel.EffectInfo::name))
+            .thenComparing(CompilerModel.EffectInfo::name))
+            .toList();
+        List<CompilerModel.SourceInfo> sources = m.sources().stream()
+            .filter(source -> !config.isExcluded(source.file()))
+            .sorted(java.util.Comparator.comparing(CompilerModel.SourceInfo::file))
             .toList();
         CompilerModel.LineInfo lines = includedLines(m, config);
         int localDefs = defs.stream().mapToInt(CompilerModel.DefInfo::localDefs).sum();
@@ -561,7 +582,7 @@ final class Metrics {
             percent(api.stream().filter(CompilerModel.DefInfo::hasDoc).count(), api.size()),
             percent(api.stream().filter(CompilerModel.DefInfo::isPure).count(), api.size()),
             text.excludedSources(), List.copyOf(smells),
-            Rankings.of(rankedDefs, modules), defs, modules, effects);
+            Rankings.of(rankedDefs, modules, sources), defs, modules, effects, sources);
     }
 
     private static CompilerModel.LineInfo includedLines(CompilerModel.Model model,

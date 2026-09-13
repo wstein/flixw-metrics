@@ -270,7 +270,7 @@ public final class FormatsTest {
                         2, 1, "", "modules depended on")),
                 List.of(new Rankings.Rank("densest", "A.f", "src/A.flix", 1,
                     String.format(Locale.ROOT, "%.1f complexity/line", 1.5))),
-                List.of(def), List.of(module), List.of());
+                List.of(def), List.of(module), List.of(), List.of());
 
             String json = localized.render(Metrics.Format.JSON);
             require(json.contains("\"cognitiveDensity\": 1.500"),
@@ -336,7 +336,8 @@ public final class FormatsTest {
                 new dev.flixw.metrics.sdk.CompilerModel.EffectInfo(
                     "A.Console", "src/A.flix", 2, 1, List.of(
                         new dev.flixw.metrics.sdk.CompilerModel.EffectOperationInfo("print", 1),
-                        new dev.flixw.metrics.sdk.CompilerModel.EffectOperationInfo("format", 3)))));
+                        new dev.flixw.metrics.sdk.CompilerModel.EffectOperationInfo("format", 3)))),
+            List.of());
     }
 
     private static int count(String text, String needle) {
