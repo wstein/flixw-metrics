@@ -61,9 +61,13 @@ public final class PluginIntegrationTest {
                     && coldJson.getAsJsonArray("smells").asList().stream().noneMatch(element ->
                         element.getAsJsonObject().get("file").getAsString().contains("generated")),
                 "packaged reports compile but exclude a configured generated source");
-            require(coldJson.getAsJsonObject("summary").get("datalogRules").getAsInt() == 1
+            require(coldJson.getAsJsonObject("summary").get("datalogRules").getAsInt() == 2
                     && coldJson.getAsJsonObject("summary").get("datalogFacts").getAsInt() == 1,
                 "packaged reports preserve separate Datalog rule and fact counts");
+            require(coldJson.getAsJsonObject("summary").get("widestEffectSurface").getAsInt() == 1
+                    && coldJson.getAsJsonObject("summary")
+                        .get("widestDatalogDependencyBreadth").getAsInt() == 2,
+                "packaged reports summarize effect and Datalog dependency breadth");
             JsonObject documented = coldJson.getAsJsonArray("definitions").asList().stream()
                 .map(element -> element.getAsJsonObject())
                 .filter(definition -> definition.get("name").getAsString()
@@ -76,6 +80,18 @@ public final class PluginIntegrationTest {
                         element.getAsJsonObject().get("rule").getAsString()
                             .equals("redundant-parameter-doc")),
                 "packaged JSON carries both FlixDoc metrics and their conservative finding");
+            JsonObject datalog = coldJson.getAsJsonArray("definitions").asList().stream()
+                .map(element -> element.getAsJsonObject())
+                .filter(definition -> definition.get("name").getAsString().equals("Alpha.datalog"))
+                .findFirst().orElseThrow();
+            require(datalog.get("effectCount").getAsInt() == 0
+                    && datalog.get("datalogDependencyBreadth").getAsInt() == 2
+                    && datalog.getAsJsonArray("datalogDependencies").size() == 2,
+                "native definition facts expose both semantic breadth measurements");
+            require(coldJson.getAsJsonArray("rankings").asList().stream().anyMatch(element ->
+                    element.getAsJsonObject().get("measure").getAsString()
+                        .equals("widest-datalog-dependency")),
+                "the packaged report ranks Datalog dependency breadth");
             require(coldJson.has("provenance") && coldJson.has("configuration")
                     && coldJson.getAsJsonObject("provenance").has("inputDigest")
                     && coldJson.getAsJsonObject("provenance").has("compilerArtifact"),

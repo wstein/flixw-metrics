@@ -36,6 +36,18 @@ public final class RankingsTest {
                 .equals("120 rendered characters"),
             "public FlixDoc parameter spans have their own ranking");
 
+        DefInfo effectfulDatalog = new DefInfo("A.orchestrate", "A", "src/A.flix", 2, 5, 5,
+            0, 0, 0, 0, 0, 0, 2, "A.orchestrate", 3, 1, 1, true, false, true,
+            List.of("Console", "FileRead", "Network"), 0, List.of(), "",
+            List.of("Edge", "Path", "Reachable"));
+        List<Rankings.Rank> semanticRanks = Rankings.of(List.of(effectfulDatalog), List.of());
+        require(rank(semanticRanks, "widest-effect-surface", "A.orchestrate").value()
+                .equals("3 declared effects"),
+            "declared effect-set width has its own ranking");
+        require(rank(semanticRanks, "widest-datalog-dependency", "A.orchestrate").value()
+                .equals("3 body predicates"),
+            "distinct Datalog body-predicate breadth has its own ranking");
+
         System.out.println("RankingsTest: ok");
     }
 

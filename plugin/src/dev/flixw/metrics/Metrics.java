@@ -38,7 +38,8 @@ final class Metrics {
                   int structs, int effects, int typeAliases, int lines, int codeLines,
                   int commentLines, int docCommentLines, int blankLines, int commentPercent,
                   int longestLine, int linesOverLimit, int datalogRules, int datalogFacts,
-                  int widestReturn, int tests, int docCoveragePercent,
+                  int widestReturn, int widestEffectSurface,
+                  int widestDatalogDependencyBreadth, int tests, int docCoveragePercent,
                   int purityPercent, List<MetricsConfig.ExcludedSource> excludedSources,
                   List<SourceMetrics.Smell> smells, List<Rankings.Rank> ranks,
                   List<CompilerModel.DefInfo> defs, List<CompilerModel.ModuleInfo> modulesList) {
@@ -51,7 +52,7 @@ final class Metrics {
         // A method so javac cannot inline yesterday's value into Baseline. Incremental builds
         // must ask the current report class which contract it emits.
         static int schemaVersion() {
-            return 20;
+            return 21;
         }
 
 
@@ -95,6 +96,12 @@ final class Metrics {
                 if (i > 0) parameterNames.append(", ");
                 parameterNames.append(SourceMetrics.Smell.quote(d.formalParameterNames().get(i)));
             }
+            StringBuilder datalogDependencies = new StringBuilder("[");
+            for (int i = 0; i < d.datalogDependencies().size(); i++) {
+                if (i > 0) datalogDependencies.append(", ");
+                datalogDependencies.append(SourceMetrics.Smell.quote(
+                    d.datalogDependencies().get(i)));
+            }
             DocumentationMetrics.ParameterDocs parameterDocs =
                 DocumentationMetrics.parameters(d.formalParameterNames(), d.docText());
             return "{\"name\": " + SourceMetrics.Smell.quote(d.name())
@@ -113,6 +120,8 @@ final class Metrics {
                  + ", \"maxLineTokensOwner\": " + SourceMetrics.Smell.quote(d.maxLineTokensOwner())
                  + ", \"datalogRules\": " + d.datalogRules()
                  + ", \"datalogFacts\": " + d.datalogFacts()
+                 + ", \"datalogDependencyBreadth\": " + d.datalogDependencyBreadth()
+                 + ", \"datalogDependencies\": " + datalogDependencies.append(']')
                  + ", \"returnWidth\": " + d.returnWidth()
                  + ", \"flixdocParameterCharacters\": " + d.flixdocParameterCharacters()
                  + ", \"formalParameterNames\": " + parameterNames.append(']')
@@ -122,6 +131,7 @@ final class Metrics {
                  + ", \"isPublic\": " + d.isPublic()
                  + ", \"isTest\": " + d.isTest()
                  + ", \"hasDoc\": " + d.hasDoc()
+                 + ", \"effectCount\": " + d.effectCount()
                  + ", \"effects\": " + e.append(']') + "}";
         }
 
@@ -233,6 +243,8 @@ final class Metrics {
                 {"longestLine", "" + longestLine}, {"linesOverLimit", "" + linesOverLimit},
                 {"datalogRules", "" + datalogRules}, {"datalogFacts", "" + datalogFacts},
                 {"widestReturn", "" + widestReturn},
+                {"widestEffectSurface", "" + widestEffectSurface},
+                {"widestDatalogDependencyBreadth", "" + widestDatalogDependencyBreadth},
                 {"tests", "" + tests},
                 {"docCoveragePercent", percentage(docCoveragePercent, machine)},
                 {"purityPercent", percentage(purityPercent, machine)},
@@ -269,6 +281,10 @@ final class Metrics {
         int datalogRules = defs.stream().mapToInt(CompilerModel.DefInfo::datalogRules).sum();
         int datalogFacts = defs.stream().mapToInt(CompilerModel.DefInfo::datalogFacts).sum();
         int widestReturn = defs.stream().mapToInt(CompilerModel.DefInfo::returnWidth).max().orElse(0);
+        int widestEffectSurface = defs.stream().mapToInt(CompilerModel.DefInfo::effectCount)
+            .max().orElse(0);
+        int widestDatalogDependencyBreadth = defs.stream()
+            .mapToInt(CompilerModel.DefInfo::datalogDependencyBreadth).max().orElse(0);
         List<CompilerModel.DefInfo> api = defs.stream()
             .filter(d -> d.isPublic() && !d.isTest() && !Thresholds.inTests(d.file())
                 && !config.isExcluded(d.file())).toList();
@@ -283,6 +299,7 @@ final class Metrics {
             lines.total(), lines.code(), lines.comment(), lines.docComment(),
             lines.blank(), percent(lines.comment() + lines.docComment(), lines.total()),
             text.longestLine(), text.linesOverLimit(), datalogRules, datalogFacts, widestReturn,
+            widestEffectSurface, widestDatalogDependencyBreadth,
             (int) defs.stream().filter(CompilerModel.DefInfo::isTest).count(),
             percent(api.stream().filter(CompilerModel.DefInfo::hasDoc).count(), api.size()),
             percent(api.stream().filter(CompilerModel.DefInfo::isPure).count(), api.size()),

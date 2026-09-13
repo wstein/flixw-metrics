@@ -17,7 +17,7 @@ public final class Flix075AdapterTest {
         try {
             Model model = new Flix075Adapter().measure(project);
             require(model.defs().size() == 6, "fixture definitions are measured");
-            require(model.lines().code() == 19 && model.lines().docComment() == 4,
+            require(model.lines().code() == 20 && model.lines().docComment() == 4,
                 "the real lexer classifies fixture lines");
             DefInfo select = definition(model, "Alpha.selectValue");
             require(select.localDefs() == 1 && select.maxLocalParameters() == 2,
@@ -34,8 +34,11 @@ public final class Flix075AdapterTest {
             require(definition(model, "Alpha.nestedRecord").returnWidth() == 2,
                 "return width counts top-level record fields, not their nested fields");
             DefInfo datalog = definition(model, "Alpha.datalog");
-            require(datalog.datalogRules() == 1 && datalog.datalogFacts() == 1,
+            require(datalog.datalogRules() == 2 && datalog.datalogFacts() == 1,
                 "Datalog rules and facts cross the compiler adapter boundary separately");
+            require(datalog.datalogDependencies().equals(java.util.List.of("Edge", "Path"))
+                    && datalog.datalogDependencyBreadth() == 2,
+                "distinct Datalog body predicates cross the adapter boundary in stable order");
             require(definition(model, "testSelectValue").isTest(),
                 "compiler test annotations are measured");
             var beta = model.modules().stream().filter(m -> m.name().equals("Beta")).findFirst()

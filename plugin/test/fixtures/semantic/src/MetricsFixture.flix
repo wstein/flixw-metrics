@@ -12,6 +12,7 @@ mod Alpha {
     pub def datalog(): #{ Edge(Int32, Int32), Path(Int32, Int32) } = #{
         Edge(1, 2).
         Path(x, y) :- Edge(x, y).
+        Path(x, z) :- Edge(x, y), Path(y, z).
     }
 
     pub def selectValue(x: Int32): Int32 =

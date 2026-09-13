@@ -88,6 +88,11 @@ final class Rankings {
         top(out, defs, "deepest", DefInfo::nesting, d -> d.nesting() + " levels nested");
         top(out, defs, "widest", DefInfo::widestParameterList,
             d -> d.widestParameterList() + " parameters");
+        top(out, defs, "widest-effect-surface", DefInfo::effectCount,
+            d -> d.effectCount() + " declared effect" + (d.effectCount() == 1 ? "" : "s"));
+        top(out, defs, "widest-datalog-dependency", DefInfo::datalogDependencyBreadth,
+            d -> d.datalogDependencyBreadth() + " body predicate"
+                + (d.datalogDependencyBreadth() == 1 ? "" : "s"));
         // FlixDoc exposes only the public API. Rank its generated parameter span rather than the
         // source line, which may have been wrapped without making the rendered signature simpler.
         List<DefInfo> documentedApi = defs.stream()

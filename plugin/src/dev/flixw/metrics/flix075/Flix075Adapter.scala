@@ -204,7 +204,8 @@ final class Flix075Adapter extends CompilerModel {
       tally.datalogRules, tally.datalogFacts, shapeWidth(d.spec.retTpe),
       d.spec.mod.isPublic, d.spec.ann.isTest, hasDoc(d),
       effectsOf(d.spec.eff).asJava, flixdocParameterCharacters(d.spec.fparams.toList),
-      sourceFormalParams(d.spec.fparams.toList).map(_.bnd.sym.text).asJava, d.spec.doc.text)
+      sourceFormalParams(d.spec.fparams.toList).map(_.bnd.sym.text).asJava, d.spec.doc.text,
+      tally.datalogDependencies.toList.sorted.asJava)
   }
 
   /**
@@ -312,6 +313,7 @@ final class Flix075Adapter extends CompilerModel {
     var guards = 0
     var datalogRules = 0
     var datalogFacts = 0
+    val datalogDependencies = scala.collection.mutable.Set.empty[String]
   }
 
   /**
@@ -374,7 +376,15 @@ final class Flix075Adapter extends CompilerModel {
       // there is nothing to filter on, and inventing a way would be counting the *syntax*
       // someone used rather than the logic they wrote.
       case c: TypedAst.Constraint =>
-        if (c.body.isEmpty) tally.datalogFacts += 1 else tally.datalogRules += 1
+        if (c.body.isEmpty) tally.datalogFacts += 1
+        else {
+          tally.datalogRules += 1
+          c.body.foreach {
+            case atom: TypedAst.Predicate.Body.Atom =>
+              tally.datalogDependencies += atom.pred.name
+            case _ => ()
+          }
+        }
       case e: TypedAst.Expr.Binary
         if e.sop == ca.uwaterloo.flix.language.ast.SemanticOp.BoolOp.And
           || e.sop == ca.uwaterloo.flix.language.ast.SemanticOp.BoolOp.Or => tally.booleans += 1

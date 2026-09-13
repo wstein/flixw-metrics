@@ -101,6 +101,8 @@ public interface CompilerModel {
      *     for a nullary definition
      * @param formalParameterNames outer formal names in source order, excluding nullary Unit
      * @param docText the declaration's raw Markdown documentation, empty when undocumented
+     * @param datalogDependencies distinct relational predicates referenced from constraint bodies,
+     *     sorted by name; facts and functional or guard body terms do not add dependencies
      */
     record DefInfo(String name, String module, String file, int line, int lines, int codeLines,
                    int parameters, int maxLocalParameters, int localDefs, int nesting, int cognitive,
@@ -108,7 +110,21 @@ public interface CompilerModel {
                    int datalogRules, int datalogFacts, int returnWidth,
                    boolean isPublic, boolean isTest, boolean hasDoc, List<String> effects,
                    int flixdocParameterCharacters, List<String> formalParameterNames,
-                   String docText) {
+                   String docText, List<String> datalogDependencies) {
+
+        public DefInfo(String name, String module, String file, int line, int lines, int codeLines,
+                       int parameters, int maxLocalParameters, int localDefs, int nesting,
+                       int cognitive, int maxLineTokens, int maxLineTokensLine,
+                       String maxLineTokensOwner, int datalogRules, int datalogFacts,
+                       int returnWidth, boolean isPublic, boolean isTest, boolean hasDoc,
+                       List<String> effects, int flixdocParameterCharacters,
+                       List<String> formalParameterNames, String docText) {
+            this(name, module, file, line, lines, codeLines, parameters, maxLocalParameters,
+                localDefs, nesting, cognitive, maxLineTokens, maxLineTokensLine,
+                maxLineTokensOwner, datalogRules, datalogFacts, returnWidth, isPublic, isTest,
+                hasDoc, effects, flixdocParameterCharacters, formalParameterNames, docText,
+                List.of());
+        }
 
         public DefInfo(String name, String module, String file, int line, int lines, int codeLines,
                        int parameters, int maxLocalParameters, int localDefs, int nesting,
@@ -119,7 +135,7 @@ public interface CompilerModel {
             this(name, module, file, line, lines, codeLines, parameters, maxLocalParameters,
                 localDefs, nesting, cognitive, maxLineTokens, maxLineTokensLine,
                 maxLineTokensOwner, datalogRules, datalogFacts, returnWidth, isPublic, isTest,
-                hasDoc, effects, 0, List.of(), "");
+                hasDoc, effects, 0, List.of(), "", List.of());
         }
 
         /** Complexity per code line; blank or comment-only padding cannot lower it. */
@@ -129,6 +145,16 @@ public interface CompilerModel {
 
         public boolean isPure() {
             return effects.isEmpty();
+        }
+
+        /** Width of the normalized declared effect set; pure definitions have width zero. */
+        public int effectCount() {
+            return effects.size();
+        }
+
+        /** Number of distinct relational predicates this definition's Datalog rules read. */
+        public int datalogDependencyBreadth() {
+            return datalogDependencies.size();
         }
 
         /** The widest parameter list anywhere inside, outer signature or local. */
