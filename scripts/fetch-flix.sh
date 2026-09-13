@@ -9,8 +9,8 @@
 # digest, refuse anything else.
 set -eu
 
-FLIX_VERSION=0.75.3
-FLIX_SHA256=bf123cdb6494d6e0cbff6399bf185314d332bbe97bfd776e4abc03a5d39dd954
+FLIX_VERSION=0.76.0
+FLIX_SHA256=d8d9a3870e199c03ed6364ea9430f56f67bfd38c332c411628a6a7cb88b2b0b4
 
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd -P)
 jar=$root/plugin/lib/flix.jar
