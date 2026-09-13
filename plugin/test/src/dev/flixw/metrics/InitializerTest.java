@@ -8,6 +8,15 @@ public final class InitializerTest {
     private InitializerTest() { }
 
     public static void main(String[] args) throws Exception {
+        try {
+            Initializer.requireClean(false, true);
+            throw new AssertionError("expected dirty-tree diagnostic");
+        } catch (Main.Usage expected) {
+            require(expected.getMessage().contains("dirty working tree")
+                    && expected.getMessage().contains("--allow-dirty"),
+                "init explains how to make a dirty baseline explicit");
+        }
+        Initializer.requireClean(true, true);
         Path root = Files.createTempDirectory("flixw-metrics-init-");
         try {
             String message = Initializer.write(root, "{\"schemaVersion\": 17}\n");

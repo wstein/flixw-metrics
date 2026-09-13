@@ -27,10 +27,12 @@ public final class MainOptionsTest {
                 && !defaults.init(),
             "the default remains report-only text");
         Main.Options init = Main.parseOptions(new String[] {"init"});
-        require(init.init() && init.format() == Metrics.Format.JSON,
+        require(init.init() && init.format() == Metrics.Format.JSON && !init.allowDirty(),
             "init selects native JSON for the captured baseline");
+        require(Main.parseOptions(new String[] {"init", "--allow-dirty"}).allowDirty(),
+            "init requires an explicit opt-in for a dirty baseline");
         expectUsage(new String[] {"init", "--format", "text"},
-            "init accepts no options");
+            "unknown init option --format");
         Main.Options configured = Main.parseOptions(new String[] {
             "report", "--fail-on", "warning", "--format", "sarif",
             "--baseline", "metrics-baseline.json", "--fail-on-new", "error",

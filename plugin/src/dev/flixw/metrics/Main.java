@@ -65,7 +65,7 @@ public final class Main {
                         + "       missing: " + String.join(", ", capabilities.missing()));
             }
             Options options = parseOptions(args);
-            if (options.init()) Initializer.preflight(context.projectRoot());
+            if (options.init()) Initializer.preflight(context.projectRoot(), options.allowDirty());
             MetricsConfig config = MetricsConfig.read(context.projectRoot());
             StableInputs.Result<Optional<Metrics.Report>> cached = StableInputs.run(context,
                 version(), ResultCache::key, (sources, digest) -> {
@@ -97,7 +97,7 @@ public final class Main {
         try {
             Context context = Context.read();
             Options options = parseOptions(args);
-            if (options.init()) Initializer.preflight(context.projectRoot());
+            if (options.init()) Initializer.preflight(context.projectRoot(), options.allowDirty());
             // Resolved here, in the only JVM that has a compiler on its class path. The
             // adapter is what knows Flix's internals; nothing else in this plugin does.
             CompilerModel model = Adapters.resolve();
@@ -259,7 +259,7 @@ public final class Main {
     }
 
     record Options(Metrics.Format format, String failOn, Path baseline, String failOnNew,
-                   Path output, boolean init) {
+                   Path output, boolean init, boolean allowDirty) {
         boolean shouldFail(Metrics.Report report, Baseline.Comparison comparison) {
             boolean existing = false;
             if (failOn != null) {
@@ -283,8 +283,10 @@ public final class Main {
     static Options parseOptions(String[] args) {
         List<String> rest = new ArrayList<>(Arrays.asList(args));
         if (!rest.isEmpty() && "init".equals(rest.get(0))) {
-            if (rest.size() != 1) throw new Usage("init accepts no options");
-            return new Options(Metrics.Format.JSON, null, null, null, null, true);
+            if (rest.size() > 2 || rest.size() == 2 && !"--allow-dirty".equals(rest.get(1)))
+                throw new Usage("unknown init option " + rest.get(1));
+            return new Options(Metrics.Format.JSON, null, null, null, null, true,
+                rest.size() == 2);
         }
         if (!rest.isEmpty() && "report".equals(rest.get(0))) rest.remove(0);
         Metrics.Format format = Metrics.Format.TEXT;
@@ -325,7 +327,7 @@ public final class Main {
         }
         if (failOnNew != null && baseline == null)
             throw new Usage("--fail-on-new requires --baseline");
-        return new Options(format, failOn, baseline, failOnNew, output, false);
+        return new Options(format, failOn, baseline, failOnNew, output, false, false);
     }
 
     static String help(String[] args) {
@@ -337,8 +339,9 @@ public final class Main {
                 + " [--fail-on note|warning|error] [--baseline report.json]"
                 + " [--fail-on-new note|warning|error] [--output path]\n\n"
                 + "Measures the project and writes a report to stdout or atomically to --output.";
-            case "init" -> "usage: ./flixw metrics init\n\n"
-                + "Creates a starter policy and metrics baseline without overwriting files.";
+            case "init" -> "usage: ./flixw metrics init [--allow-dirty]\n\n"
+                + "Creates a starter policy and clean-tree metrics baseline without overwriting"
+                + " files.";
             case "capabilities" -> "usage: ./flixw metrics capabilities\n\n"
                 + "Reports compiler compatibility and the adapter ABI gate as JSON.";
             default -> null;
@@ -349,7 +352,7 @@ public final class Main {
         return "usage: ./flixw metrics [report] [--format text|json|md|sarif]"
             + " [--fail-on note|warning|error] [--baseline report.json]"
             + " [--fail-on-new note|warning|error] [--output path]\n"
-            + "       ./flixw metrics init\n"
+            + "       ./flixw metrics init [--allow-dirty]\n"
             + "       ./flixw metrics capabilities\n\n"
             + "Reads typed compiler data through a supported compiler adapter.\n"
             + "Results are cached under FLIXW_PLUGIN_CACHE and reused until the sources, the\n"

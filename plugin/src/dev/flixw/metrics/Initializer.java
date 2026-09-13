@@ -33,10 +33,21 @@ final class Initializer {
     private Initializer() { }
 
     static void preflight(Path root) {
+        preflight(root, true);
+    }
+
+    static void preflight(Path root, boolean allowDirty) {
         Path policy = root.resolve(MetricsConfig.FILE);
         Path baseline = root.resolve(BASELINE_FILE);
         if (Files.exists(policy)) throw exists(policy);
         if (Files.exists(baseline)) throw exists(baseline);
+        requireClean(allowDirty, Provenance.dirty(root));
+    }
+
+    static void requireClean(boolean allowDirty, boolean dirty) {
+        if (dirty && !allowDirty)
+            throw new Main.Usage("refusing to capture a baseline from a dirty working tree; "
+                + "commit or stash the changes, or pass --allow-dirty explicitly");
     }
 
     static String write(Path root, String baselineJson) throws IOException {

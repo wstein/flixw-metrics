@@ -110,8 +110,9 @@ CI: ./flixw metrics report --baseline metrics-baseline.json --fail-on-new warnin
 The generated policy contains documented, commented examples and therefore leaves every default
 active. The baseline is the complete native JSON report from the normal compiler-backed analysis,
 including provenance and effective policy. `init` refuses to overwrite either file; move or remove
-an existing file explicitly before trying again. Review and commit both files, then use the printed
-command in CI.
+an existing file explicitly before trying again. It also refuses to capture unreproducible state
+from a dirty Git working tree. Commit or stash changes first; use `init --allow-dirty` only when that
+state is intentional. Review and commit both files, then use the printed command in CI.
 
 To adopt metrics manually without making existing debt block every change, capture a native JSON
 report on the branch you want to treat as the baseline, commit it, and gate only regressions:

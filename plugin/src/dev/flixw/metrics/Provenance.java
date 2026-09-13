@@ -30,10 +30,14 @@ record Provenance(String commit, boolean dirty, String version, String when,
     static Provenance of(Main.Context context, String version, String inputDigest) {
         Path root = context.projectRoot();
         String sha = git(root, "rev-parse", "HEAD");
-        boolean dirty = !git(root, "status", "--porcelain").isEmpty();
+        boolean dirty = dirty(root);
         return new Provenance(sha.isEmpty() ? "(not a git checkout)" : sha, dirty, version,
             Instant.now().toString(), context.compilerJar().getFileName().toString(),
             inputDigest == null ? "(unavailable)" : inputDigest);
+    }
+
+    static boolean dirty(Path root) {
+        return !git(root, "status", "--porcelain").isEmpty();
     }
 
     /**
