@@ -14,6 +14,7 @@ public final class Flix0600AdapterTest {
         Path project = Flix0753AdapterTest.copyFixture(Path.of(args[0]));
         try {
             Model model = new Flix0600Adapter().measure(project);
+            Flix0753AdapterTest.assertLegacyEffectDetails(model);
             require(model.defs().size() == 6, "fixture definitions are measured");
             require(model.lines().code() == 21 && model.lines().docComment() == 4,
                 "the older token positions preserve lexer-backed line metrics");

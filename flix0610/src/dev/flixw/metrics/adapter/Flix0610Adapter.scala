@@ -1,6 +1,7 @@
 package dev.flixw.metrics.adapter
 
 import dev.flixw.metrics.sdk.CompilerModel
+import dev.flixw.metrics.sdk.CompilerModel.DefInfo.EffectDetail
 import dev.flixw.metrics.DatalogGraph
 import dev.flixw.metrics.sdk.CompilerModel.{DefInfo, EffectInfo, EffectOperationInfo, LineInfo, Model, ModelFailure, ModuleInfo, SourceInfo}
 
@@ -231,6 +232,7 @@ final class Flix0610Adapter extends CompilerModel {
       .isTest(d.spec.ann.isTest)
       .hasDoc(hasDoc(d))
       .effects(effectsOf(d.spec.eff).asJava)
+      .effectDetails(effectDetailsOf(d.spec.eff).asJava)
       .flixdocParameterCharacters(flixdocParameterCharacters(d.spec.fparams.toList))
       .formalParameterNames(sourceFormalParams(d.spec.fparams.toList).map(_.bnd.sym.text).asJava)
       .docText(d.spec.doc.text)
@@ -288,6 +290,10 @@ final class Flix0610Adapter extends CompilerModel {
     case Type.Cst(ca.uwaterloo.flix.language.ast.TypeConstructor.Pure, _) => Nil
     case _ => eff.effects.toList.map(_.name).sorted
   }
+
+  /** Legacy effect constructors have no instantiation arguments. */
+  private def effectDetailsOf(eff: Type): List[EffectDetail] =
+    effectsOf(eff).map(name => new EffectDetail(name, List.empty[String].asJava))
 
   private def declaredParameters(fparams: List[TypedAst.FormalParam]): Int = fparams match {
     // A nullary definition is written `def f(): T` and reaches here as one Unit parameter, which
