@@ -10,6 +10,56 @@ Tests live in `plugin/test/src/` and use the Flix fixture in
 documentation in `docs/`, automation in `scripts/`, and CI workflows in `.github/workflows/`.
 Do not commit generated `out/`, `dist/`, or the downloaded `plugin/lib/flix.jar`.
 
+## Architecture
+
+The Java/Scala split is load-bearing, not incidental. `Bootstrap`/`TypedAst`/etc. in `flix.jar` carry no
+ABI compatibility promise between releases. All knowledge of those types is confined to one file,
+`flix075/Flix075Adapter.scala`; everything else — `Main`, `Metrics`, `ResultCache`, `SourceMetrics`, and
+the stable `sdk.CompilerModel`/`sdk.Adapters` boundary — stays plain Java that knows nothing about Flix.
+`CompilerModel` returns counts and strings only, deliberately, never compiler types or an AST cursor.
+
+The engine is Scala specifically because Flix's AST is a sealed hierarchy: `-Xfatal-warnings` makes an
+inexhaustive `match` over it a *build failure*, not a silent undercount. The reflective predecessor this
+replaced classified nodes by simple class name and silently ignored unrecognized ones — a
+`TypeMatchRule` that didn't exist was counted and the real `ExtMatchRule` was missed, with no error
+anywhere. That failure mode is why the AST-facing half of the plugin is Scala at all; see
+`docs/COMPILER-SDK.md` for the full contract.
+
+Supporting a new Flix generation means adding one adapter class plus a line in `Adapters.KNOWN` — never
+touching the report, findings, formats, cache, or CLI. Adapters are selected by **linkage, not version
+string**: `Adapters.resolve()` instantiates each known adapter and keeps the first that loads, catching
+`LinkageError` alongside reflective exceptions, so an incompatible AST fails at a controlled point
+instead of mid-measurement.
+
+`CompilerCapabilities` inspects the pinned compiler jar via `Class.forName(name, false, loader)` (never
+initializing/running compiler code) and lists every member `Flix075Adapter` actually links against. This
+list is not decoration — an earlier, incomplete gate let a compiler pass and then fail mid-run with a
+raw reflection error, exactly what the gate exists to turn into a clean diagnostic instead. **Any change
+to what the adapter calls must update the gate in the same commit.**
+
+The compiler loads on the **application class path** of a second ("bridge") JVM (`-cp
+plugin.jar:flix.jar`) launched with a 64 MiB thread stack (Flix's constraint generation is recursive and
+overflows the default stack on real projects). An isolated `URLClassLoader` was tried and doesn't work —
+the Flix standard library resolves some of its own Java dependencies (e.g. `dev.flix.runtime.Global`)
+through the application class path regardless of which loader defined the compiler classes. Consequence:
+`flix.jar` bundles ASM, JLine, gson, and json4s **unshaded** on that flat class path, so any dependency
+this plugin adds must be shaded or classpath order decides which copy wins.
+
+`flix.jar` is wired in via `compileClasspath` in `build.mill`, not `unmanagedClasspath` — it must stay
+compile-time only. At runtime the compiler is whatever flixw pinned for the target project; bundling a
+copy would mean measuring one compiler while claiming to measure another.
+
+Only **measurements** are cached (`ResultCache`/`Wire`), keyed on sources, `flix.toml`, the pinned
+compiler, this plugin's version, and its own artifact bytes. Findings and formatting are recomputed on
+every run — including cache hits — so an edited `.flixw-metrics.properties` policy or a fresh git
+provenance snapshot takes effect immediately without invalidating the cache. Every cache failure is
+treated as a miss, never a stale answer.
+
+One `Report` object renders to `text`/`json`/`md`/`sarif`. `Thresholds` is the single place a measurement
+becomes a finding; `RuleDefinitions` is the single catalog of rule IDs, severities, default limits, and
+remediation text. A finding's `detail` string is always derived from its numeric fields, never stored
+independently, so the two can't drift apart.
+
 ## Build, Test, and Development Commands
 
 - `make lint` fetches the pinned compiler and compiles with all warnings fatal.
