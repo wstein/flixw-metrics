@@ -57,7 +57,7 @@ compiler regression locks in that behavior.
 | Bytecode-derived ABI gate | packaged `capabilities` and `CompilerCapabilitiesTest` | `hasEngineApi=true`; no missing members |
 | Semantic fixture | `scripts/test-one.sh Flix0753AdapterTest` | passed, including polymorphic effects and Java descriptors |
 | Packaged integration | `PluginIntegrationTest` with the 0.76 JAR | passed |
-| Compatibility floor | `scripts/test-compiler-compatibility.sh` | 0.75.2 rejected; packaged 0.75.3 integration passed |
+| Compatibility families | `scripts/test-compiler-compatibility.sh` | packaged integration passed on 0.68.0, 0.75.2, and 0.75.3; 0.67.0 rejected |
 | Corpus calibration | `scripts/calibrate-corpus.sh /tmp/flixw-calibration-076c` | all 9 active targets matched exactly |
 | Performance contract | `scripts/measure-performance.sh /tmp/flixw-performance-076.json` | cold median 4,138 ms; warm 336 ms; 8% ratio |
 | Packaged report schema | `check-jsonschema` via `uvx` | passed |
@@ -76,7 +76,9 @@ previous stable summaries and findings.
 
 ## Decision and compatibility impact
 
-- Verified releases: Flix 0.75.3 and 0.76.0 through `Flix0753Adapter`. Flix 0.75.2 is the locked, rejected predecessor.
+- Verified current-family releases: Flix 0.75.3 and 0.76.0 through `Flix0753Adapter`.
+  A later investigation added `Flix0680Adapter` for 0.68.0 and 0.75.2 and moved the locked
+  rejected predecessor to 0.67.0.
 - Required implementation change: count saturated polymorphic effects atomically.
 - Report schema: unchanged.
 - Wire format and cache: unchanged; compiler artifact bytes already invalidate cached measurements.

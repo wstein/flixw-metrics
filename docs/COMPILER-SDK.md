@@ -11,7 +11,7 @@ reorganised between releases. A plugin that spread knowledge of those types thro
 code would inherit that instability everywhere, and every new Flix would be an edit in a dozen
 places.
 
-So it is confined to one file. `dev.flixw.metrics.sdk.CompilerModel` is the only thing the
+So it is confined to one file per compatibility family. `dev.flixw.metrics.sdk.CompilerModel` is the only thing the
 rest of the plugin knows about a compiler, it is plain Java, and it returns **counts and
 strings, not compiler types** — a richer interface handing back declarations or an AST cursor
 would put compiler concepts straight back into the callers it exists to protect.
@@ -20,24 +20,26 @@ would put compiler concepts straight back into the callers it exists to protect.
 |---|---|---|
 | `Main`, `Metrics`, `ResultCache`, `SourceMetrics` | nothing | Java |
 | `sdk.CompilerModel`, `sdk.Adapters` | nothing | Java |
+| `flix0680.Flix0680Adapter` | everything | Scala |
 | `flix0753.Flix0753Adapter` | everything | Scala |
 
-Supporting another Flix generation is a class and a line in `Adapters.KNOWN`. It is explicitly
-*not* an edit to the report, the smells, the formats, the cache or the CLI.
+Supporting another Flix generation is an isolated adapter module and a line in `Adapters.KNOWN`.
+It is explicitly *not* an edit to the report, the smells, the formats, the cache or the CLI. Each
+module compiles against the oldest verified compiler in its family; neither compiler is packaged.
 
 `SDK_VERSION` is declared and unused. The moment an adapter ships separately from this jar,
 the two need a way to say whether they agree; while every adapter is compiled in this module
-they cannot disagree, so nothing checks it. Today's scope is narrower on purpose: **Flix 0.75.3
-and 0.76.0, one in-tree adapter compatibility family.** `Flix0753` names the oldest compatible
-release, not a closed range or the current compiler pin. The investigation supporting each release
+they cannot disagree, so nothing checks it. Today's verified scope is **Flix 0.68.0 and 0.75.2 via
+`Flix0680Adapter`, plus Flix 0.75.3 and 0.76.0 via `Flix0753Adapter`.** Each suffix names the oldest
+verified release in its family, not a closed range or the current compiler pin. The investigation supporting each release
 is recorded under [`docs/compiler-compatibility`](compiler-compatibility/README.md).
 
 ### Adapters are selected by linkage, not by version string
 
-`Adapters.resolve()` instantiates each known adapter and keeps the first that loads. Doing so
-forces the JVM to resolve the compiler types the adapter binds to, so an adapter written for an
-AST this compiler does not have fails in a controlled place rather than part-way through a
-measurement. A fork reporting an unfamiliar version may still link; a compiler reporting a
+`Adapters.resolve()` checks each known adapter's bytecode-derived ABI contract, newest first, and
+instantiates the first compatible one. The explicit check matters because the JVM may resolve a
+method reference only when that code path first executes; construction alone does not prove the
+whole adapter links. A fork reporting an unfamiliar version may still link; a compiler reporting a
 familiar one may not. The JVM knows, and asking it is cheaper than maintaining a table of which
 versions are secretly compatible.
 
@@ -68,8 +70,8 @@ and answer on a machine where the adapter would not link at all.
 
 ## The gate names what the engine links against
 
-The capability gate reads the packaged `Flix0753Adapter` class files and checks every Flix class,
-field, constructor, and method they link against using its exact JVM descriptor. Following generated
+The capability gate reads every packaged adapter family and checks every Flix class, field,
+constructor, and method each one links against using its exact JVM descriptor. Following generated
 nested adapter classes keeps Scala's closure placement from creating an unchecked call. The resulting
 contract includes:
 
@@ -196,7 +198,7 @@ finding—stable foundations are expected to have high fan-in—and the ranking 
 
 ### Lines are classified by the compiler's lexer, not by scanning for `//`
 
-`Lexer.lex(Source)` and `TokenKind.isComment` are both in stock 0.75.3 and 0.76.0 — an earlier note here
+`Lexer.lex(Source)` and `TokenKind.isComment` are present throughout both verified adapter families — an earlier note here
 claimed otherwise and was simply wrong. A line holding code and a trailing comment counts as
 code, because it is a line you have to read as code; a line inside a block comment counts as a
 comment though nothing on it says so, which is exactly where a text scan goes wrong.

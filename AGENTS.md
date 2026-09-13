@@ -2,19 +2,19 @@
 
 ## Project Structure & Module Organization
 
-The analyzer is a mixed Java/Scala Mill module. Compiler-neutral code lives in
-`plugin/src/dev/flixw/metrics/`. The Flix compatibility-family adapter
-is isolated in `plugin/src/dev/flixw/metrics/flix0753/`; the stable boundary is under
+The analyzer is a mixed Java/Scala Mill build. Compiler-neutral code and the current Flix adapter
+live in `plugin/src/dev/flixw/metrics/`; the older adapter is compiled in isolation under
+`adapter0680/src/`. The stable boundary is under
 `plugin/src/dev/flixw/metrics/sdk/`. Tests live in `plugin/test/src/` and use the Flix fixture in
 `plugin/test/fixtures/semantic/`. Calibration inputs and budgets live in `calibration/`, project
 documentation in `docs/`, automation in `scripts/`, and CI workflows in `.github/workflows/`.
-Do not commit generated `out/`, `dist/`, or the downloaded `plugin/lib/flix.jar`.
+Do not commit generated `out/`, `dist/`, or downloaded `plugin/lib/flix*.jar` files.
 
 ## Architecture
 
 The Java/Scala split is load-bearing, not incidental. `Bootstrap`/`TypedAst`/etc. in `flix.jar` carry no
-ABI compatibility promise between releases. All knowledge of those types is confined to one file,
-`flix0753/Flix0753Adapter.scala`; everything else — `Main`, `Metrics`, `ResultCache`, `SourceMetrics`, and
+ABI compatibility promise between releases. All knowledge of those types is confined to one file
+per family, `flix0753/Flix0753Adapter.scala` or `flix0680/Flix0680Adapter.scala`; everything else — `Main`, `Metrics`, `ResultCache`, `SourceMetrics`, and
 the stable `sdk.CompilerModel`/`sdk.Adapters` boundary — stays plain Java that knows nothing about Flix.
 `CompilerModel` returns counts and strings only, deliberately, never compiler types or an AST cursor.
 
@@ -26,18 +26,19 @@ reflective predecessor classified nodes by simple class name and silently ignore
 anywhere. That failure mode is why the AST-facing half of the plugin is Scala at all; see
 `docs/COMPILER-SDK.md` and `docs/compiler-compatibility/` for the full contract and release evidence.
 
-`Flix0753Adapter` names the linkage generation whose oldest compatible release is Flix 0.75.3 and
-which is currently verified with Flix 0.76.0. Supporting an incompatible Flix generation means
+`Flix0680Adapter` is verified with Flix 0.68.0 and 0.75.2; `Flix0753Adapter` is verified with
+Flix 0.75.3 and 0.76.0. Each name records the oldest verified release in its linkage family.
+Supporting an incompatible Flix generation means
 adding one adapter class plus a line in `Adapters.KNOWN` — never
 touching the report, findings, formats, cache, or CLI. Adapters are selected by **linkage, not version
-string**: `Adapters.resolve()` instantiates each known adapter and keeps the first that loads, catching
-`LinkageError` alongside reflective exceptions, so an incompatible AST fails at a controlled point
-instead of mid-measurement.
+string**: `Adapters.resolve()` checks each adapter's bytecode-derived contract before instantiation
+and keeps the first compatible adapter, so lazy JVM resolution cannot defer an incompatible AST
+failure until mid-measurement.
 
 `CompilerCapabilities` inspects the pinned compiler jar via `Class.forName(name, false, loader)` (never
 initializing/running compiler code). `AdapterAbi` derives its exact class, field, constructor, and method
-requirements from the compiled adapter bytecode, including generated nested classes. A regression checks
-that the pinned compiler satisfies this structural contract; do not replace it with a handwritten list.
+requirements from every compiled adapter's bytecode, including generated nested classes. A regression
+checks each pinned compiler against these structural contracts; do not replace them with handwritten lists.
 
 The compiler loads on the **application class path** of a second ("bridge") JVM (spawned by `Main`
 via `--bridge` with `-cp plugin.jar:flix.jar`) launched with a 64 MiB thread stack (`-Xss64m`; Flix's
@@ -67,11 +68,12 @@ independently, so the two can't drift apart.
 
 - `make lint` fetches the pinned compiler and compiles with all warnings fatal.
 - `make test` runs linting, calibration and performance-contract tests, all executable unit tests,
-  the real-compiler fixture, integration tests, and the 0.75.2/0.75.3 compatibility boundary. It
-  downloads those two historical compiler jars into ignored `out/` storage when absent. Its packaging
+  the real-compiler fixture, integration tests, and the 0.67.0/0.68.0 compatibility boundary. It
+  also verifies packaged operation on 0.75.2 and 0.75.3. Historical compiler jars are downloaded
+  into ignored `out/` storage when absent. Its packaging
   check deliberately builds twice with a two-second gap to prove reproducibility; that pause is expected.
 - `sh scripts/test-one.sh MetricsTest` compiles as needed and runs one test main. The wrapper also supplies
-  the special fixtures and classpaths required by `CompilerCapabilitiesTest`, `Flix0753AdapterTest`, and
+  the special fixtures and classpaths required by `CompilerCapabilitiesTest`, both adapter tests, and
   `PluginIntegrationTest`.
 - `make package` creates `dist/plugin.jar` and `dist/SHA256SUMS`.
 - `sh scripts/validate-report-schema.sh` validates a packaged fixture report with
@@ -96,7 +98,7 @@ for example `definition-too-long`. Run `make format` and `make lint` before comm
 
 Tests are dependency-free classes named `*Test.java` with a `main` method and exact assertions.
 Add a failing regression before behavioral fixes. Use temporary directories and clean them in
-`finally`. Adapter changes must extend `Flix0753AdapterTest`; packaging or process changes should
+`finally`. Adapter changes must extend the matching `Flix*AdapterTest`; packaging or process changes should
 extend `PluginIntegrationTest`. Use `scripts/test-one.sh` while iterating; `./mill plugin.test.test`
 does not exist because `testFramework = "none"`. Run `make test` before opening a pull request. CodeQL supplements,
 but does not replace, regression coverage.
