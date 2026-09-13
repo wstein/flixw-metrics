@@ -93,6 +93,12 @@ final class Rankings {
         top(out, defs, "widest-datalog-dependency", DefInfo::datalogDependencyBreadth,
             d -> d.datalogDependencyBreadth() + " body predicate"
                 + (d.datalogDependencyBreadth() == 1 ? "" : "s"));
+        top(out, defs, "deepest-datalog-dependency", DefInfo::datalogDependencyDepth,
+            d -> d.datalogDependencyDepth() + " predicate level"
+                + (d.datalogDependencyDepth() == 1 ? "" : "s"));
+        top(out, defs, "most-recursive-datalog", DefInfo::recursiveDatalogPredicateCount,
+            d -> d.recursiveDatalogPredicateCount() + " recursive predicate"
+                + (d.recursiveDatalogPredicateCount() == 1 ? "" : "s"));
         // FlixDoc exposes only the public API. Rank its generated parameter span rather than the
         // source line, which may have been wrapped without making the rendered signature simpler.
         List<DefInfo> documentedApi = defs.stream()

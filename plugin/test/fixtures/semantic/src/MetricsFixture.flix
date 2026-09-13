@@ -9,10 +9,11 @@ mod Alpha {
         { position = { x = 0, y = 0 }, size = { x = 1, y = 1 } }
 
     /// Returns one edge and its derived path.
-    pub def datalog(): #{ Edge(Int32, Int32), Path(Int32, Int32) } = #{
+    pub def datalog(): #{ Edge(Int32, Int32), Path(Int32, Int32), Reach(Int32, Int32) } = #{
         Edge(1, 2).
         Path(x, y) :- Edge(x, y).
-        Path(x, z) :- Edge(x, y), Path(y, z).
+        Path(x, z) :- Edge(x, y), Reach(y, z).
+        Reach(x, y) :- Path(x, y).
     }
 
     pub def selectValue(x: Int32): Int32 =

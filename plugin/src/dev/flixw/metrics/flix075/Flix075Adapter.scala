@@ -196,6 +196,7 @@ final class Flix075Adapter extends CompilerModel {
       .minByOption { case (_, loc) => loc.endLine - loc.startLine }
       .map { case (name, _) => d.sym.toString + "." + name }
       .getOrElse(d.sym.toString)
+    val datalog = analyzeDatalog(tally.datalogEdges.toSet)
     new DefInfo(
       d.sym.toString, moduleOf(d.sym), relativise(d.loc, projectRoot),
       d.loc.startLine, spannedLines(d.loc), codeLines, declaredParameters(d.spec.fparams.toList),
@@ -205,7 +206,7 @@ final class Flix075Adapter extends CompilerModel {
       d.spec.mod.isPublic, d.spec.ann.isTest, hasDoc(d),
       effectsOf(d.spec.eff).asJava, flixdocParameterCharacters(d.spec.fparams.toList),
       sourceFormalParams(d.spec.fparams.toList).map(_.bnd.sym.text).asJava, d.spec.doc.text,
-      tally.datalogDependencies.toList.sorted.asJava)
+      datalog.dependencies.asJava, datalog.depth, datalog.recursive.asJava)
   }
 
   /**
@@ -313,7 +314,53 @@ final class Flix075Adapter extends CompilerModel {
     var guards = 0
     var datalogRules = 0
     var datalogFacts = 0
-    val datalogDependencies = scala.collection.mutable.Set.empty[String]
+    val datalogEdges = scala.collection.mutable.Set.empty[(String, String)]
+  }
+
+  /** Predicate graph facts retained after recursive components have been identified. */
+  private final class DatalogAnalysis(val dependencies: List[String], val depth: Int,
+                                      val recursive: List[String])
+
+  /**
+   * Measures a predicate dependency graph without letting recursion make depth infinite.
+   *
+   * An edge is `head -> body`: the derived head reads that body relation. Mutually reachable
+   * predicates form one recursive component. Depth is the number of component levels in the
+   * longest path, including the terminal input predicate; a graph with no relational edge is
+   * zero, so a facts-only database does not appear in the ranking.
+   */
+  private def analyzeDatalog(edges: Set[(String, String)]): DatalogAnalysis = {
+    if (edges.isEmpty) return new DatalogAnalysis(Nil, 0, Nil)
+
+    val nodes = edges.flatMap { case (head, body) => Set(head, body) }.toList.sorted
+    val adjacent = nodes.map { node =>
+      node -> edges.collect { case (`node`, body) => body }
+    }.toMap
+
+    def reaches(from: String, target: String, seen: Set[String]): Boolean =
+      if (from == target) true
+      else if (seen.contains(from)) false
+      else adjacent.getOrElse(from, Set.empty).exists(reaches(_, target, seen + from))
+
+    val recursive = nodes.filter { node =>
+      adjacent.getOrElse(node, Set.empty).exists(reaches(_, node, Set.empty))
+    }
+    val representative = nodes.map { node =>
+      val component = nodes.filter(other =>
+        reaches(node, other, Set.empty) && reaches(other, node, Set.empty))
+      node -> component.min
+    }.toMap
+    val dag = edges.map { case (head, body) => representative(head) -> representative(body) }
+      .filter { case (head, body) => head != body }
+    val components = representative.values.toSet
+    val memo = scala.collection.mutable.Map.empty[String, Int]
+    def componentDepth(node: String): Int = memo.getOrElseUpdate(node, {
+      val below = dag.collect { case (`node`, body) => body }
+      1 + below.map(componentDepth).maxOption.getOrElse(0)
+    })
+
+    new DatalogAnalysis(edges.map(_._2).toList.sorted.distinct,
+      components.map(componentDepth).max, recursive)
   }
 
   /**
@@ -381,7 +428,10 @@ final class Flix075Adapter extends CompilerModel {
           tally.datalogRules += 1
           c.body.foreach {
             case atom: TypedAst.Predicate.Body.Atom =>
-              tally.datalogDependencies += atom.pred.name
+              c.head match {
+                case head: TypedAst.Predicate.Head.Atom =>
+                  tally.datalogEdges += ((head.pred.name, atom.pred.name))
+              }
             case _ => ()
           }
         }

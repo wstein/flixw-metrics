@@ -39,7 +39,7 @@ public final class RankingsTest {
         DefInfo effectfulDatalog = new DefInfo("A.orchestrate", "A", "src/A.flix", 2, 5, 5,
             0, 0, 0, 0, 0, 0, 2, "A.orchestrate", 3, 1, 1, true, false, true,
             List.of("Console", "FileRead", "Network"), 0, List.of(), "",
-            List.of("Edge", "Path", "Reachable"));
+            List.of("Edge", "Path", "Reachable"), 4, List.of("Path", "Reachable"));
         List<Rankings.Rank> semanticRanks = Rankings.of(List.of(effectfulDatalog), List.of());
         require(rank(semanticRanks, "widest-effect-surface", "A.orchestrate").value()
                 .equals("3 declared effects"),
@@ -47,6 +47,12 @@ public final class RankingsTest {
         require(rank(semanticRanks, "widest-datalog-dependency", "A.orchestrate").value()
                 .equals("3 body predicates"),
             "distinct Datalog body-predicate breadth has its own ranking");
+        require(rank(semanticRanks, "deepest-datalog-dependency", "A.orchestrate").value()
+                .equals("4 predicate levels"),
+            "the collapsed Datalog dependency graph has its own depth ranking");
+        require(rank(semanticRanks, "most-recursive-datalog", "A.orchestrate").value()
+                .equals("2 recursive predicates"),
+            "recursive predicate participation has its own ranking");
 
         System.out.println("RankingsTest: ok");
     }

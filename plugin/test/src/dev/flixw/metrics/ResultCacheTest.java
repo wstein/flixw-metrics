@@ -79,7 +79,7 @@ public final class ResultCacheTest {
                 "Foo.od\td", "Foo", "src/A.flix", 3, 40, 30, 2, 9, 1, 4, 12, 31, 7, "Foo.odd.loop",
                 2, 5, 6, true, false, true, List.of("IO", "Net"), 47,
                 List.of("left", "right"), "First line.\nSecond line with a tab:\tend.",
-                List.of("Edge", "Path"));
+                List.of("Edge", "Path"), 3, List.of("Path", "Reach"));
             var mod = new dev.flixw.metrics.sdk.CompilerModel.ModuleInfo("Foo", 1, 40, 2, 3);
             var sourceInfo = new dev.flixw.metrics.sdk.CompilerModel.SourceInfo("src/A.flix",
                 new dev.flixw.metrics.sdk.CompilerModel.LineInfo(40, 30, 4, 3, 3));

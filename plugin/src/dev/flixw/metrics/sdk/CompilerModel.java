@@ -103,6 +103,10 @@ public interface CompilerModel {
      * @param docText the declaration's raw Markdown documentation, empty when undocumented
      * @param datalogDependencies distinct relational predicates referenced from constraint bodies,
      *     sorted by name; facts and functional or guard body terms do not add dependencies
+     * @param datalogDependencyDepth predicate levels in the longest dependency path after
+     *     recursive components are collapsed, or zero when no relational dependency edge exists
+     * @param recursiveDatalogPredicates predicates participating in a self or mutual dependency
+     *     cycle, sorted by name
      */
     record DefInfo(String name, String module, String file, int line, int lines, int codeLines,
                    int parameters, int maxLocalParameters, int localDefs, int nesting, int cognitive,
@@ -110,7 +114,23 @@ public interface CompilerModel {
                    int datalogRules, int datalogFacts, int returnWidth,
                    boolean isPublic, boolean isTest, boolean hasDoc, List<String> effects,
                    int flixdocParameterCharacters, List<String> formalParameterNames,
-                   String docText, List<String> datalogDependencies) {
+                   String docText, List<String> datalogDependencies, int datalogDependencyDepth,
+                   List<String> recursiveDatalogPredicates) {
+
+        public DefInfo(String name, String module, String file, int line, int lines, int codeLines,
+                       int parameters, int maxLocalParameters, int localDefs, int nesting,
+                       int cognitive, int maxLineTokens, int maxLineTokensLine,
+                       String maxLineTokensOwner, int datalogRules, int datalogFacts,
+                       int returnWidth, boolean isPublic, boolean isTest, boolean hasDoc,
+                       List<String> effects, int flixdocParameterCharacters,
+                       List<String> formalParameterNames, String docText,
+                       List<String> datalogDependencies) {
+            this(name, module, file, line, lines, codeLines, parameters, maxLocalParameters,
+                localDefs, nesting, cognitive, maxLineTokens, maxLineTokensLine,
+                maxLineTokensOwner, datalogRules, datalogFacts, returnWidth, isPublic, isTest,
+                hasDoc, effects, flixdocParameterCharacters, formalParameterNames, docText,
+                datalogDependencies, 0, List.of());
+        }
 
         public DefInfo(String name, String module, String file, int line, int lines, int codeLines,
                        int parameters, int maxLocalParameters, int localDefs, int nesting,
@@ -123,7 +143,7 @@ public interface CompilerModel {
                 localDefs, nesting, cognitive, maxLineTokens, maxLineTokensLine,
                 maxLineTokensOwner, datalogRules, datalogFacts, returnWidth, isPublic, isTest,
                 hasDoc, effects, flixdocParameterCharacters, formalParameterNames, docText,
-                List.of());
+                List.of(), 0, List.of());
         }
 
         public DefInfo(String name, String module, String file, int line, int lines, int codeLines,
@@ -135,7 +155,7 @@ public interface CompilerModel {
             this(name, module, file, line, lines, codeLines, parameters, maxLocalParameters,
                 localDefs, nesting, cognitive, maxLineTokens, maxLineTokensLine,
                 maxLineTokensOwner, datalogRules, datalogFacts, returnWidth, isPublic, isTest,
-                hasDoc, effects, 0, List.of(), "", List.of());
+                hasDoc, effects, 0, List.of(), "", List.of(), 0, List.of());
         }
 
         /** Complexity per code line; blank or comment-only padding cannot lower it. */
@@ -155,6 +175,11 @@ public interface CompilerModel {
         /** Number of distinct relational predicates this definition's Datalog rules read. */
         public int datalogDependencyBreadth() {
             return datalogDependencies.size();
+        }
+
+        /** Number of predicates participating in Datalog dependency cycles. */
+        public int recursiveDatalogPredicateCount() {
+            return recursiveDatalogPredicates.size();
         }
 
         /** The widest parameter list anywhere inside, outer signature or local. */
