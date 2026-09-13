@@ -45,6 +45,32 @@ public final class FormatsTest {
             "totals are nested, so a total cannot collide with a list of the same name");
         require(json.contains("\"id\": \"" + firstId + "\""),
             "native JSON carries the same stable finding id as SARIF");
+        require(json.contains("\"ruleCatalog\": [")
+                && json.contains("\"title\": \"Deeply nested\"")
+                && json.contains("\"category\": \"complexity\"")
+                && json.contains("\"severity\": \"warning\"")
+                && json.contains("\"remediation\": \"Invert a condition"),
+            "native JSON gives agents a self-describing rule catalog");
+        String findingsSection = json.substring(json.indexOf("\"smells\": ["));
+        require(findingsSection.contains("\"rule\": \"deeply-nested\"")
+                && findingsSection.contains("\"severity\": \"warning\""),
+            "each native JSON finding carries its severity without a catalog join");
+        String summaryJson = report.render(Metrics.Format.JSON, null,
+            MetricsConfig.defaults(), null, Metrics.View.SUMMARY);
+        require(summaryJson.contains("\"summary\": {")
+                && summaryJson.contains("\"ruleCatalog\": [")
+                && !summaryJson.contains("\"definitions\": [")
+                && !summaryJson.contains("\"modules\": [")
+                && !summaryJson.contains("\"rankings\": [")
+                && !summaryJson.contains("\"smells\": ["),
+            "summary view keeps context while omitting potentially large detail arrays");
+        String findingsJson = report.render(Metrics.Format.JSON, null,
+            MetricsConfig.defaults(), null, Metrics.View.FINDINGS);
+        require(findingsJson.contains("\"smells\": [")
+                && !findingsJson.contains("\"definitions\": [")
+                && !findingsJson.contains("\"modules\": [")
+                && !findingsJson.contains("\"rankings\": ["),
+            "findings view is an actionable compact report");
 
         String md = report.render(Metrics.Format.MARKDOWN);
         require(md.startsWith("# Flix metrics"), "markdown has a title");
@@ -147,6 +173,17 @@ public final class FormatsTest {
                 && comparedJson.contains("\"newCount\": 1")
                 && comparedJson.contains("\"resolvedCount\": 1"),
             "native JSON reports every baseline outcome separately");
+        require(comparedJson.contains("\"baselineState\": \"new\"")
+                && comparedJson.contains("\"baselineState\": \"updated\""),
+            "native JSON labels current findings with their baseline state");
+        String changesJson = report.render(Metrics.Format.JSON, provenance,
+            MetricsConfig.defaults(), comparison, Metrics.View.CHANGES);
+        require(changesJson.contains("\"baselineState\": \"new\"")
+                && changesJson.contains("\"baselineState\": \"updated\"")
+                && !changesJson.contains("\"baselineState\": \"unchanged\"")
+                && !changesJson.contains("\"definitions\": [")
+                && !changesJson.contains("\"rankings\": ["),
+            "changes view contains only new and worsened current findings");
         String comparedText = report.render(Metrics.Format.TEXT, provenance,
             MetricsConfig.defaults(), comparison);
         require(comparedText.contains("baseline: 1 new, 1 worsened, 1 resolved, 3 retained"),

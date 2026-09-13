@@ -29,6 +29,22 @@ final class Metrics {
         }
     }
 
+    /** Presentation-only projection of native JSON; measurement and policy are unchanged. */
+    enum View {
+        FULL, SUMMARY, FINDINGS, CHANGES;
+
+        static View parse(String value) {
+            return switch (value) {
+                case "full" -> FULL;
+                case "summary" -> SUMMARY;
+                case "findings" -> FINDINGS;
+                case "changes" -> CHANGES;
+                default -> throw new Main.Usage("unknown view " + value
+                    + " (expected full, summary, findings or changes)");
+            };
+        }
+    }
+
     /**
      * One report. Flat on purpose: every field is a count a consumer can compare between two
      * runs without knowing what the others mean.
@@ -70,8 +86,17 @@ final class Metrics {
 
         String render(Format format, Provenance p, MetricsConfig config,
                       Baseline.Comparison comparison) {
+            return render(format, p, config, comparison, View.FULL);
+        }
+
+        String render(Format format, Provenance p, MetricsConfig config,
+                      Baseline.Comparison comparison, View view) {
+            if (view != View.FULL && format != Format.JSON)
+                throw new IllegalArgumentException("compact views require JSON format");
+            if (view == View.CHANGES && comparison == null)
+                throw new IllegalArgumentException("changes view requires a baseline");
             return switch (format) {
-                case JSON -> json(p, config, comparison);
+                case JSON -> json(p, config, comparison, view);
                 case MARKDOWN -> Formats.markdown(this, p, config, comparison);
                 case SARIF -> Formats.sarif(this, p, config, comparison);
                 case TEXT -> text(comparison);
@@ -163,7 +188,38 @@ final class Metrics {
             return fields(false);
         }
 
-        private String json(Provenance p, MetricsConfig config, Baseline.Comparison comparison) {
+        private static String ruleJson(RuleDefinitions.Rule rule, MetricsConfig config) {
+            return "{\"id\": " + SourceMetrics.Smell.quote(rule.id())
+                + ", \"title\": " + SourceMetrics.Smell.quote(rule.title())
+                + ", \"category\": " + SourceMetrics.Smell.quote(rule.category())
+                + ", \"severity\": " + SourceMetrics.Smell.quote(rule.level())
+                + ", \"description\": " + SourceMetrics.Smell.quote(rule.description())
+                + ", \"remediation\": " + SourceMetrics.Smell.quote(rule.advice())
+                + ", \"unit\": " + SourceMetrics.Smell.quote(rule.unit())
+                + ", \"categorical\": " + rule.categorical()
+                + ", \"defaultLimit\": " + numberOrNull(rule.categorical(), rule.defaultLimit())
+                + ", \"configuredLimit\": " + numberOrNull(rule.categorical(), config.limit(rule))
+                + ", \"minimumCodeLines\": " + rule.minimumCodeLines()
+                + ", \"enabled\": " + config.enabled(rule) + "}";
+        }
+
+        private static String numberOrNull(boolean absent, double number) {
+            if (absent) return "null";
+            return number == Math.rint(number) ? String.valueOf((long) number)
+                : String.format(Locale.ROOT, "%.3f", number);
+        }
+
+        private static String findingJson(SourceMetrics.Smell smell, String baselineState) {
+            String json = smell.json();
+            String suffix = ", \"severity\": "
+                + SourceMetrics.Smell.quote(RuleDefinitions.byId(smell.rule()).level())
+                + (baselineState == null ? "" : ", \"baselineState\": "
+                    + SourceMetrics.Smell.quote(baselineState));
+            return json.substring(0, json.length() - 1) + suffix + "}";
+        }
+
+        private String json(Provenance p, MetricsConfig config, Baseline.Comparison comparison,
+                            View view) {
             StringBuilder b = new StringBuilder("{\n");
             b.append("  \"schemaVersion\": ").append(schemaVersion()).append(",\n");
             if (p != null)
@@ -171,6 +227,13 @@ final class Metrics {
             b.append("  \"configuration\": ").append(config.json()).append(",\n");
             if (comparison != null)
                 b.append("  \"baseline\": ").append(comparison.json()).append(",\n");
+            b.append("  \"ruleCatalog\": [");
+            List<RuleDefinitions.Rule> rules = RuleDefinitions.all();
+            for (int i = 0; i < rules.size(); i++) {
+                b.append(i == 0 ? "\n" : ",\n").append("    ")
+                    .append(ruleJson(rules.get(i), config));
+            }
+            b.append(rules.isEmpty() ? "],\n" : "\n  ],\n");
             b.append("  \"excludedSources\": [");
             for (int i = 0; i < excludedSources.size(); i++) {
                 if (i > 0) b.append(", ");
@@ -189,27 +252,39 @@ final class Metrics {
                 b.append("    \"").append(fields[i][0]).append("\": ")
                  .append(fields[i][1]).append(i == fields.length - 1 ? "\n" : ",\n");
             }
-            b.append("  },\n");
-            b.append("  \"definitions\": [");
-            for (int i = 0; i < defs.size(); i++) {
-                b.append(i == 0 ? "\n" : ",\n").append("    ").append(defJson(defs.get(i)));
+            b.append("  }");
+            if (view == View.SUMMARY) return b.append("\n}\n").toString();
+            if (view == View.FULL) {
+                b.append(",\n  \"definitions\": [");
+                for (int i = 0; i < defs.size(); i++) {
+                    b.append(i == 0 ? "\n" : ",\n").append("    ").append(defJson(defs.get(i)));
+                }
+                b.append(defs.isEmpty() ? "]" : "\n  ]");
+                b.append(",\n  \"modules\": [");
+                for (int i = 0; i < modulesList.size(); i++) {
+                    b.append(i == 0 ? "\n" : ",\n").append("    ").append(moduleJson(modulesList.get(i)));
+                }
+                b.append(modulesList.isEmpty() ? "]" : "\n  ]");
+                b.append(",\n  \"rankings\": [");
+                for (int i = 0; i < ranks.size(); i++) {
+                    b.append(i == 0 ? "\n" : ",\n").append("    ").append(ranks.get(i).json());
+                }
+                b.append(ranks.isEmpty() ? "]" : "\n  ]");
             }
-            b.append(defs.isEmpty() ? "],\n" : "\n  ],\n");
-            b.append("  \"modules\": [");
-            for (int i = 0; i < modulesList.size(); i++) {
-                b.append(i == 0 ? "\n" : ",\n").append("    ").append(moduleJson(modulesList.get(i)));
-            }
-            b.append(modulesList.isEmpty() ? "],\n" : "\n  ],\n");
-            b.append("  \"rankings\": [");
-            for (int i = 0; i < ranks.size(); i++) {
-                b.append(i == 0 ? "\n" : ",\n").append("    ").append(ranks.get(i).json());
-            }
-            b.append(ranks.isEmpty() ? "],\n" : "\n  ],\n");
+            List<SourceMetrics.Smell> shown = view == View.CHANGES
+                ? smells.stream().filter(s -> comparison.isAdded(s.id())
+                    || comparison.isWorsened(s.id())).toList()
+                : smells;
+            b.append(",\n");
             b.append("  \"smells\": [");
-            for (int i = 0; i < smells.size(); i++) {
-                b.append(i == 0 ? "\n" : ",\n").append("    ").append(smells.get(i).json());
+            for (int i = 0; i < shown.size(); i++) {
+                SourceMetrics.Smell smell = shown.get(i);
+                String state = comparison == null ? null : comparison.isAdded(smell.id()) ? "new"
+                    : comparison.isWorsened(smell.id()) ? "updated" : "unchanged";
+                b.append(i == 0 ? "\n" : ",\n").append("    ")
+                    .append(findingJson(smell, state));
             }
-            b.append(smells.isEmpty() ? "]\n}\n" : "\n  ]\n}\n");
+            b.append(shown.isEmpty() ? "]\n}\n" : "\n  ]\n}\n");
             return b.toString();
         }
 
