@@ -157,6 +157,19 @@ No pinned project declares a generic effect, so the compiler fixture—not this 
 evidence for type-parameter extraction. Nine declarations, five from one project, do not support a
 portable ranking or threshold. The records remain native JSON context only.
 
+### Instantiated effect-detail distribution
+
+The instantiated-effect change was rerun over all nine active Flix 0.76.0 targets with fresh
+caches. Every pinned summary and all 1,349 findings remained unchanged. Across 2,650 definitions,
+479 are effectful and expose 525 effect-detail entries. Their constructor-name sets match the
+existing `effects` lists exactly.
+
+All 525 entries have zero type arguments: none of the pinned projects uses a polymorphic effect.
+The semantic compiler fixture is therefore the only positive evidence, distinguishing
+`Outer[Inner[Int32]]` from `Outer[Inner[String]]` while retaining one `Outer` capability in each
+case. The corpus supplies useful negative compatibility evidence but no basis for a ranking,
+finding, or threshold.
+
 The expanded volume remains dominated by note-level policy: 909 lines over 100 UTF-16 code units,
 354 missing public doc comments, and 159 crammed lines. The game engine intentionally embeds shader
 source and other large data and contains a 4,109-unit line, demonstrating why line findings need
@@ -297,6 +310,7 @@ Ratings are confidence that the action improves signal, from 1 (speculative) to 
 | **4/5** | Rank declared effect-surface width. **Done.** | Only 13 of 2,952 definitions declare four or more effects; sorted effect names distinguish intentional orchestration boundaries from an unexplained count without asserting a smell. |
 | **4/5** | Keep effect-handler shape as separate, threshold-free facts. **Done.** | Seven corpus definitions exercise 11 handlers, 69 clauses, widths from 1 to 20, zero and repeated resumptions, and nested handlers; that validates extraction but is too concentrated to justify policy. |
 | **4/5** | Add per-effect declaration records without policy. **Done.** | Nine declarations expose operation counts from 0 to 20 and arities from 0 to 5, while the generic case needs a fixture; this supports typed facts but not a universal threshold. |
+| **3/5** | Expose instantiated effect details without policy. **Done.** | All 525 active-corpus entries are non-parameterized; a compiler fixture validates distinction and nesting semantics, but the corpus provides no policy signal. |
 | **4/5** | Rank Datalog dependency breadth. **Done.** | Seven corpus definitions read relational predicates; their distinct breadth reaches nine, and the retained predicate names make repeated atoms, recursion, and broad logic programs auditable. |
 | **4/5** | Measure Datalog dependency depth and recursion. **Done.** | Collapsing cycles produces finite depths from two through nine; retained cycle members identify four self-recursive programs and one mutual recursive two-predicate component without declaring recursion a smell. |
 | **3/5** | Rank compiler-rendered FlixDoc result width. **Done.** | Public result types span 1–96 characters with p95 28; the ranking locates the upper tail without manufacturing a threshold unsupported by the corpus. |

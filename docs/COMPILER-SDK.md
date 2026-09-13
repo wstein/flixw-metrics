@@ -148,6 +148,8 @@ child loader parented to the platform loader.
 | `localDefinitions` | `LocalDef` nodes — definitions the outer signature hides |
 | `effectfulDefinitions`, `purityPercent`, per-definition `effectCount` and `effects` | the compiler-normalized *declared* effect set on each signature; a saturated polymorphic effect is atomic |
 | per-definition `handlers`, `handledOperations`, `maxHandlerOperations`, `resumptions` | typed handler literals, their clauses, the widest handler, and direct continuation-parameter calls |
+| per-definition `effectDetails` | each effect constructor with its argument count and compiler-rendered type arguments; does not widen `effects` |
+| `effectDeclarations` | each effect declaration's qualified name, source location, type-parameter count, and source-ordered operation names and arities |
 | `cognitive` | branches weighted by nesting, plus boolean operators and match guards |
 | `returnWidth` | a tuple's arity, or a record's top-level field count |
 | `flixdocParameterCharacters` | Unicode characters in FlixDoc's generated outer formal-parameter span |
@@ -195,8 +197,8 @@ native JSON facts only: there is no project summary, ranking, finding, or thresh
 
 This additive measurement changes machine compatibility intentionally. `CompilerModel.DefInfo`
 adds four integer components (the named builder defaults each to zero), the internal wire format
-is version 11 so version-10 measurement caches become misses, and native JSON schema 31 requires the
-four non-negative fields. A schema-30 baseline is rejected rather than compared as if the
+is version 10 so version-9 measurement caches become misses, and native JSON schema 30 requires the
+four non-negative fields. A schema-29 baseline is rejected rather than compared as if the
 measurements existed. Text, Markdown, SARIF, CLI, and capability-JSON shapes are unchanged; the
 bytecode-derived capability contract automatically includes the extra typed-AST members used by
 each adapter.
@@ -207,7 +209,33 @@ declaration's qualified name, source location, type-parameter count, and its ope
 order with compiler-derived arities. Flix 0.60.0 reports `typeParameters` as zero explicitly,
 since that release's AST carries no such member. The aggregate `effects` per-definition surface
 and `effectCount` keep their existing capability semantics unchanged; declaration detail is
-additive and appears only in full native JSON, under the same wire and schema version bump above.
+additive and appears only in full native JSON. It changes the internal wire format from 10 to 11
+and native JSON from schema 30 to 31; older caches safely miss.
+
+### Effect instances do not redefine the capability surface
+
+`effects` remains the sorted, distinct set of constructors in the compiler-normalized declared
+effect formula. `effectDetails` adds an `EffectDetail` for each distinct instantiation: constructor
+name plus an ordered list of type arguments rendered by the same compiler formatter used for
+FlixDoc signatures. `argumentCount` is derived from that list. Sorting by constructor and rendered
+arguments makes output deterministic for one typed program.
+
+The adapter stops when it reaches a saturated effect constructor. For
+`Outer[Inner[Int32]]`, the surrounding formula therefore contains one `Outer` capability whose one
+rendered argument is `Inner[Int32]`; `Inner` is not another member of that formula. Two definitions
+using `Outer[Inner[Int32]]` and `Outer[Inner[String]]` have identical `effects` and distinct
+`effectDetails`.
+
+Rendered arguments are compiler-normalized strings, not a new cross-release type language. They
+are deterministic within the compiler that produced the report and remain useful across families
+as ordinary Flix type syntax, but a compiler release may deliberately change formatting. Older
+adapter families predate polymorphic effects and explicitly pair every existing constructor name
+with an empty argument list.
+
+This additive field changes the internal wire format from 11 to 12 and native JSON from schema 31
+to 32. Version-11 measurement caches safely miss. Schema 32 requires `effectDetails` on every full-report
+definition. Existing `effects`, `effectCount`, purity, summary, rankings, findings, text, Markdown,
+SARIF, CLI, and capability-JSON shapes are unchanged.
 
 ### FlixDoc parameter noise comes from the typed signature and its documentation
 
