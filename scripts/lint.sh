@@ -8,4 +8,4 @@ sh "$root/scripts/fetch-flix.sh"
 mill=$root/mill
 [ -x "$mill" ] || mill=mill
 (cd "$root" && "$mill" --no-server plugin.compile adapter0680.compile adapter0672.compile \
-  adapter0661.compile)
+  adapter0661.compile adapter0610.compile)

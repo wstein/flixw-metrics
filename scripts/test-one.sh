@@ -23,7 +23,11 @@ case $class in
   dev.flixw.metrics.CompilerCapabilitiesTest)
     exec java -cp "$classpath" "$class" "$root/plugin/lib/flix.jar" \
       "$root/plugin/lib/flix-0.68.0.jar" "$root/plugin/lib/flix-0.67.2.jar" \
-      "$root/plugin/lib/flix-0.66.1.jar"
+      "$root/plugin/lib/flix-0.66.1.jar" "$root/plugin/lib/flix-0.61.0.jar"
+    ;;
+  dev.flixw.metrics.Flix0610AdapterTest)
+    exec java -cp "$classpath:$root/plugin/lib/flix-0.61.0.jar" "$class" \
+      "$root/plugin/test/fixtures/semantic-validation"
     ;;
   dev.flixw.metrics.Flix0661AdapterTest)
     exec java -cp "$classpath:$root/plugin/lib/flix-0.66.1.jar" "$class" \

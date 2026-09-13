@@ -29,7 +29,7 @@ public final class CompilerCapabilitiesTest {
             require(AdapterAbi.contracts().stream().anyMatch(contract -> noApi.missing().containsAll(
                 contract.references().stream().map(AdapterAbi.Reference::display).toList())),
                 "the capability gate reports every reference in its closest adapter contract");
-            require(AdapterAbi.contracts().size() == 4,
+            require(AdapterAbi.contracts().size() == 5,
                 "the capability gate derives a separate contract for each adapter");
             require(linked.stream().anyMatch(r -> r.contains("formatType$default$2:()")),
                 "the bytecode contract includes Scala default-argument accessors");
@@ -133,6 +133,16 @@ public final class CompilerCapabilitiesTest {
                     "the earliest compiler does not satisfy the 0.67.2 adapter contract");
                 require(missing(earliest, AdapterAbi.contracts().get(3)).isEmpty(),
                     "the earliest compiler satisfies its dedicated adapter contract");
+            }
+            if (args.length >= 5) {
+                Path validation = Path.of(args[4]);
+                CompilerCapabilities stock = inspect(validation);
+                require(stock.hasEngineApi() && stock.missing().isEmpty(),
+                    "the Validation-era compiler satisfies an adapter contract");
+                require(!missing(validation, AdapterAbi.contracts().get(3)).isEmpty(),
+                    "the Validation-era compiler does not satisfy the Result-era contract");
+                require(missing(validation, AdapterAbi.contracts().get(4)).isEmpty(),
+                    "the Validation-era compiler satisfies its dedicated adapter contract");
             }
         } finally {
             delete(work);
