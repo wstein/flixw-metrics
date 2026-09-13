@@ -120,9 +120,9 @@ public final class Main {
                 options, stable.digest());
             if (options.shouldFail(measured.report(), comparison)) System.exit(1);
         } catch (LinkageError e) {
-            // The promise is a sentence, never a stack trace, and the capability probe cannot
-            // enumerate every member the adapter touches. Whatever it misses arrives here: the
-            // JVM resolves a call site against a compiler this build was not compiled for.
+            // The promise is a sentence, never a stack trace. The descriptor gate covers the
+            // adapter's direct Flix linkage; this remains the final guard for transitive linkage
+            // failures while the JVM loads compiler implementation code.
             System.err.println("metrics: this compiler is not the one this build supports");
             System.err.println("       " + e);
             System.err.println("       run: ./flixw metrics capabilities");
@@ -194,10 +194,10 @@ public final class Main {
                 .directory(context.projectRoot().toFile())
                 .inheritIO().start().waitFor();
         } catch (IOException e) {
-            throw new Usage("cannot start reflection bridge: " + e.getMessage());
+            throw new Usage("cannot start compiler bridge: " + e.getMessage());
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new Usage("interrupted while waiting for reflection bridge");
+            throw new Usage("interrupted while waiting for compiler bridge");
         }
     }
 
@@ -218,7 +218,7 @@ public final class Main {
             command.addAll(Arrays.asList(args));
             return List.copyOf(command);
         } catch (URISyntaxException e) {
-            throw new Usage("cannot start reflection bridge: " + e.getMessage());
+            throw new Usage("cannot start compiler bridge: " + e.getMessage());
         }
     }
 
