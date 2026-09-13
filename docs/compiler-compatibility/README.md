@@ -7,6 +7,7 @@ runs semantic and packaged-process regressions, and compares the calibration cor
 
 | Flix | Adapter family | Source build | ABI gate | Semantic fixture | Integration | Corpus | Record |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | --- |
+| 0.60.0 | `Flix0600Adapter` | yes | yes | yes | yes | not rerun | [investigation](flix-0.60.0.md) |
 | 0.61.0 | `Flix0610Adapter` | yes | yes | yes | yes | not rerun | [investigation](flix-0.61.0.md) |
 | 0.65.0 | `Flix0610Adapter` | yes | yes | yes | yes | not rerun | [family endpoint](flix-0.61.0.md) |
 | 0.66.1 | `Flix0661Adapter` | yes | yes | yes | yes | not rerun | [investigation](flix-0.66.1.md) |
@@ -22,8 +23,9 @@ the upper end is evidence that grows release by release, not part of the JVM pac
 plugin itself retains an independent SemVer because its reporting behavior evolves separately.
 
 `scripts/test-compiler-compatibility.sh` enforces the current lower boundary with official release
-artifacts: 0.66.0 must fail compiler-runtime inspection, while 0.61.0, 0.65.0, 0.66.1, 0.67.1,
-0.67.2, 0.68.0, 0.75.2, and 0.75.3 must pass packaged integration. Intermediate releases may satisfy the structural gate, but remain unverified
+artifacts: 0.59.0 must fail the AST gate and 0.66.0 must fail compiler-runtime inspection, while
+0.60.0, 0.61.0, 0.65.0, 0.66.1, 0.67.1, 0.67.2, 0.68.0, 0.75.2, and 0.75.3 must pass packaged
+integration. Intermediate releases may satisfy the structural gate, but remain unverified
 until they receive their own row and investigation.
 
 For a new release, copy [the template](template.md), complete every applicable check, update this

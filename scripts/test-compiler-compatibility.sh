@@ -1,5 +1,5 @@
 #!/bin/sh
-# Lock the oldest runnable Flix release to 0.66.1, with its broken predecessor as proof.
+# Lock the oldest supported Flix release to 0.60.0, with its rejected predecessor as proof.
 set -eu
 
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd -P)

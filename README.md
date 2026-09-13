@@ -330,8 +330,9 @@ download a compiler, choose one, or run anything else.
 
 ## Supported compilers
 
-Flix **0.61.0, 0.65.0, 0.66.1, 0.67.1, 0.67.2, 0.68.0, 0.75.2, 0.75.3, and 0.76.0** are
-verified. Flix 0.61.0 and 0.65.0 use `Flix0610Adapter`; Flix 0.66.1 and 0.67.1 use
+Flix **0.60.0, 0.61.0, 0.65.0, 0.66.1, 0.67.1, 0.67.2, 0.68.0, 0.75.2, 0.75.3, and 0.76.0**
+are verified. Flix 0.60.0 uses `Flix0600Adapter`; Flix 0.61.0 and 0.65.0 use
+`Flix0610Adapter`; Flix 0.66.1 and 0.67.1 use
 `Flix0661Adapter`; Flix 0.67.2 uses `Flix0672Adapter`; Flix 0.68.0 and 0.75.2 use
 `Flix0680Adapter`; and Flix 0.75.3 and 0.76.0 use `Flix0753Adapter`. Each name records the oldest
 verified release in that linkage family. The plugin's
@@ -357,9 +358,9 @@ or a stack trace. Supporting another Flix generation is one adapter class; relea
 evidence lives in [docs/compiler-compatibility](docs/compiler-compatibility/README.md), and the
 boundary itself is described in [docs/COMPILER-SDK.md](docs/COMPILER-SDK.md).
 
-The full test suite also locks the lower boundary: it requires 0.66.0 to fail compiler-runtime
-inspection and runs packaged integration with 0.61.0, 0.65.0, 0.66.1, 0.67.1, 0.67.2,
-0.68.0, 0.75.2, and 0.75.3.
+The full test suite locks the lower boundary by requiring 0.59.0 to fail the derived AST gate. It
+also locks the independently broken 0.66.0 Java-runtime artifact and runs packaged integration
+with 0.60.0, 0.61.0, 0.65.0, 0.66.1, 0.67.1, 0.67.2, 0.68.0, 0.75.2, and 0.75.3.
 A release not named above may still link, but it is unsupported until its own compatibility
 investigation is recorded.
 
