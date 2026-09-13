@@ -20,6 +20,7 @@ would put compiler concepts straight back into the callers it exists to protect.
 |---|---|---|
 | `Main`, `Metrics`, `ResultCache`, `SourceMetrics` | nothing | Java |
 | `sdk.CompilerModel`, `sdk.Adapters` | nothing | Java |
+| `flix0661.Flix0661Adapter` | everything | Scala |
 | `flix0672.Flix0672Adapter` | everything | Scala |
 | `flix0680.Flix0680Adapter` | everything | Scala |
 | `flix0753.Flix0753Adapter` | everything | Scala |
@@ -30,8 +31,9 @@ module compiles against the oldest verified compiler in its family; neither comp
 
 `SDK_VERSION` is declared and unused. The moment an adapter ships separately from this jar,
 the two need a way to say whether they agree; while every adapter is compiled in this module
-they cannot disagree, so nothing checks it. Today's verified scope is **Flix 0.67.2 via
-`Flix0672Adapter`; Flix 0.68.0 and 0.75.2 via `Flix0680Adapter`; and Flix 0.75.3 and 0.76.0 via
+they cannot disagree, so nothing checks it. Today's verified scope is **Flix 0.66.1 and 0.67.1 via
+`Flix0661Adapter`; Flix 0.67.2 via `Flix0672Adapter`; Flix 0.68.0 and 0.75.2 via
+`Flix0680Adapter`; and Flix 0.75.3 and 0.76.0 via
 `Flix0753Adapter`.** Each suffix names the oldest
 verified release in its family, not a closed range or the current compiler pin. The investigation supporting each release
 is recorded under [`docs/compiler-compatibility`](compiler-compatibility/README.md).
@@ -87,6 +89,11 @@ contract includes:
 | `ca.uwaterloo.flix.api.Flix.check` and `setOptions` | the typed root comes from here |
 | `ca.uwaterloo.flix.api.Bootstrap.check` and `Bootstrap$.bootstrap` | loads the project and its dependencies |
 | `Options$.Default`, `Formatter$.getDefault`, and Scala `MODULE$` fields | compiler setup and singleton linkage |
+
+The gate also loads `dev.flix.runtime.Global` without initialization. That class is not referenced
+by adapter bytecode, but the compiler's standard library loads it through the application class
+path. This catches an otherwise structurally compatible compiler built for a newer JVM before
+measurement begins; the official 0.66.0 artifact is the boundary regression.
 
 This list is not decoration. An earlier gate checked `Flix.check()` and a two-argument
 `addFile` — and the engine calls neither `addFile` nor anything else that gate covered. A

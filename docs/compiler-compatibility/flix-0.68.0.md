@@ -43,7 +43,8 @@ tree, and resolution checks that contract before instantiation.
 ## Decision and compatibility impact
 
 - Supported release and adapter: Flix 0.68.0 through `Flix0680Adapter`. A later investigation
-  added `Flix0672Adapter` for 0.67.2 and established 0.67.1 as the rejected predecessor.
+  added `Flix0672Adapter` for 0.67.2 and `Flix0661Adapter` for 0.66.1 and 0.67.1; 0.66.0 is
+  the rejected runtime predecessor.
 - Required implementation changes: isolated historical compile module, second packaged adapter,
   multi-contract ABI inspection, and pre-instantiation resolver gating.
 - Report schema: unchanged.

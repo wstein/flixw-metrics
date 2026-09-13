@@ -15,7 +15,8 @@
 Flix 0.67.2 uses `SourceLocation.beginLine`/`beginCol` and token `sp1`/`sp2` positions, where the
 0.68 family uses `startLine`/`startCol` and position-valued token `start`/`end`. It also has
 `Input.RealFile` and `Input.VirtualFile`. The immediately preceding 0.67.1 artifact instead has
-`Input.TxtFile` and `Input.Text`, so it cannot satisfy the source-selection contract.
+`Input.TxtFile` and `Input.Text`, so it cannot satisfy this adapter's source-selection contract.
+A later investigation added `Flix0661Adapter` for that representation.
 
 ## Adapter impact
 
@@ -54,4 +55,4 @@ drift, so the adapter preserves it rather than rewriting the compiler's typed ef
 - SDK and capability JSON: unchanged.
 - CLI: unchanged.
 - Class-path or dependency implications: the adapter is packaged; its compiler artifact is not.
-- Follow-up work: a still older compiler requires another adapter for the pre-0.67.2 `Input` model.
+- Follow-up work: completed by `Flix0661Adapter`; 0.66.0 is now the rejected runtime predecessor.
