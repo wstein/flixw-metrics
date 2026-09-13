@@ -271,6 +271,11 @@ public final class FormatsTest {
                 "SARIF findings expose the full measured definition span");
             require(json.contains("\"overBy\": 1.50"),
                 "finding JSON decimals are independent of the process locale");
+            require(json.contains("\"handlers\": 0")
+                    && json.contains("\"handledOperations\": 0")
+                    && json.contains("\"maxHandlerOperations\": 0")
+                    && json.contains("\"resumptions\": 0"),
+                "native definitions expose additive effect-handler measurements");
             require(localized.render(Metrics.Format.MARKDOWN).contains("1.5x"),
                 "Markdown decimals are independent of the process locale");
         } finally {

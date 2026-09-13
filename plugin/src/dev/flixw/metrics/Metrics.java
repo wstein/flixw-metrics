@@ -72,7 +72,7 @@ final class Metrics {
         // A method so javac cannot inline yesterday's value into Baseline. Incremental builds
         // must ask the current report class which contract it emits.
         static int schemaVersion() {
-            return 29;
+            return 30;
         }
 
         /** A finding's physical span and compiler-level owner, ready for editor tooling. */
@@ -222,7 +222,11 @@ final class Metrics {
                  + ", \"isTest\": " + d.isTest()
                  + ", \"hasDoc\": " + d.hasDoc()
                  + ", \"effectCount\": " + d.effectCount()
-                 + ", \"effects\": " + e.append(']') + "}";
+                 + ", \"effects\": " + e.append(']')
+                 + ", \"handlers\": " + d.handlers()
+                 + ", \"handledOperations\": " + d.handledOperations()
+                 + ", \"maxHandlerOperations\": " + d.maxHandlerOperations()
+                 + ", \"resumptions\": " + d.resumptions() + "}";
         }
 
         private static String moduleJson(CompilerModel.ModuleInfo m) {
