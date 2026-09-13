@@ -51,14 +51,23 @@ final class Initializer {
             Files.writeString(baseline, baselineJson, StandardOpenOption.CREATE_NEW);
             baselineCreated = true;
         } catch (IOException e) {
-            if (baselineCreated) Files.deleteIfExists(baseline);
-            if (policyCreated) Files.deleteIfExists(policy);
+            if (baselineCreated) cleanup(baseline, e);
+            if (policyCreated) cleanup(policy, e);
             throw e;
         }
         return "created " + MetricsConfig.FILE + "\n"
             + "created " + BASELINE_FILE + "\n"
             + "CI: ./flixw metrics report --baseline " + BASELINE_FILE
             + " --fail-on-new warning\n";
+    }
+
+    /** Best-effort rollback that preserves the exception which made rollback necessary. */
+    static void cleanup(Path path, IOException original) {
+        try {
+            Files.deleteIfExists(path);
+        } catch (IOException cleanupFailure) {
+            original.addSuppressed(cleanupFailure);
+        }
     }
 
     private static Main.Usage exists(Path path) {

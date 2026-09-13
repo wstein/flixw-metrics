@@ -41,6 +41,14 @@ public final class InitializerTest {
             } finally {
                 delete(baselineOnly);
             }
+
+            Path nonEmpty = Files.createDirectories(root.resolve("non-empty"));
+            Files.writeString(nonEmpty.resolve("child"), "keep");
+            java.io.IOException original = new java.io.IOException("original write failure");
+            Initializer.cleanup(nonEmpty, original);
+            require(original.getSuppressed().length == 1
+                    && original.getSuppressed()[0] instanceof java.io.IOException,
+                "rollback cleanup cannot replace the original write failure");
             System.out.println("InitializerTest: ok");
         } finally {
             delete(root);
