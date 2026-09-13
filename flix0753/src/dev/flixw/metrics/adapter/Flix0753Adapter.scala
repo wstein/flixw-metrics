@@ -205,6 +205,7 @@ final class Flix0753Adapter extends CompilerModel {
       .map { case (name, _) => d.sym.toString + "." + name }
       .getOrElse(d.sym.toString)
     val datalog = analyzeDatalog(tally.datalogEdges.toSet)
+    val effectDetails = effectDetailsOf(d.spec.eff)
     DefInfo.builder(d.sym.toString, moduleOf(d.sym), relativise(d.loc, projectRoot),
       d.loc.startLine)
       .lines(spannedLines(d.loc))
@@ -231,8 +232,8 @@ final class Flix0753Adapter extends CompilerModel {
       .isPublic(d.spec.mod.isPublic)
       .isTest(d.spec.ann.isTest)
       .hasDoc(hasDoc(d))
-      .effects(effectsOf(d.spec.eff).asJava)
-      .effectDetails(effectDetailsOf(d.spec.eff).asJava)
+      .effects(effectDetails.map(_.name()).distinct.sorted.asJava)
+      .effectDetails(effectDetails.asJava)
       .flixdocParameterCharacters(flixdocParameterCharacters(d.spec.fparams.toList))
       .formalParameterNames(sourceFormalParams(d.spec.fparams.toList).map(_.bnd.sym.text).asJava)
       .docText(d.spec.doc.text)
@@ -279,33 +280,9 @@ final class Flix0753Adapter extends CompilerModel {
   private def hasDoc(d: TypedAst.Def): Boolean = d.spec.doc.text.trim.nonEmpty
 
   /**
-   * The effects a signature declares, as names.
-   *
-   * Strings, because they cross into the SDK where compiler types may not go — and because what
-   * a reader wants from an effect here is which one it is, not its internal structure. `Pure` is
-   * the absence of an effect and is reported as the empty list, so purity is `isEmpty` rather
-   * than a comparison against a magic name.
+   * Instantiated capabilities, retaining arguments without widening the capability set.
+   * Constructor-only names are derived from this result so the two SDK views cannot drift.
    */
-  private def effectsOf(eff: Type): List[String] = eff match {
-    case Type.Cst(ca.uwaterloo.flix.language.ast.TypeConstructor.Pure, _) => Nil
-    case _ =>
-      def visit(tpe: Type): List[String] = tpe match {
-        case Type.Cst(TypeConstructor.Effect(sym, _), _) => sym.name :: Nil
-        // A saturated polymorphic effect is one capability. Its type arguments may themselves
-        // mention effects, but those are parameters of this effect rather than members of the
-        // surrounding effect formula.
-        case app: Type.Apply if app.kind == Kind.Eff => app.baseType match {
-          case Type.Cst(TypeConstructor.Effect(sym, _), _) => sym.name :: Nil
-          case _ => visit(app.tpe1) ::: visit(app.tpe2)
-        }
-        case app: Type.Apply => visit(app.tpe1) ::: visit(app.tpe2)
-        case Type.Alias(_, _, tpe, _) => visit(tpe)
-        case _ => Nil
-      }
-      visit(eff).distinct.sorted
-  }
-
-  /** Instantiated capabilities, retaining arguments without widening the capability set. */
   private def effectDetailsOf(eff: Type)(implicit flix: Flix): List[EffectDetail] = {
     def visit(tpe: Type): List[(String, List[String])] = tpe match {
       case Type.Cst(TypeConstructor.Effect(sym, _), _) => (sym.name, Nil) :: Nil
