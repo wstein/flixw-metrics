@@ -243,7 +243,7 @@ Three things get measured, and where each comes from is deliberate:
   not.
 - **From thresholds over both** — the findings.
 
-Eight measures are worth knowing about because they catch what totals hide:
+Nine measures are worth knowing about because they catch what totals hide:
 
 **Cognitive complexity is nesting-weighted.** Five nested conditions cost more than five
 consecutive ones. Divided by lexer-confirmed code lines, it separates *long* from *hard*: a
@@ -286,6 +286,13 @@ the final compiler-typed formal; invoking an alias is deliberately not guessed t
 These values do not change cognitive complexity and currently produce no ranking or finding. The
 [calibration corpus](docs/CALIBRATION.md#effect-handler-distribution) is too concentrated in seven
 definitions to justify a universal threshold.
+
+**Effect declarations retain their compiler-typed operation surface.** Native JSON includes a
+deterministically ordered `effectDeclarations` list with each qualified name, source location,
+type-parameter count, and source-ordered operations as `{name, arity}` records. It also supplies
+derived `operationCount` and `maxOperationArity` values. Nullary operations have arity zero; the
+adapter uses typed formal parameters rather than parsing declarations. The project-wide `effects`
+total remains the declaration count. These facts currently produce no ranking or finding.
 
 **Datalog dependency breadth measures relations read by derived rules.**
 `datalogDependencyBreadth` is the number of distinct relational predicate names appearing in the

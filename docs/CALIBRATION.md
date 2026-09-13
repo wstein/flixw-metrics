@@ -134,6 +134,29 @@ four values therefore preserves observable distinctions that one aggregate would
 positive definitions—five from one project—are useful extraction evidence but not enough to set a
 portable threshold or introduce rankings and findings.
 
+### Effect-declaration distribution
+
+The per-effect declaration change was rerun over all nine active Flix 0.76.0 targets with fresh
+caches. Every pinned summary and all 1,349 findings remained unchanged. The corpus contains nine
+effect declarations and 37 operations:
+
+| Target | Effect declarations | Operations | Largest effect | Maximum operation arity |
+| --- | ---: | ---: | ---: | ---: |
+| Prelude | 3 | 0 | 0 | 0 |
+| flix-game-engine | 5 | 36 | 20 | 5 |
+| qual-effect-system | 1 | 1 | 1 | 0 |
+| flix-semver2, flix-json, and four Datalog examples | 0 | 0 | 0 | 0 |
+| **Total** | **9** | **37** | **20** | **5** |
+
+Operation arities are concentrated at zero and one: 10 nullary, 18 unary, 6 binary, 2 quaternary,
+and 1 five-parameter operation. `GameEngine.Game` is the largest declaration with 20 operations
+and the maximum arity of five; `GameEngine.Audio` has seven operations but a maximum arity of two.
+Keeping the operation list and both derived dimensions therefore preserves distinct shapes.
+
+No pinned project declares a generic effect, so the compiler fixture—not this corpus—is the positive
+evidence for type-parameter extraction. Nine declarations, five from one project, do not support a
+portable ranking or threshold. The records remain native JSON context only.
+
 The expanded volume remains dominated by note-level policy: 909 lines over 100 UTF-16 code units,
 354 missing public doc comments, and 159 crammed lines. The game engine intentionally embeds shader
 source and other large data and contains a 4,109-unit line, demonstrating why line findings need
@@ -273,6 +296,7 @@ Ratings are confidence that the action improves signal, from 1 (speculative) to 
 | **4/5** | Measure generated FlixDoc formal-parameter load. **Done.** | The 140-character boundary selects 29 of 1,484 public signatures and catches long rendered types even when parameter count is small. |
 | **4/5** | Rank declared effect-surface width. **Done.** | Only 13 of 2,952 definitions declare four or more effects; sorted effect names distinguish intentional orchestration boundaries from an unexplained count without asserting a smell. |
 | **4/5** | Keep effect-handler shape as separate, threshold-free facts. **Done.** | Seven corpus definitions exercise 11 handlers, 69 clauses, widths from 1 to 20, zero and repeated resumptions, and nested handlers; that validates extraction but is too concentrated to justify policy. |
+| **4/5** | Add per-effect declaration records without policy. **Done.** | Nine declarations expose operation counts from 0 to 20 and arities from 0 to 5, while the generic case needs a fixture; this supports typed facts but not a universal threshold. |
 | **4/5** | Rank Datalog dependency breadth. **Done.** | Seven corpus definitions read relational predicates; their distinct breadth reaches nine, and the retained predicate names make repeated atoms, recursion, and broad logic programs auditable. |
 | **4/5** | Measure Datalog dependency depth and recursion. **Done.** | Collapsing cycles produces finite depths from two through nine; retained cycle members identify four self-recursive programs and one mutual recursive two-predicate component without declaring recursion a smell. |
 | **3/5** | Rank compiler-rendered FlixDoc result width. **Done.** | Public result types span 1–96 characters with p95 28; the ranking locates the upper tail without manufacturing a threshold unsupported by the corpus. |

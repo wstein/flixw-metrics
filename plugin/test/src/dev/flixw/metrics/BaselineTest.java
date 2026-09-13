@@ -141,7 +141,8 @@ public final class BaselineTest {
             "A", 1, definitionLines, fanIn, 1);
         return new Metrics.Report(1, 1, 1, 0, 0, cognitive, 0, 0, 0, 0, 0, 0,
             definitionLines, definitionLines, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 100, 100, List.of(), List.of(), List.of(), List.of(def), List.of(module));
+            0, 0, 0, 100, 100, List.of(), List.of(), List.of(), List.of(def), List.of(module),
+            List.of());
     }
 
     private static void stableFindingIdentity() throws Exception {

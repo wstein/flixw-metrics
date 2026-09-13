@@ -65,6 +65,8 @@ public final class PluginIntegrationTest {
             require(coldJson.getAsJsonObject("summary").get("datalogRules").getAsInt() == 3
                     && coldJson.getAsJsonObject("summary").get("datalogFacts").getAsInt() == 1,
                 "packaged reports preserve separate Datalog rule and fact counts");
+            require(coldJson.getAsJsonArray("effectDeclarations").isEmpty(),
+                "packaged reports expose the compiler-neutral effect declaration list");
             require(coldJson.getAsJsonObject("summary").get("widestEffectSurface").getAsInt()
                     == expectedEffectSurface
                     && coldJson.getAsJsonObject("summary")

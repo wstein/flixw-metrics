@@ -50,6 +50,13 @@ public final class FormatsTest {
             "native JSON points consumers to its machine-readable contract");
         require(count(json, "\"definitions\":") == 2 && json.contains("\"summary\": {"),
             "totals are nested, so a total cannot collide with a list of the same name");
+        require(json.contains("\"effectDeclarations\": [")
+                && json.contains("\"name\": \"A.Console\"")
+                && json.contains("\"typeParameters\": 1")
+                && json.contains("\"operationCount\": 2")
+                && json.contains("\"maxOperationArity\": 3")
+                && json.contains("{\"name\": \"format\", \"arity\": 3}"),
+            "native JSON exposes compiler-typed effect declaration and operation shape");
         require(json.contains("\"id\": \"" + firstId + "\""),
             "native JSON carries the same stable finding id as SARIF");
         require(json.contains("\"ruleCatalog\": [")
@@ -67,6 +74,7 @@ public final class FormatsTest {
         require(summaryJson.contains("\"summary\": {")
                 && summaryJson.contains("\"ruleCatalog\": [")
                 && !summaryJson.contains("\"definitions\": [")
+                && !summaryJson.contains("\"effectDeclarations\": [")
                 && !summaryJson.contains("\"modules\": [")
                 && !summaryJson.contains("\"rankings\": [")
                 && !summaryJson.contains("\"smells\": ["),
@@ -75,6 +83,7 @@ public final class FormatsTest {
             MetricsConfig.defaults(), null, Metrics.View.FINDINGS);
         require(findingsJson.contains("\"smells\": [")
                 && !findingsJson.contains("\"definitions\": [")
+                && !findingsJson.contains("\"effectDeclarations\": [")
                 && !findingsJson.contains("\"modules\": [")
                 && !findingsJson.contains("\"rankings\": ["),
             "findings view is an actionable compact report");
@@ -249,7 +258,7 @@ public final class FormatsTest {
                         2, 1, "", "modules depended on")),
                 List.of(new Rankings.Rank("densest", "A.f", "src/A.flix", 1,
                     String.format(Locale.ROOT, "%.1f complexity/line", 1.5))),
-                List.of(def), List.of(module));
+                List.of(def), List.of(module), List.of());
 
             String json = localized.render(Metrics.Format.JSON);
             require(json.contains("\"cognitiveDensity\": 1.500"),
@@ -305,7 +314,11 @@ public final class FormatsTest {
         return new Metrics.Report(1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             10, 8, 1, 1, 0, 10, 40, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 100, 100,
             List.of(), smells,
-            List.of(rank), List.of(), List.of());
+            List.of(rank), List.of(), List.of(), List.of(
+                new dev.flixw.metrics.sdk.CompilerModel.EffectInfo(
+                    "A.Console", "src/A.flix", 2, 1, List.of(
+                        new dev.flixw.metrics.sdk.CompilerModel.EffectOperationInfo("print", 1),
+                        new dev.flixw.metrics.sdk.CompilerModel.EffectOperationInfo("format", 3)))));
     }
 
     private static int count(String text, String needle) {
