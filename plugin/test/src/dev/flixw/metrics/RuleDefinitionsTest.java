@@ -15,6 +15,9 @@ public final class RuleDefinitionsTest {
             "dense findings disclose their minimum eligible definition size");
         require(RuleDefinitions.NOISY_FLIXDOC_PARAMETERS.defaultLimit() == 140,
             "the FlixDoc parameter-span boundary is explicit and configurable");
+        require(RuleDefinitions.WIDE_RETURN.defaultLimit()
+                == RuleDefinitions.TOO_MANY_PARAMETERS.defaultLimit(),
+            "return and parameter widths deliberately share one cognitive boundary");
         require(rules.stream().filter(rule -> rule != RuleDefinitions.DENSE)
                 .allMatch(rule -> rule.minimumCodeLines() == 0),
             "rules without a size floor do not invent one");

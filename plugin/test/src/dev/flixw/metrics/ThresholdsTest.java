@@ -26,7 +26,8 @@ public final class ThresholdsTest {
         // 400 lines against a limit of 60 is 6.7x. The multiple is what lets findings of
         // different kinds be ordered against each other at all.
         require(Thresholds.apply(List.of(longDef), List.of()).stream()
-            .anyMatch(s -> Math.abs(s.overBy() - 400.0 / Thresholds.MAX_LINES) < 0.001),
+            .anyMatch(s -> Math.abs(s.overBy()
+                - 400.0 / RuleDefinitions.DEFINITION_TOO_LONG.defaultLimit()) < 0.001),
             "a finding knows how far over it is");
 
         // The point of measuring locals: the outer signature says two, the loop inside says nine.
@@ -66,7 +67,7 @@ public final class ThresholdsTest {
         // The owner is the *subject* now, not buried in prose: a consumer can group by it.
         require(found.stream().anyMatch(s -> s.rule().equals("crammed-line")
             && s.line() == 57 && s.subject().equals("Foo.outer.loop")
-            && s.actual() == 44 && s.limit() == Thresholds.MAX_LINE_TOKENS),
+            && s.actual() == 44 && s.limit() == RuleDefinitions.CRAMMED_LINE.defaultLimit()),
             "a crammed line names the local that owns it, its line, and both numbers");
 
         DefInfo calibratedBoundary = DefInfo.builder(

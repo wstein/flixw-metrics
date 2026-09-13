@@ -25,6 +25,8 @@ final class RuleDefinitions {
         "note");
     static final Rule WIDE_RETURN = numeric("wide-return", "Wide return value", "maintainability",
         "A returned tuple or record has more parts than the configured limit.",
+        // Deliberately the parameter limit: these are the same cognitive width in opposite
+        // directions, and RuleDefinitionsTest prevents that policy from silently drifting.
         "Name the shape: a record with a type alias reads better than a wide tuple.", "parts", 5,
         "note");
     static final Rule DEEPLY_NESTED = numeric("deeply-nested", "Deeply nested", "complexity",
