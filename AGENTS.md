@@ -4,8 +4,8 @@
 
 The analyzer is a mixed Java/Scala Mill module. Compiler-neutral code lives in
 `plugin/src/dev/flixw/metrics/`. The version-specific Flix adapter
-is isolated in `plugin/src/dev/flixw/metrics/flix075/`; the stable boundary is under `sdk/`.
-Tests live in `plugin/test/src/` and use the Flix fixture in
+is isolated in `plugin/src/dev/flixw/metrics/flix075/`; the stable boundary is under
+`plugin/src/dev/flixw/metrics/sdk/`. Tests live in `plugin/test/src/` and use the Flix fixture in
 `plugin/test/fixtures/semantic/`. Calibration inputs and budgets live in `calibration/`, project
 documentation in `docs/`, automation in `scripts/`, and CI workflows in `.github/workflows/`.
 Do not commit generated `out/`, `dist/`, or the downloaded `plugin/lib/flix.jar`.
@@ -37,13 +37,14 @@ list is not decoration — an earlier, incomplete gate let a compiler pass and t
 raw reflection error, exactly what the gate exists to turn into a clean diagnostic instead. **Any change
 to what the adapter calls must update the gate in the same commit.**
 
-The compiler loads on the **application class path** of a second ("bridge") JVM (`-cp
-plugin.jar:flix.jar`) launched with a 64 MiB thread stack (Flix's constraint generation is recursive and
-overflows the default stack on real projects). An isolated `URLClassLoader` was tried and doesn't work —
-the Flix standard library resolves some of its own Java dependencies (e.g. `dev.flix.runtime.Global`)
-through the application class path regardless of which loader defined the compiler classes. Consequence:
-`flix.jar` bundles ASM, JLine, gson, and json4s **unshaded** on that flat class path, so any dependency
-this plugin adds must be shaded or classpath order decides which copy wins.
+The compiler loads on the **application class path** of a second ("bridge") JVM (spawned by `Main`
+via `--bridge` with `-cp plugin.jar:flix.jar`) launched with a 64 MiB thread stack (`-Xss64m`; Flix's
+constraint generation is recursive and overflows the default stack on real projects). An isolated
+`URLClassLoader` was tried and doesn't work — the Flix standard library resolves some of its own Java
+dependencies (e.g. `dev.flix.runtime.Global`) through the application class path regardless of which
+loader defined the compiler classes. Consequence: `flix.jar` bundles ASM, JLine, gson, and json4s
+**unshaded** on that flat class path, so any dependency this plugin adds must be shaded or classpath
+order decides which copy wins.
 
 `flix.jar` is wired in via `compileClasspath` in `build.mill`, not `unmanagedClasspath` — it must stay
 compile-time only. At runtime the compiler is whatever flixw pinned for the target project; bundling a
@@ -66,12 +67,13 @@ independently, so the two can't drift apart.
 - `make test` runs linting, calibration and performance-contract tests, packaging checks, all
   executable unit tests, the real-compiler adapter fixture, and plugin integration tests.
 - `make package` creates `dist/plugin.jar` and `dist/SHA256SUMS`.
-- `make format` applies the repository formatter.
+- `make format` checks for trailing whitespace and formatting violations (no auto-formatter is configured).
+- `./mill --no-server plugin.test.compile` quickly compiles sources and test suites.
 - `./mill plugin.docJar` builds Java/Scala API documentation.
 - `sh scripts/calibrate-corpus.sh /tmp/results` remeasures the pinned external corpus; use it when
   changing adapter logic or default thresholds.
 
-Java 21 is required. `./mill` bootstraps the build; the first build fetches Flix and dependencies.
+Java 21, `jq`, `unzip`, and `shasum` are required. `./mill` bootstraps the build; the first build fetches Flix and dependencies.
 
 ## Coding Style & Naming Conventions
 
@@ -91,10 +93,15 @@ but does not replace, regression coverage.
 
 ## Commit & Pull Request Guidelines
 
-Follow the existing focused subject style: `fix: ...`, `feat: ...`, `test: ...`, `docs: ...`,
-`refactor: ...`, `perf: ...`, or `ci: ...`. Keep each commit independently buildable and limited
-to one concern. After completing and verifying each logical step, create its Conventional Commit
-before starting the next step; do not accumulate unrelated completed work in the working tree.
-Pull requests should explain the behavior change, cite calibration evidence for metric or threshold
-changes, list verification commands, and note report-schema, wire-format, SDK, or capability-JSON
-compatibility impacts. Screenshots are only useful for rendered documentation.
+Always make focused, atomic commits. Follow the existing conventional subject style: `fix: ...`,
+`feat: ...`, `test: ...`, `docs: ...`, `refactor: ...`, `perf: ...`, or `ci: ...`. Keep each commit
+independently buildable and strictly limited to one concern.
+
+- **Commit each logical step immediately**: As soon as a logical step is completed and verified,
+  create its Conventional Commit before starting the next step.
+- **Never batch unrelated work**: Do not accumulate unrelated edits, fixes, or multiple task phases
+  in the working tree.
+- **Pull request requirements**: Pull requests should explain the behavior change, cite calibration
+  evidence for metric or threshold changes, list verification commands, and note report-schema,
+  wire-format, SDK, or capability-JSON compatibility impacts. Screenshots are only useful for
+  rendered documentation.
