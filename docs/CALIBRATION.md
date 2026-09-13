@@ -152,6 +152,14 @@ enough variety to exercise the upper tail rather than only its threshold:
   recursion: four have one self-recursive predicate, while railroad's `Circumvent` and `Connected`
   form the corpus's only two-predicate cycle. The names confirm recursion rather than treating a
   cyclic graph as infinitely deep.
+- Across 1,721 public production definitions, compiler-rendered result types have a median width
+  of 8 Unicode characters, p95 of 28, p99 of 45, and maximum of 96. None exceed 100. This supports
+  locating complex generated results but provides no evidence for a result-width finding.
+- Fan-in stays small in compact libraries and exposes architectural foundations in the larger
+  projects: `FlixParsec.GenParser` is called from eight modules, while the game engine's root,
+  `Vec2`, and `Num` modules have definition-call fan-in 116, 43, and 28. The root result also shows
+  why this is impact context rather than automatic debt: unrelated top-level definitions share
+  that synthetic module.
 
 Selected distribution points show why thresholds were not tuned merely to manufacture findings:
 
@@ -231,6 +239,8 @@ Ratings are confidence that the action improves signal, from 1 (speculative) to 
 | **4/5** | Rank declared effect-surface width. **Done.** | Only 13 of 2,952 definitions declare four or more effects; sorted effect names distinguish intentional orchestration boundaries from an unexplained count without asserting a smell. |
 | **4/5** | Rank Datalog dependency breadth. **Done.** | Seven corpus definitions read relational predicates; their distinct breadth reaches nine, and the retained predicate names make repeated atoms, recursion, and broad logic programs auditable. |
 | **4/5** | Measure Datalog dependency depth and recursion. **Done.** | Collapsing cycles produces finite depths from two through nine; retained cycle members identify four self-recursive programs and one mutual recursive two-predicate component without declaring recursion a smell. |
+| **3/5** | Rank compiler-rendered FlixDoc result width. **Done.** | Public result types span 1–96 characters with p95 28; the ranking locates the upper tail without manufacturing a threshold unsupported by the corpus. |
+| **3/5** | Rank high fan-in as scoped change impact. **Done.** | Resolved definition-call fan-in identifies shared foundations, while its explicit label and threshold-free treatment avoid calling stable, widely used modules defective. |
 | **4/5** | Use project configuration for established line-length and documentation conventions. | A universal increase would erase useful notes for compact projects; the existing per-rule limits and suppressions preserve local policy. |
 | **4/5** | Automate the pinned calibration corpus as a scheduled workflow. **Done.** | The weekly read-only job verifies full source SHAs and exact per-target results without adding network-heavy calibration to every pull request. |
 | **4/5** | Add first-class exclusions for generated or embedded-data sources. **Done.** | Exclusions keep sources in the compiler while removing their line totals and located quality signals; every report discloses matched paths and reasons. |

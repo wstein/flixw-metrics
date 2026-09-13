@@ -122,6 +122,7 @@ child loader parented to the platform loader.
 | `cognitive` | branches weighted by nesting, plus boolean operators and match guards |
 | `returnWidth` | a tuple's arity, or a record's top-level field count |
 | `flixdocParameterCharacters` | Unicode characters in FlixDoc's generated outer formal-parameter span |
+| `flixdocResultCharacters` | Unicode characters in FlixDoc's compiler-formatted result type |
 | `parameterDocEntries`, `redundantParameterDocEntries` | strict Markdown entries for real formal names, and the subset containing only signature boilerplate |
 | `datalogRules`, `datalogFacts` | constraints with and without a body |
 | `datalogDependencyBreadth`, `datalogDependencies` | distinct relational predicate names read by constraint bodies |
@@ -166,11 +167,21 @@ two such entries are required. This keeps named lists, meaningful parameter cont
 Prelude prose out of the rule. Native JSON exposes the rendered length and both entry counts, but
 not the complete doc text; the latter is cached only so policy can be recomputed on a warm run.
 
+The result type is measured separately with the same compiler formatter. It has no source-wrapping
+component and no threshold: `longest-flixdoc-result` ranks the generated API surface while native
+JSON exposes `flixdocResultCharacters`. Keeping it separate from parameter width lets consumers
+distinguish a complicated input contract from a complicated value returned to callers.
+
 Module coupling is deliberately narrower than general dependency coupling. An edge from A to B
 means a project definition in A contains a resolved direct call to a definition in B. Type,
 trait, effect, enum, struct, and instance dependencies are not included, so reports call these
 values definition-call coupling rather than claiming to describe every way modules can depend on
 one another.
+
+The same edge contributes to B's `fanIn`. `highest-change-impact` ranks that reverse count: how many
+other project modules directly call definitions in B. It is a review-impact hint rather than a
+finding—stable foundations are expected to have high fan-in—and the ranking value explicitly says
+“definition-call fan-in” to avoid claiming type, trait, effect, enum, struct, or instance impact.
 
 ### Lines are classified by the compiler's lexer, not by scanning for `//`
 

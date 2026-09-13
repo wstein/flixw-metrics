@@ -60,6 +60,7 @@ widestEffectSurface: 1
 widestDatalogDependencyBreadth: 0
 deepestDatalogDependency: 0
 mostRecursiveDatalogPredicates: 0
+longestFlixdocResultCharacters: 28
 tests: 1
 docCoveragePercent: 25
 purityPercent: 75
@@ -71,8 +72,10 @@ where each measure peaks
   deepest            3 levels nested                    Json.size  (src/Json.flix:33)
   widest             2 parameters                       Json.size  (src/Json.flix:33)
   widest-effect-surface 1 declared effect               Json.write  (src/Json.flix:42)
+  longest-flixdoc-result 28 rendered characters         Json.decode  (src/Json.flix:8)
   crammed-line       43 tokens on one line              Json.encode  (src/Json.flix:24)
   most-coupled       3 modules called, call-instability 1.00   Json
+  highest-change-impact 1 dependent module, definition-call fan-in   Json
 
 smells: 10
   src/Json.flix:24  crammed-line         (43 tokens, over 35  [Json.encode])
@@ -214,7 +217,7 @@ Three things get measured, and where each comes from is deliberate:
   not.
 - **From thresholds over both** — the findings.
 
-Six measures are worth knowing about because they catch what totals hide:
+Seven measures are worth knowing about because they catch what totals hide:
 
 **Cognitive complexity is nesting-weighted.** Five nested conditions cost more than five
 consecutive ones. Divided by lexer-confirmed code lines, it separates *long* from *hard*: a
@@ -227,12 +230,14 @@ carries `eligible` plus an `ineligibilityReason`; `true` means no structural pre
 the entry, not that it crossed a threshold. SARIF carries the minimum-size condition in its rule
 metadata.
 
-**FlixDoc parameter load measures the generated API, not source wrapping.** FlixDoc renders an
+**FlixDoc signature load measures the generated API, not source wrapping.** FlixDoc renders an
 outer formal-parameter span as `(name: Type, ...)`; `flixdocParameterCharacters` counts its Unicode
 characters exactly as the compiler formats the types. Public production functions over 140 are a
 `noisy-flixdoc-parameters` note and appear in the `longest-flixdoc-parameters` ranking. The pinned
 corpus has a median of 33, p95 of 105, and 29 outliers over 140—including one-parameter functions
 whose type alone renders at 146–194 characters—so this is not another parameter-count rule.
+`flixdocResultCharacters` separately measures the compiler-formatted result type and
+`longest-flixdoc-result` ranks it; result width remains contextual rather than a finding.
 
 **Redundant parameter prose is deliberately narrow.** `parameterDocEntries` recognizes Markdown
 list items such as ``- `input`: ...`` only when `input` is an actual outer formal parameter.
@@ -256,6 +261,12 @@ debt. `datalogDependencyDepth` counts predicate levels on the longest path after
 recursive predicates are collapsed into one component, so cycles cannot make depth infinite;
 facts-only definitions are zero. `recursiveDatalogPredicates` retains the sorted cycle members.
 The `deepest-datalog-dependency` and `most-recursive-datalog` rankings expose both dimensions.
+
+**Fan-in estimates definition-call change impact.** `highest-change-impact` ranks modules by how
+many other project modules directly call their definitions. It uses the same resolved call graph
+as coupling, but reverses the question from “how many modules does this one call?” to “how many
+modules may need review if this one changes?” The label always says definition-call fan-in because
+type, trait, effect, and data dependencies are outside this deliberately narrow graph.
 
 **Parameters and crammed lines are attributed to the local definition that owns them.** In
 the sample above, `Json.size.loop` is blamed for its own crammed line — not `Json.size`, the
