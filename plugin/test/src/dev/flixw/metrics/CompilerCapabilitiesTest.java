@@ -29,7 +29,7 @@ public final class CompilerCapabilitiesTest {
             require(AdapterAbi.contracts().stream().anyMatch(contract -> noApi.missing().containsAll(
                 contract.references().stream().map(AdapterAbi.Reference::display).toList())),
                 "the capability gate reports every reference in its closest adapter contract");
-            require(AdapterAbi.contracts().size() == 2,
+            require(AdapterAbi.contracts().size() == 3,
                 "the capability gate derives a separate contract for each adapter");
             require(linked.stream().anyMatch(r -> r.contains("formatType$default$2:()")),
                 "the bytecode contract includes Scala default-argument accessors");
@@ -110,6 +110,17 @@ public final class CompilerCapabilitiesTest {
                     "the older compiler does not satisfy the newer adapter contract");
                 require(missing(older, AdapterAbi.contracts().get(1)).isEmpty(),
                     "the older compiler satisfies its dedicated adapter contract");
+            }
+            if (args.length >= 3) {
+                Path oldest = Path.of(args[2]);
+                CompilerCapabilities stock = inspect(oldest);
+                require(stock.hasEngineApi() && stock.missing().isEmpty(),
+                    "the oldest compiler satisfies one bytecode-derived adapter requirement");
+                require(!missing(oldest, AdapterAbi.contracts().get(0)).isEmpty()
+                        && !missing(oldest, AdapterAbi.contracts().get(1)).isEmpty(),
+                    "the oldest compiler does not satisfy either newer adapter contract");
+                require(missing(oldest, AdapterAbi.contracts().get(2)).isEmpty(),
+                    "the oldest compiler satisfies its dedicated adapter contract");
             }
         } finally {
             delete(work);

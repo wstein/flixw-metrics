@@ -27,7 +27,8 @@ public final class Adapters {
      */
     private static final List<String> KNOWN =
         List.of("dev.flixw.metrics.flix0753.Flix0753Adapter",
-            "dev.flixw.metrics.flix0680.Flix0680Adapter");
+            "dev.flixw.metrics.flix0680.Flix0680Adapter",
+            "dev.flixw.metrics.flix0672.Flix0672Adapter");
 
     /** The first adapter that links, or null when none does. */
     public static CompilerModel resolve() {

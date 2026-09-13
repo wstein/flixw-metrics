@@ -21,6 +21,7 @@ public final class PluginIntegrationTest {
         try {
             Path plugin = Path.of(args[1]);
             Path compiler = Path.of(args[2]);
+            int expectedEffectSurface = args.length >= 4 ? Integer.parseInt(args[3]) : 1;
             String initialized = runCommand(initProject, initCache, plugin, compiler,
                 System.getProperty("java.home"), "init");
             require(initialized.contains("--fail-on-new warning")
@@ -64,7 +65,8 @@ public final class PluginIntegrationTest {
             require(coldJson.getAsJsonObject("summary").get("datalogRules").getAsInt() == 3
                     && coldJson.getAsJsonObject("summary").get("datalogFacts").getAsInt() == 1,
                 "packaged reports preserve separate Datalog rule and fact counts");
-            require(coldJson.getAsJsonObject("summary").get("widestEffectSurface").getAsInt() == 1
+            require(coldJson.getAsJsonObject("summary").get("widestEffectSurface").getAsInt()
+                    == expectedEffectSurface
                     && coldJson.getAsJsonObject("summary")
                         .get("widestDatalogDependencyBreadth").getAsInt() == 3,
                 "packaged reports summarize effect and Datalog dependency breadth");
@@ -198,6 +200,7 @@ public final class PluginIntegrationTest {
                     || entry.getName().startsWith("ca/uwaterloo/flix/")),
                 "the plugin does not bundle compiler or Scala classes");
             require(jar.getEntry("dev/flixw/metrics/flix0680/Flix0680Adapter.class") != null
+                    && jar.getEntry("dev/flixw/metrics/flix0672/Flix0672Adapter.class") != null
                     && jar.getEntry("dev/flixw/metrics/flix0753/Flix0753Adapter.class") != null,
                 "the plugin packages every compiler adapter family");
             var attributes = jar.getManifest().getMainAttributes();

@@ -1,5 +1,5 @@
 #!/bin/sh
-# Lock the oldest supported Flix ABI to 0.68.0, with the immediately preceding release as proof.
+# Lock the oldest supported Flix ABI to 0.67.2, with the immediately preceding release as proof.
 set -eu
 
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd -P)
@@ -38,7 +38,8 @@ fetch() {
   mv "$jar.part" "$jar"
 }
 
-fetch 0.67.0 7e345b4c2868244298d8d5b0d33c71f72e6084bfeac5130b6a7771543405dbe5
+fetch 0.67.1 2f888a5c1ca2b343915add0ca697d36167fd16ae82e61b37bc0be29d09a1d8c4
+fetch 0.67.2 3162ba033d77e481c8cd731441e1f279bd8f44e5f278b2b21632149c30f8ed3f
 fetch 0.68.0 af568a2d4046207f908f8ec37786409b3dccdec944c2df5f571444599fb6b7c8
 fetch 0.75.2 a2697d875725a0dde6e793b8d54cb220e86167a6d49ec5f0ccb0832966c8c15a
 fetch 0.75.3 bf123cdb6494d6e0cbff6399bf185314d332bbe97bfd776e4abc03a5d39dd954
@@ -61,12 +62,18 @@ capabilities() {
     "$java_home/bin/java" -jar "$root/dist/plugin.jar" capabilities
 }
 
-capabilities "$work/flix-0.67.0.jar" > "$work/0.67.0.json"
+capabilities "$work/flix-0.67.1.jar" > "$work/0.67.1.json"
 jq -e '
   (.hasEngineApi == false) and
-  any(.missing[]; contains("SourceLocation.startLine"))
-' "$work/0.67.0.json" >/dev/null || {
-  echo "test-compiler-compatibility: Flix 0.67.0 did not fail the expected ABI boundary" >&2
+  any(.missing[]; contains("Input$RealFile"))
+' "$work/0.67.1.json" >/dev/null || {
+  echo "test-compiler-compatibility: Flix 0.67.1 did not fail the expected ABI boundary" >&2
+  exit 1
+}
+
+capabilities "$work/flix-0.67.2.jar" > "$work/0.67.2.json"
+jq -e '.hasEngineApi and (.missing | length == 0)' "$work/0.67.2.json" >/dev/null || {
+  echo "test-compiler-compatibility: Flix 0.67.2 did not satisfy the adapter ABI" >&2
   exit 1
 }
 
@@ -95,13 +102,15 @@ classpath=$(cd "$root" && "$mill" --no-server show plugin.test.runClasspath 2>/d
   | jq -r '.[] | split(":")[-1]' | paste -sd: -)
 integration() {
   compiler=$1
+  effect_surface=${2:-1}
   "$java_home/bin/java" -cp "$classpath:$compiler" \
     dev.flixw.metrics.PluginIntegrationTest \
-    "$root/plugin/test/fixtures/semantic" "$root/dist/plugin.jar" "$compiler"
+    "$root/plugin/test/fixtures/semantic" "$root/dist/plugin.jar" "$compiler" "$effect_surface"
 }
 
+integration "$work/flix-0.67.2.jar" 2
 integration "$work/flix-0.68.0.jar"
 integration "$work/flix-0.75.2.jar"
 integration "$work/flix-0.75.3.jar"
 
-echo "test-compiler-compatibility: 0.67.0 rejected; 0.68.0, 0.75.2, and 0.75.3 integration passed"
+echo "test-compiler-compatibility: 0.67.1 rejected; 0.67.2, 0.68.0, 0.75.2, and 0.75.3 integration passed"
