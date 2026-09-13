@@ -401,6 +401,13 @@ Packaging fixes the ZIP entry order and timestamps, so the same source, toolchai
 produce the same JAR bytes. The digest under [Install](#install) remains the published artifact's
 and is what installations should verify against.
 
+## Community
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) before proposing a change and [SUPPORT.md](SUPPORT.md) when
+reporting a problem. Report security vulnerabilities privately according to
+[SECURITY.md](SECURITY.md). Participation is governed by the
+[Code of Conduct](CODE_OF_CONDUCT.md).
+
 ## License
 
 Apache-2.0. See [LICENSE](LICENSE).
