@@ -30,6 +30,10 @@ public final class FormatsTest {
         require(!sarif.contains("\"uri\": \"\""),
             "module findings do not invent an empty artifact URI");
         require(sarif.contains("\"startLine\": 12"), "SARIF keeps a real line");
+        require(sarif.contains("\"logicalLocations\": [{\"fullyQualifiedName\": \"A.deep\""
+                + ", \"kind\": \"function\"}]")
+                && sarif.contains("\"fullyQualifiedName\": \"Wide\", \"kind\": \"module\""),
+            "SARIF names both definition and module locations for agent navigation");
         require(count(sarif, "\"ruleId\"") == 2, "every finding becomes a result");
         // Declared even when unfired, so a consumer's rule list does not change per run.
         require(count(sarif, "\"id\": ") == 11, "every rule is declared, fired or not");
@@ -227,6 +231,13 @@ public final class FormatsTest {
             require(json.contains("\"dependencies\": [\"B\", \"C\"]")
                     && json.contains("\"dependents\": [\"Foundation\"]"),
                 "module JSON names coupling edges needed to plan a refactor");
+            require(json.contains("\"location\": {\"path\": \"src/A.flix\","
+                    + " \"startLine\": 1, \"endLine\": 2,"
+                    + " \"logicalName\": \"A.f\", \"kind\": \"function\"}"),
+                "native findings expose an edit-ready definition span");
+            require(localized.render(Metrics.Format.SARIF).contains(
+                    "\"region\": {\"startLine\": 1, \"endLine\": 2}"),
+                "SARIF findings expose the full measured definition span");
             require(json.contains("\"overBy\": 1.50"),
                 "finding JSON decimals are independent of the process locale");
             require(localized.render(Metrics.Format.MARKDOWN).contains("1.5x"),

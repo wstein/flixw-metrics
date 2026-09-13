@@ -204,10 +204,10 @@ final class Baseline {
         }
         Map<String, Object> root = object(parsed, path, "report");
         int schema = integer(root.get("schemaVersion"), path, "schemaVersion");
-        if (schema != Metrics.Report.schemaVersion() && schema != 24)
+        if (schema != Metrics.Report.schemaVersion() && schema != 25 && schema != 24)
             throw invalid(path, "incompatible schema version " + schema
-                + " (expected " + Metrics.Report.schemaVersion() + "; schema 24 is also"
-                + " accepted for migration)");
+                + " (expected " + Metrics.Report.schemaVersion()
+                + "; schemas 24 and 25 are also accepted for migration)");
         Object baselineConfig = required(root, "configuration", path);
         Object currentConfig = new Json(config.json()).parse();
         if (!baselineConfig.equals(currentConfig))

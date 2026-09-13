@@ -366,6 +366,11 @@ final class Formats {
             b.append(", \"message\": {\"text\": ")
                     .append(SourceMetrics.Smell.quote(s.subject() + ": " + s.detail()));
             b.append('}');
+            Metrics.Report.Location location = r.location(s);
+            b.append(", \"logicalLocations\": [{\"fullyQualifiedName\": ")
+                    .append(SourceMetrics.Smell.quote(location.logicalName()))
+                    .append(", \"kind\": ")
+                    .append(SourceMetrics.Smell.quote(location.kind())).append("}]");
             // A module-level finding spans files, so it has no physical location at all. An
             // empty URI or made-up line would turn absence of a location into a false one.
             if (!s.file().isEmpty()) {
@@ -373,7 +378,8 @@ final class Formats {
                 b.append("\"artifactLocation\": {\"uri\": ")
                         .append(SourceMetrics.Smell.quote(s.file())).append("}");
                 if (s.line() > 0)
-                    b.append(", \"region\": {\"startLine\": ").append(s.line()).append("}");
+                    b.append(", \"region\": {\"startLine\": ").append(location.startLine())
+                        .append(", \"endLine\": ").append(location.endLine()).append("}");
                 b.append("}}]");
             }
             b.append('}');

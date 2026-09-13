@@ -72,7 +72,34 @@ final class Metrics {
         // A method so javac cannot inline yesterday's value into Baseline. Incremental builds
         // must ask the current report class which contract it emits.
         static int schemaVersion() {
-            return 25;
+            return 26;
+        }
+
+        /** A finding's physical span and compiler-level owner, ready for editor tooling. */
+        record Location(String path, Integer startLine, Integer endLine, String logicalName,
+                        String kind) {
+            String json() {
+                return "{\"path\": " + SourceMetrics.Smell.quote(path)
+                    + ", \"startLine\": " + (startLine == null ? "null" : startLine)
+                    + ", \"endLine\": " + (endLine == null ? "null" : endLine)
+                    + ", \"logicalName\": " + SourceMetrics.Smell.quote(logicalName)
+                    + ", \"kind\": " + SourceMetrics.Smell.quote(kind) + "}";
+            }
+        }
+
+        Location location(SourceMetrics.Smell smell) {
+            if (smell.file().isEmpty())
+                return new Location("", null, null, smell.subject(), "module");
+            CompilerModel.DefInfo owner = defs.stream()
+                .filter(d -> d.file().equals(smell.file())
+                    && (smell.subject().equals(d.name())
+                        || smell.subject().startsWith(d.name() + ".")))
+                .max(java.util.Comparator.comparingInt(d -> d.name().length()))
+                .orElse(null);
+            int start = smell.line() > 0 ? smell.line() : owner == null ? 1 : owner.line();
+            int end = owner != null && start == owner.line()
+                ? owner.line() + Math.max(1, owner.lines()) - 1 : start;
+            return new Location(smell.file(), start, end, smell.subject(), "function");
         }
 
 
@@ -222,8 +249,10 @@ final class Metrics {
                 : String.format(Locale.ROOT, "%.3f", number);
         }
 
-        private static String findingJson(SourceMetrics.Smell smell, String baselineState) {
-            return smell.json(baselineState);
+        private String findingJson(SourceMetrics.Smell smell, String baselineState) {
+            String flat = smell.json(baselineState);
+            return flat.substring(0, flat.length() - 1) + ", \"location\": "
+                + location(smell).json() + "}";
         }
 
         private String json(Provenance p, MetricsConfig config, Baseline.Comparison comparison,
