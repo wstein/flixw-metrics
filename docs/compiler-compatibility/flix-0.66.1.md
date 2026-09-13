@@ -29,7 +29,7 @@ without initializing it, so 0.66.0 fails before the bridge attempts measurement.
 | Check | Command or method | Result |
 | --- | --- | --- |
 | Artifact digest | `scripts/fetch-flix.sh` | official 0.66.1 artifact matched the recorded SHA-256 |
-| Adapter source build | `./mill --no-server flix0661.compile` | passed with fatal Scala warnings |
+| Adapter source build | `./mill --no-server adapter.flix0661.compile` | passed with fatal Scala warnings |
 | Capability boundary | `scripts/test-compiler-compatibility.sh` | 0.66.1 passed; 0.66.0 rejected its Java 24 runtime class |
 | Semantic fixture | `scripts/test-one.sh Flix0661AdapterTest` | passed |
 | Packaged integration | `scripts/test-compiler-compatibility.sh` | passed cold/warm reports, cache, JSON, SARIF, and initialization |

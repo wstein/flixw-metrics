@@ -36,7 +36,7 @@ drift, so the adapter preserves it rather than rewriting the compiler's typed ef
 | Check | Command or method | Result |
 | --- | --- | --- |
 | Artifact digest | `scripts/fetch-flix.sh` | official 0.67.2 artifact matched the recorded SHA-256 |
-| Adapter source build | `./mill --no-server flix0672.compile` | passed with fatal Scala warnings |
+| Adapter source build | `./mill --no-server adapter.flix0672.compile` | passed with fatal Scala warnings |
 | Bytecode-derived ABI gate | `scripts/test-compiler-compatibility.sh` | 0.67.2 passed; 0.67.1 failed on the expected input representation |
 | Semantic fixture | `scripts/test-one.sh Flix0672AdapterTest` | passed, including old positions, lines, effects, Datalog, and module edges |
 | Packaged integration | `scripts/test-compiler-compatibility.sh` | passed cold/warm reports, cache, JSON, SARIF, and initialization |

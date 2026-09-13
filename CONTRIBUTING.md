@@ -37,7 +37,7 @@ performance contracts, and proves package reproducibility.
 ## Architecture constraints
 
 Compiler-neutral Java code lives under `plugin/src/dev/flixw/metrics/`. Flix compiler types may
-appear only in the Scala adapter source under a versioned `flixNNNN` module. Values crossing
+appear only in the Scala adapter source under a versioned `adapter.flixNNNN` module. Values crossing
 `sdk.CompilerModel` must remain compiler-neutral strings, numbers, booleans, paths, and
 collections.
 

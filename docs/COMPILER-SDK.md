@@ -20,15 +20,16 @@ would put compiler concepts straight back into the callers it exists to protect.
 |---|---|---|
 | `Main`, `Metrics`, `ResultCache`, `SourceMetrics` | nothing | Java |
 | `sdk.CompilerModel`, `sdk.Adapters` | nothing | Java |
-| `flix0600`: `dev.flixw.metrics.adapter.Flix0600Adapter` | everything | Scala |
-| `flix0610`: `dev.flixw.metrics.adapter.Flix0610Adapter` | everything | Scala |
-| `flix0661`: `dev.flixw.metrics.adapter.Flix0661Adapter` | everything | Scala |
-| `flix0672`: `dev.flixw.metrics.adapter.Flix0672Adapter` | everything | Scala |
-| `flix0680`: `dev.flixw.metrics.adapter.Flix0680Adapter` | everything | Scala |
-| `flix0753`: `dev.flixw.metrics.adapter.Flix0753Adapter` | everything | Scala |
+| `adapter.flix0600`: `dev.flixw.metrics.adapter.Flix0600Adapter` | everything | Scala |
+| `adapter.flix0610`: `dev.flixw.metrics.adapter.Flix0610Adapter` | everything | Scala |
+| `adapter.flix0661`: `dev.flixw.metrics.adapter.Flix0661Adapter` | everything | Scala |
+| `adapter.flix0672`: `dev.flixw.metrics.adapter.Flix0672Adapter` | everything | Scala |
+| `adapter.flix0680`: `dev.flixw.metrics.adapter.Flix0680Adapter` | everything | Scala |
+| `adapter.flix0753`: `dev.flixw.metrics.adapter.Flix0753Adapter` | everything | Scala |
 
-Every adapter, including the newest family, is a peer module compiled against only its own compiler
-generation. Supporting another Flix generation is an isolated adapter module and a line in `Adapters.KNOWN`.
+Every adapter, including the newest family, is an isolated child of the `adapter` module and is
+compiled against only its own compiler generation. Supporting another Flix generation is an
+isolated adapter module and a line in `Adapters.KNOWN`.
 It is explicitly *not* an edit to the report, the smells, the formats, the cache or the CLI. Each
 module compiles against the oldest verified compiler in its family; none of those compilers is packaged.
 

@@ -38,8 +38,9 @@ public interface CompilerModel {
      * <p>It is here because it will be needed and is cheap now: the moment an adapter ships
      * separately from this jar -- built by someone else, for a Flix generation this build has
      * never seen -- the two need a way to say whether they agree. Today each adapter is compiled
-     * in its own versioned sibling module and every adapter is packaged with this SDK in the same
-     * plugin jar, so they cannot disagree and nothing checks the declared version.
+     * in its own versioned module under the top-level {@code adapter} group and every adapter is
+     * packaged with this SDK in the same plugin jar, so they cannot disagree and nothing checks
+     * the declared version.
      *
      * <p>The verified scope is <b>Flix 0.60.0, 0.61.0, 0.65.0, 0.66.1, 0.67.1, 0.67.2,
      * 0.68.0, 0.75.2, 0.75.3, and 0.76.0</b> across six in-tree adapter families. Versioning

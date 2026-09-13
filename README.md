@@ -359,7 +359,7 @@ are verified. Flix 0.60.0 uses `Flix0600Adapter`; Flix 0.61.0 and 0.65.0 use
 `Flix0610Adapter`; Flix 0.66.1 and 0.67.1 use
 `Flix0661Adapter`; Flix 0.67.2 uses `Flix0672Adapter`; Flix 0.68.0 and 0.75.2 use
 `Flix0680Adapter`; and Flix 0.75.3 and 0.76.0 use `Flix0753Adapter`. Each name records the oldest
-verified release in that linkage family. Each family is compiled in an isolated `flixNNNN` Mill
+verified release in that linkage family. Each family is compiled in an isolated `adapter.flixNNNN` Mill
 module against only its own compiler generation; the adapters share the
 `dev.flixw.metrics.adapter` package and ship together in `plugin.jar`. The compiler-neutral
 `plugin` module has no Flix jar on its compile class path.

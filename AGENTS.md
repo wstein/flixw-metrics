@@ -3,9 +3,8 @@
 ## Project Structure & Module Organization
 
 The analyzer is a mixed Java/Scala Mill build. Compiler-neutral code lives in
-`plugin/src/dev/flixw/metrics/`; every Flix adapter is compiled in isolation under the peer modules
-`flix0753/src/`, `flix0680/src/`, `flix0672/src/`, `flix0661/src/`, `flix0610/src/`, and
-`flix0600/src/`. The stable boundary is under
+`plugin/src/dev/flixw/metrics/`; every Flix adapter is compiled in isolation under `adapter/`, in
+`adapter/flix0753/src/` through `adapter/flix0600/src/`. The stable boundary is under
 `plugin/src/dev/flixw/metrics/sdk/`. Tests live in `plugin/test/src/` and use the Flix fixture in
 `plugin/test/fixtures/semantic/`. Calibration inputs and budgets live in `calibration/`, project
 documentation in `docs/`, automation in `scripts/`, and CI workflows in `.github/workflows/`.
@@ -15,8 +14,9 @@ Do not commit generated `out/`, `dist/`, or downloaded `plugin/lib/flix*.jar` fi
 
 The Java/Scala split is load-bearing, not incidental. `Bootstrap`/`TypedAst`/etc. in `flix.jar` carry no
 ABI compatibility promise between releases. All knowledge of those types is confined to one file
-per family under `flixNNNN/src/dev/flixw/metrics/adapter/`, for example
-`flix0753/src/dev/flixw/metrics/adapter/Flix0753Adapter.scala`. Everything else — `Main`, `Metrics`, `ResultCache`, `SourceMetrics`, and
+per family under `adapter/flixNNNN/src/dev/flixw/metrics/adapter/`, for example
+`adapter/flix0753/src/dev/flixw/metrics/adapter/Flix0753Adapter.scala`. Everything else — `Main`,
+`Metrics`, `ResultCache`, `SourceMetrics`, and
 the stable `sdk.CompilerModel`/`sdk.Adapters` boundary — stays plain Java that knows nothing about Flix.
 `CompilerModel` returns counts and strings only, deliberately, never compiler types or an AST cursor.
 

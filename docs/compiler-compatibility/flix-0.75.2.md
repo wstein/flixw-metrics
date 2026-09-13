@@ -29,7 +29,7 @@ formal-parameter and polymorphic-effect behavior.
 | Check | Command or method | Result |
 | --- | --- | --- |
 | Artifact digest | `scripts/test-compiler-compatibility.sh` | official 0.75.2 artifact matched the recorded SHA-256 |
-| Adapter source build | direct 0.75.2 derivation, then `flix0680.compile` | passed |
+| Adapter source build | direct 0.75.2 derivation, then `adapter.flix0680.compile` | passed |
 | Bytecode-derived ABI gate | packaged `capabilities` | older contract passed; newer contract was independently confirmed incompatible |
 | Semantic fixture | `Flix0680AdapterTest` plus packaged integration | definitions, lines, effects, Datalog, and module edges passed |
 | Packaged integration | `scripts/test-compiler-compatibility.sh` | passed cold/warm reports, cache, JSON, SARIF, and initialization |
