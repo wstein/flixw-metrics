@@ -249,10 +249,13 @@ unreadable and sorted least-severe by an accident of arithmetic rather than a de
 *owned* by the local definition holding it, and a module-level finding has a subject and no
 location at all.
 
-Each finding also has a deterministic SHA-256 observation ID derived from its rule, subject,
-portable file, and source line. Native JSON exposes it as `id`; SARIF carries the same value as
-`partialFingerprints.flixwMetricsFinding/v1`, so consumers can correlate a finding between
-formats and across unchanged source revisions without parsing its prose.
+Each finding also has a deterministic SHA-256 observation ID. Symbol-owned findings derive it from
+the rule, semantic subject, and portable file, so adding lines above a definition does not turn one
+observation into a false resolution plus addition. Source-only findings use exact line content and
+its occurrence ordinal within the file; the ordinal keeps identical offending lines distinct.
+Native JSON exposes the result as `id`, and SARIF carries the same value as a partial fingerprint,
+so consumers can correlate a finding between formats without parsing its prose. Baseline matching
+also accepts the earlier location-sensitive fingerprint during migration.
 
 ### Findings are report-only unless a caller opts into a gate
 
@@ -265,9 +268,10 @@ status 1 then means policy failure, distinct from usage or analysis failure at s
 observations and stable observations whose reported `overBy` increased. The baseline reader runs
 in both the outer cache-hit JVM and the compiler bridge without a JSON dependency. It requires the
 native report's schema and effective configuration (including scoped suppressions) to match;
-incompatible input is a usage failure at status 2. A source move becomes new plus resolved because
-the stable observation ID intentionally includes location. JSON and human reports retain the
-resolved side explicitly, while SARIF gives current results its standard baseline states.
+incompatible input is a usage failure at status 2. JSON and human reports retain the resolved side
+explicitly, while SARIF gives current results its standard baseline states. The comparison also
+reports raw summary, definition, and module `measurementDeltas`, even when the changed values remain
+below every configured threshold; policy findings are therefore not the only observable progress.
 
 `init` does not have a second measurement implementation. It selects native JSON, follows the same
 cache-or-compiler path as `report`, and writes that rendered report to `metrics-baseline.json` after

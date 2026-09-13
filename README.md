@@ -124,10 +124,17 @@ report on the branch you want to treat as the baseline, commit it, and gate only
 
 `--fail-on-new` exits 1 only for a new finding, or for the same stable finding whose threshold
 multiple increased, at or above the selected severity. Existing and improved findings do not
-fail it. A moved finding is new at its new location and resolved at its old location, because
-location is part of the observation ID. The report separately lists new, worsened, and resolved
-observations and counts those retained; SARIF labels current results `new`, `updated`, or
-`unchanged`.
+fail it. Definition and module findings keep their identity when unrelated edits move their source
+line. Source-only findings use the line's content and occurrence within the file, so repeated long
+lines remain distinct while an insertion above them does not manufacture new debt. Baselines from
+the previous location-sensitive identity scheme remain readable. The report separately lists new,
+worsened, and resolved observations and counts those retained; SARIF labels current results `new`,
+`updated`, or `unchanged`.
+
+Baseline output also includes typed `measurementDeltas` for changed summary, definition, and module
+measurements. These are independent of rule thresholds: for example, an agent can see cognitive
+complexity fall from 50 to 20 even if neither value produced a finding. Each entry names its scope,
+semantic subject, metric, before/after values, and numeric delta.
 
 The baseline must be a native JSON report with the current `schemaVersion` and the same effective
 rule/suppression policy. A missing, malformed, stale-schema, or differently configured baseline
