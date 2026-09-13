@@ -33,14 +33,19 @@ built=$(cd "$root" && "$mill" --no-server show plugin.jar 2>/dev/null | tr -d '"
 # released jar had it in the build and not in the artifact.
 work=$(mktemp -d)
 manifest=$(mktemp)
-trap 'rm -rf "$work"; rm -f "$manifest"' EXIT INT TERM
+entries=$(mktemp)
+trap 'rm -rf "$work"; rm -f "$manifest" "$entries"' EXIT INT TERM
 (cd "$work" && unzip -qo "$built")
 # Only the main section: a blank line ends it, and an attribute appended past one would land
 # in a per-entry section, where nothing looks for it.
 tr -d '\r' < "$work/META-INF/MANIFEST.MF" | awk 'NF==0{exit} {print}' > "$manifest"
 printf 'Implementation-Version: %s\n' "$version" >> "$manifest"
 rm -rf "$work/META-INF"
-(cd "$work" && jar --create --file "$dist/plugin.jar" --manifest "$manifest" .)
+# JARs are ZIP files: both entry order and entry timestamps affect their digest. Make both
+# explicit so the same source and version produce the checksum CI will publish.
+(cd "$work" && find . -type f -print | LC_ALL=C sort > "$entries")
+(cd "$work" && jar --create --file "$dist/plugin.jar" --manifest "$manifest" \
+  --date=1980-01-01T00:00:02Z @"$entries")
 
 # What build.mill declares must survive packaging, or the release is a jar that does not say
 # what it is. Checked on the built artifact, because that is the thing that ships.

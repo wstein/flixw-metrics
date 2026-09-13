@@ -328,7 +328,7 @@ or a stack trace. Supporting another Flix generation is one adapter class — se
 
 ```console
 sh scripts/test.sh                 # lint, build, tests
-sh scripts/package.sh 0.1.7        # dist/plugin.jar and dist/SHA256SUMS
+sh scripts/package.sh 0.2.0        # reproducible dist/plugin.jar and dist/SHA256SUMS
 sh scripts/calibrate-corpus.sh /tmp/flixw-calibration-results
 sh scripts/measure-performance.sh /tmp/flixw-performance.json
 ```
@@ -350,9 +350,9 @@ and checks cold median, warm median, and warm/cold ratio against
 retains those measurements, making budget changes reviewable against CI history rather than a
 single favorable run.
 
-A jar is not byte-reproducible across machines, because `jar` records timestamps: a local
-build will not have the digest the release does. The digest under [Install](#install) is the
-published artifact's, and is what you should verify against.
+Packaging fixes the ZIP entry order and timestamps, so the same source, toolchain, and version
+produce the same JAR bytes. The digest under [Install](#install) remains the published artifact's
+and is what installations should verify against.
 
 ## License
 
