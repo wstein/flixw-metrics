@@ -32,10 +32,9 @@ string**: `Adapters.resolve()` instantiates each known adapter and keeps the fir
 instead of mid-measurement.
 
 `CompilerCapabilities` inspects the pinned compiler jar via `Class.forName(name, false, loader)` (never
-initializing/running compiler code) and lists every member `Flix075Adapter` actually links against. This
-list is not decoration — an earlier, incomplete gate let a compiler pass and then fail mid-run with a
-raw reflection error, exactly what the gate exists to turn into a clean diagnostic instead. **Any change
-to what the adapter calls must update the gate in the same commit.**
+initializing/running compiler code). `AdapterAbi` derives its exact class, field, constructor, and method
+requirements from the compiled adapter bytecode, including generated nested classes. A regression checks
+that the pinned compiler satisfies this structural contract; do not replace it with a handwritten list.
 
 The compiler loads on the **application class path** of a second ("bridge") JVM (spawned by `Main`
 via `--bridge` with `-cp plugin.jar:flix.jar`) launched with a 64 MiB thread stack (`-Xss64m`; Flix's
@@ -64,8 +63,12 @@ independently, so the two can't drift apart.
 ## Build, Test, and Development Commands
 
 - `make lint` fetches the pinned compiler and compiles with all warnings fatal.
-- `make test` runs linting, calibration and performance-contract tests, packaging checks, all
-  executable unit tests, the real-compiler adapter fixture, and plugin integration tests.
+- `make test` runs linting, calibration and performance-contract tests, all executable unit tests,
+  the real-compiler fixture, and integration tests. Its packaging check deliberately builds twice with
+  a two-second gap to prove reproducibility; that pause is expected.
+- `sh scripts/test-one.sh MetricsTest` compiles as needed and runs one test main. The wrapper also supplies
+  the special fixtures and classpaths required by `CompilerCapabilitiesTest`, `Flix075AdapterTest`, and
+  `PluginIntegrationTest`.
 - `make package` creates `dist/plugin.jar` and `dist/SHA256SUMS`.
 - `make format` checks for trailing whitespace and formatting violations (no auto-formatter is configured).
 - `./mill --no-server plugin.test.compile` quickly compiles sources and test suites.
@@ -88,7 +91,8 @@ for example `definition-too-long`. Run `make format` and `make lint` before comm
 Tests are dependency-free classes named `*Test.java` with a `main` method and exact assertions.
 Add a failing regression before behavioral fixes. Use temporary directories and clean them in
 `finally`. Adapter changes must extend `Flix075AdapterTest`; packaging or process changes should
-extend `PluginIntegrationTest`. Run `make test` before opening a pull request. CodeQL supplements,
+extend `PluginIntegrationTest`. Use `scripts/test-one.sh` while iterating; `./mill plugin.test.test`
+does not exist because `testFramework = "none"`. Run `make test` before opening a pull request. CodeQL supplements,
 but does not replace, regression coverage.
 
 ## Commit & Pull Request Guidelines
