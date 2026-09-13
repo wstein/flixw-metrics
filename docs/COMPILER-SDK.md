@@ -20,6 +20,7 @@ would put compiler concepts straight back into the callers it exists to protect.
 |---|---|---|
 | `Main`, `Metrics`, `ResultCache`, `SourceMetrics` | nothing | Java |
 | `sdk.CompilerModel`, `sdk.Adapters` | nothing | Java |
+| `flix0672.Flix0672Adapter` | everything | Scala |
 | `flix0680.Flix0680Adapter` | everything | Scala |
 | `flix0753.Flix0753Adapter` | everything | Scala |
 
@@ -29,8 +30,9 @@ module compiles against the oldest verified compiler in its family; neither comp
 
 `SDK_VERSION` is declared and unused. The moment an adapter ships separately from this jar,
 the two need a way to say whether they agree; while every adapter is compiled in this module
-they cannot disagree, so nothing checks it. Today's verified scope is **Flix 0.68.0 and 0.75.2 via
-`Flix0680Adapter`, plus Flix 0.75.3 and 0.76.0 via `Flix0753Adapter`.** Each suffix names the oldest
+they cannot disagree, so nothing checks it. Today's verified scope is **Flix 0.67.2 via
+`Flix0672Adapter`; Flix 0.68.0 and 0.75.2 via `Flix0680Adapter`; and Flix 0.75.3 and 0.76.0 via
+`Flix0753Adapter`.** Each suffix names the oldest
 verified release in its family, not a closed range or the current compiler pin. The investigation supporting each release
 is recorded under [`docs/compiler-compatibility`](compiler-compatibility/README.md).
 
