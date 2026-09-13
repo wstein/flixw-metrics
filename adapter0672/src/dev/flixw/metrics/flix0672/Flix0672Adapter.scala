@@ -1,7 +1,8 @@
 package dev.flixw.metrics.flix0672
 
 import dev.flixw.metrics.sdk.CompilerModel
-import dev.flixw.metrics.DatalogGraph
+import dev.flixw.metrics.{AdapterSupport, DatalogGraph}
+import dev.flixw.metrics.AdapterSupport.{Span, Tally}
 import dev.flixw.metrics.sdk.CompilerModel.{DefInfo, LineInfo, Model, ModelFailure, ModuleInfo, SourceInfo}
 
 import ca.uwaterloo.flix.api.{Bootstrap, Flix}
@@ -190,16 +191,16 @@ final class Flix0672Adapter extends CompilerModel {
         .map(line => (line, onLines.getOrElse(line, 0)))
         .maxByOption(_._2).getOrElse((d.loc.beginLine, 0))
     val owner = tally.locals
-      .filter { case (_, loc) => loc.beginLine <= crammedLine && crammedLine <= loc.endLine }
+      .filter { case (_, span) => span.beginLine <= crammedLine && crammedLine <= span.endLine }
       // Innermost wins: nested locals all contain the line, and the smallest span is the one
       // whose body a reader would actually be looking at.
-      .minByOption { case (_, loc) => loc.endLine - loc.beginLine }
+      .minByOption { case (_, span) => span.endLine - span.beginLine }
       .map { case (name, _) => d.sym.toString + "." + name }
       .getOrElse(d.sym.toString)
     val datalog = analyzeDatalog(tally.datalogEdges.toSet)
     DefInfo.builder(d.sym.toString, moduleOf(d.sym), relativise(d.loc, projectRoot),
       d.loc.beginLine)
-      .lines(spannedLines(d.loc))
+      .lines(AdapterSupport.spannedLines(toSpan(d.loc)))
       .codeLines(codeLines)
       .parameters(declaredParameters(d.spec.fparams.toList))
       .maxLocalParameters(tally.widestLocalParams)
@@ -208,8 +209,8 @@ final class Flix0672Adapter extends CompilerModel {
       .maxLocalParametersLine(
         if (tally.widestLocalLine == 0) d.loc.beginLine else tally.widestLocalLine)
       .localDefs(tally.localDefs)
-      .nesting(deepestChain(tally.branches.toList))
-      .cognitive(cognitive(tally))
+      .nesting(AdapterSupport.deepestChain(tally.branches.toList))
+      .cognitive(AdapterSupport.cognitive(tally))
       .maxLineTokens(crammedTokens)
       .maxLineTokensLine(crammedLine)
       .maxLineTokensOwner(owner)
@@ -314,7 +315,9 @@ final class Flix0672Adapter extends CompilerModel {
     rendered.codePointCount(0, rendered.length)
   }
 
-  private def spannedLines(loc: SourceLocation): Int = loc.endLine - loc.beginLine + 1
+  /** This release's [[SourceLocation]], reduced to the version-independent [[Span]] shape. */
+  private def toSpan(loc: SourceLocation): Span =
+    Span(loc.source, loc.beginLine, loc.beginCol, loc.endLine, loc.endCol)
 
   /**
     * The module a definition belongs to, or a name for the one that has none.
@@ -330,22 +333,6 @@ final class Flix0672Adapter extends CompilerModel {
 
   // ---- the walk -------------------------------------------------------------------------
 
-  /** What one pass over a definition yields. */
-  private final class Tally {
-    val branches = scala.collection.mutable.ListBuffer.empty[SourceLocation]
-    /** Name and span of each local definition, for attributing a crammed line to the right one. */
-    val locals = scala.collection.mutable.ListBuffer.empty[(String, SourceLocation)]
-    var localDefs = 0
-    var widestLocalParams = 0
-    var widestLocalName: String = null
-    var widestLocalLine = 0
-    var booleans = 0
-    var guards = 0
-    var datalogRules = 0
-    var datalogFacts = 0
-    val datalogEdges = scala.collection.mutable.Set.empty[(String, String)]
-  }
-
   /**
    * Measures a predicate dependency graph without letting recursion make depth infinite.
    *
@@ -360,29 +347,6 @@ final class Flix0672Adapter extends CompilerModel {
   }
 
   /**
-   * Each branch weighted by how many branches enclose it, plus boolean operators and guards.
-   *
-   * Five nested conditions are harder to hold in the head than five consecutive ones, and a
-   * flat count says they are the same. This is the fork's `cognitiveComplexity`, ported.
-   */
-  private def cognitive(tally: Tally): Int = {
-    val locs = tally.branches.toList
-    locs.map(loc => locs.count(other => contains(other, loc))).sum + tally.booleans + tally.guards
-  }
-
-  /** The longest chain of locations each contained in the last. */
-  private def deepestChain(locs: List[SourceLocation]): Int =
-    if (locs.isEmpty) 0 else locs.map(loc => locs.count(other => contains(other, loc))).max
-
-  private def contains(outer: SourceLocation, inner: SourceLocation): Boolean =
-    outer.source == inner.source &&
-      before(outer.beginLine, outer.beginCol, inner.beginLine, inner.beginCol) &&
-      before(inner.endLine, inner.endCol, outer.endLine, outer.endCol)
-
-  private def before(line1: Int, col1: Int, line2: Int, col2: Int): Boolean =
-    line1 < line2 || (line1 == line2 && col1 <= col2)
-
-  /**
    * Records what each construct contributes, then descends.
    *
    * The catch-all is the one place this file gives up exhaustiveness, and deliberately: with 76
@@ -392,19 +356,19 @@ final class Flix0672Adapter extends CompilerModel {
    */
   private def walk(node: Any, tally: Tally): Unit = {
     node match {
-      case e: TypedAst.Expr.IfThenElse => tally.branches += e.loc
+      case e: TypedAst.Expr.IfThenElse => tally.branches += toSpan(e.loc)
       case r: TypedAst.MatchRule =>
-        tally.branches += r.exp.loc
+        tally.branches += toSpan(r.exp.loc)
         if (r.guard.isDefined) tally.guards += 1
-      case r: TypedAst.ExtMatchRule => tally.branches += r.exp.loc
-      case r: TypedAst.CatchRule => tally.branches += r.exp.loc
-      case r: TypedAst.HandlerRule => tally.branches += r.exp.loc
-      case r: TypedAst.SelectChannelRule => tally.branches += r.exp.loc
+      case r: TypedAst.ExtMatchRule => tally.branches += toSpan(r.exp.loc)
+      case r: TypedAst.CatchRule => tally.branches += toSpan(r.exp.loc)
+      case r: TypedAst.HandlerRule => tally.branches += toSpan(r.exp.loc)
+      case r: TypedAst.SelectChannelRule => tally.branches += toSpan(r.exp.loc)
       case e: TypedAst.Expr.LocalDef =>
         tally.localDefs += 1
         // exp1 is the local's own body; e.loc also covers the continuation after it, so
         // attributing by e.loc would blame a local for lines written past its own end.
-        tally.locals += ((e.bnd.sym.text, e.exp1.loc))
+        tally.locals += ((e.bnd.sym.text, toSpan(e.exp1.loc)))
         val parameters = declaredParameters(e.fparams.toList)
         if (parameters > tally.widestLocalParams) {
           tally.widestLocalParams = parameters
