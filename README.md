@@ -58,6 +58,8 @@ datalogFacts: 0
 widestReturn: 1
 widestEffectSurface: 1
 widestDatalogDependencyBreadth: 0
+deepestDatalogDependency: 0
+mostRecursiveDatalogPredicates: 0
 tests: 1
 docCoveragePercent: 25
 purityPercent: 75
@@ -250,7 +252,10 @@ combining several effects is often exactly an application's job.
 bodies of a definition's constraints. Repeated atoms count once, recursive reads count, and facts,
 guards, and functional predicates do not inflate it. `widest-datalog-dependency` ranks the
 definitions with the broadest relation dependency surface; no threshold turns that context into
-debt.
+debt. `datalogDependencyDepth` counts predicate levels on the longest path after mutually
+recursive predicates are collapsed into one component, so cycles cannot make depth infinite;
+facts-only definitions are zero. `recursiveDatalogPredicates` retains the sorted cycle members.
+The `deepest-datalog-dependency` and `most-recursive-datalog` rankings expose both dimensions.
 
 **Parameters and crammed lines are attributed to the local definition that owns them.** In
 the sample above, `Json.size.loop` is blamed for its own crammed line — not `Json.size`, the

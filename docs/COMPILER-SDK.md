@@ -125,6 +125,8 @@ child loader parented to the platform loader.
 | `parameterDocEntries`, `redundantParameterDocEntries` | strict Markdown entries for real formal names, and the subset containing only signature boilerplate |
 | `datalogRules`, `datalogFacts` | constraints with and without a body |
 | `datalogDependencyBreadth`, `datalogDependencies` | distinct relational predicate names read by constraint bodies |
+| `datalogDependencyDepth` | predicate levels in the longest dependency path after recursive components are collapsed |
+| `recursiveDatalogPredicateCount`, `recursiveDatalogPredicates` | predicates participating in direct or mutual dependency cycles |
 | `tests`, `docCoveragePercent` | `@Test` annotations and doc comments on the production public surface |
 | `lines`, `codeLines`, `commentLines`, `docCommentLines`, `blankLines` | the compiler's own lexer |
 | `longestLine`, `linesOverLimit` | the source text |
@@ -319,6 +321,15 @@ one dependency; a recursive `Path` body contributes `Path`; head predicates, fac
 functional body predicates contribute none. The compiler adapter retains the sorted names and the
 `widest-datalog-dependency` ranking points to the owning definition. This too remains a measurement:
 the corpus supports meaningful ordering, not a universal smell threshold.
+
+Depth uses an edge from a derived head predicate to each relational body predicate it reads.
+Mutually reachable predicates form one strongly connected component before the longest path is
+measured; each component is one level, including the terminal input predicate. Thus `A -> B -> C`
+has depth three, while `A -> B -> A` has depth one and two recursive predicates. A facts-only
+definition has no dependency edge and depth zero. `deepest-datalog-dependency` ranks the former;
+`most-recursive-datalog` ranks the number of named cycle participants. Native JSON retains the
+sorted recursive names, making direct and mutual recursion distinguishable from an unexplained
+count.
 
 ### The AST walk is generic
 

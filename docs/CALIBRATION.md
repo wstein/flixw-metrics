@@ -148,6 +148,10 @@ enough variety to exercise the upper tail rather than only its threshold:
   1, 1, 2, 2, 2, 5, and 9. The upper two are the dependency-resolution and railroad examples,
   where inspecting the retained predicate names confirms that the ordering reflects the size of
   each logic program's relation surface rather than repeated atoms.
+- The same seven dependency graphs have collapsed depths 2, 2, 3, 3, 3, 4, and 9. Five contain
+  recursion: four have one self-recursive predicate, while railroad's `Circumvent` and `Connected`
+  form the corpus's only two-predicate cycle. The names confirm recursion rather than treating a
+  cyclic graph as infinitely deep.
 
 Selected distribution points show why thresholds were not tuned merely to manufacture findings:
 
@@ -162,9 +166,9 @@ Selected distribution points show why thresholds were not tuned merely to manufa
 | qual-effect-system | 32/75 | 4/4 | 3/5 | 30/34 | 3/6 |
 
 The expanded corpus therefore validates tuple and record widths from two through eight, plus both
-Datalog rules and facts. Effect width and Datalog dependency breadth remain measurements and
-rankings rather than findings: the observations establish a useful upper tail, not an arbitrary
-universal threshold.
+Datalog rules and facts. Effect width, Datalog dependency breadth, collapsed depth, and recursive
+participation remain measurements and rankings rather than findings: the observations establish
+useful ordering, not arbitrary universal thresholds.
 
 ## Runtime and cache behavior
 
@@ -226,6 +230,7 @@ Ratings are confidence that the action improves signal, from 1 (speculative) to 
 | **4/5** | Measure generated FlixDoc formal-parameter load. **Done.** | The 140-character boundary selects 29 of 1,484 public signatures and catches long rendered types even when parameter count is small. |
 | **4/5** | Rank declared effect-surface width. **Done.** | Only 13 of 2,952 definitions declare four or more effects; sorted effect names distinguish intentional orchestration boundaries from an unexplained count without asserting a smell. |
 | **4/5** | Rank Datalog dependency breadth. **Done.** | Seven corpus definitions read relational predicates; their distinct breadth reaches nine, and the retained predicate names make repeated atoms, recursion, and broad logic programs auditable. |
+| **4/5** | Measure Datalog dependency depth and recursion. **Done.** | Collapsing cycles produces finite depths from two through nine; retained cycle members identify four self-recursive programs and one mutual recursive two-predicate component without declaring recursion a smell. |
 | **4/5** | Use project configuration for established line-length and documentation conventions. | A universal increase would erase useful notes for compact projects; the existing per-rule limits and suppressions preserve local policy. |
 | **4/5** | Automate the pinned calibration corpus as a scheduled workflow. **Done.** | The weekly read-only job verifies full source SHAs and exact per-target results without adding network-heavy calibration to every pull request. |
 | **4/5** | Add first-class exclusions for generated or embedded-data sources. **Done.** | Exclusions keep sources in the compiler while removing their line totals and located quality signals; every report discloses matched paths and reasons. |
