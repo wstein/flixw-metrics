@@ -70,6 +70,8 @@ independently, so the two can't drift apart.
   the special fixtures and classpaths required by `CompilerCapabilitiesTest`, `Flix075AdapterTest`, and
   `PluginIntegrationTest`.
 - `make package` creates `dist/plugin.jar` and `dist/SHA256SUMS`.
+- `sh scripts/validate-report-schema.sh` validates a packaged fixture report with
+  `check-jsonschema`; use it after changing native JSON or its schema.
 - `make format` checks for trailing whitespace and formatting violations (no auto-formatter is configured).
 - `./mill --no-server plugin.test.compile` quickly compiles sources and test suites.
 - `./mill plugin.docJar` builds Java/Scala API documentation.

@@ -354,6 +354,7 @@ or a stack trace. Supporting another Flix generation is one adapter class — se
 ```console
 sh scripts/test.sh                 # lint, build, tests
 sh scripts/package.sh 0.2.0        # reproducible dist/plugin.jar and dist/SHA256SUMS
+sh scripts/validate-report-schema.sh # packaged fixture report against the published schema
 sh scripts/calibrate-corpus.sh /tmp/flixw-calibration-results
 sh scripts/measure-performance.sh /tmp/flixw-performance.json
 ```
