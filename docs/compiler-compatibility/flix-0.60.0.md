@@ -25,7 +25,7 @@ contract before measurement.
 | Check | Command or method | Result |
 | --- | --- | --- |
 | Artifact digest | `scripts/fetch-flix.sh` | official 0.60.0 artifact matched the recorded SHA-256 |
-| Adapter source build | `./mill --no-server adapter0600.compile` | passed with fatal Scala warnings |
+| Adapter source build | `./mill --no-server flix0600.compile` | passed with fatal Scala warnings |
 | ABI boundary | `scripts/test-compiler-compatibility.sh` | 0.60.0 passed; 0.59.0 failed on the expected effect/tuple AST contract |
 | Semantic fixture | `scripts/test-one.sh Flix0600AdapterTest` | passed using the historical test convention |
 | Packaged integration | `scripts/test-compiler-compatibility.sh` | passed cold/warm reports, cache, JSON, SARIF, and initialization |

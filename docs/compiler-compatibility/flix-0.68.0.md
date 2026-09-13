@@ -32,7 +32,7 @@ tree, and resolution checks that contract before instantiation.
 | Check | Command or method | Result |
 | --- | --- | --- |
 | Artifact digest | `scripts/fetch-flix.sh` | official 0.68.0 artifact matched the recorded SHA-256 |
-| Adapter source build | `./mill --no-server adapter0680.compile` | passed with fatal Scala warnings |
+| Adapter source build | `./mill --no-server flix0680.compile` | passed with fatal Scala warnings |
 | Bytecode-derived ABI gate | `scripts/test-compiler-compatibility.sh` | 0.68.0 passed; 0.67.0 failed on the expected location/token ABI |
 | Semantic fixture | `scripts/test-one.sh Flix0680AdapterTest` | passed, including locations, lexer lines, effects, local definitions, Datalog, and module edges |
 | Packaged integration | `scripts/test-compiler-compatibility.sh` | passed cold/warm reports, cache, JSON, SARIF, and initialization |

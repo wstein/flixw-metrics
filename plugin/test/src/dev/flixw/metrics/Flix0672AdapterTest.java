@@ -1,6 +1,6 @@
 package dev.flixw.metrics;
 
-import dev.flixw.metrics.flix0672.Flix0672Adapter;
+import dev.flixw.metrics.adapter.Flix0672Adapter;
 import dev.flixw.metrics.sdk.CompilerModel.DefInfo;
 import dev.flixw.metrics.sdk.CompilerModel.Model;
 

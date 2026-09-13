@@ -16,6 +16,6 @@ mill=$root/mill
 [ -x "$mill" ] || mill=mill
 (cd "$root" && "$mill" --no-server plugin.test.compile >/dev/null)
 
-exec java -cp "$root/out/plugin/compile.dest/classes:$root/out/adapter0753/compile.dest/classes:$root/out/plugin/test/compile.dest/classes:$root/plugin/lib/flix.jar" \
+exec java -cp "$root/out/plugin/compile.dest/classes:$root/out/flix0753/compile.dest/classes:$root/out/plugin/test/compile.dest/classes:$root/plugin/lib/flix.jar" \
   dev.flixw.metrics.StdlibCalibration \
   "$root/plugin/test/fixtures/semantic" "$prelude" Prelude.flix

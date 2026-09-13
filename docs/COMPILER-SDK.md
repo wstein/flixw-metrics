@@ -20,12 +20,12 @@ would put compiler concepts straight back into the callers it exists to protect.
 |---|---|---|
 | `Main`, `Metrics`, `ResultCache`, `SourceMetrics` | nothing | Java |
 | `sdk.CompilerModel`, `sdk.Adapters` | nothing | Java |
-| `adapter0600`: `flix0600.Flix0600Adapter` | everything | Scala |
-| `adapter0610`: `flix0610.Flix0610Adapter` | everything | Scala |
-| `adapter0661`: `flix0661.Flix0661Adapter` | everything | Scala |
-| `adapter0672`: `flix0672.Flix0672Adapter` | everything | Scala |
-| `adapter0680`: `flix0680.Flix0680Adapter` | everything | Scala |
-| `adapter0753`: `flix0753.Flix0753Adapter` | everything | Scala |
+| `flix0600`: `adapter.Flix0600Adapter` | everything | Scala |
+| `flix0610`: `adapter.Flix0610Adapter` | everything | Scala |
+| `flix0661`: `adapter.Flix0661Adapter` | everything | Scala |
+| `flix0672`: `adapter.Flix0672Adapter` | everything | Scala |
+| `flix0680`: `adapter.Flix0680Adapter` | everything | Scala |
+| `flix0753`: `adapter.Flix0753Adapter` | everything | Scala |
 
 Every adapter, including the newest family, is a peer module compiled against only its own compiler
 generation. Supporting another Flix generation is an isolated adapter module and a line in `Adapters.KNOWN`.

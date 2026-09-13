@@ -25,7 +25,7 @@ annotation coverage using the historical Boolean-returning test convention.
 | Check | Command or method | Result |
 | --- | --- | --- |
 | Artifact digests | `scripts/fetch-flix.sh`, compatibility script | 0.61.0 and 0.65.0 matched recorded SHA-256 values |
-| Adapter source build | `./mill --no-server adapter0610.compile` | passed with fatal Scala warnings |
+| Adapter source build | `./mill --no-server flix0610.compile` | passed with fatal Scala warnings |
 | Bytecode-derived ABI gate | packaged `capabilities` | passed on 0.61.0 and 0.65.0 |
 | Semantic fixture | `scripts/test-one.sh Flix0610AdapterTest` | passed |
 | Packaged integration | `scripts/test-compiler-compatibility.sh` | passed on both verified endpoints |
