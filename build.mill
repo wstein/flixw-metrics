@@ -4,87 +4,95 @@ import mill._, scalalib._
 
 private val flixScalaVersion = "2.13.18"
 
-/** The current adapter, compiled in isolation against the oldest compiler in its ABI family. */
-object flix0753 extends ScalaModule {
-  def scalaVersion = flixScalaVersion
+/** Compiler-facing modules, grouped physically and logically under one adapter boundary. */
+object adapter extends Module {
+  /** The current adapter, compiled in isolation against the oldest compiler in its ABI family. */
+  object flix0753 extends ScalaModule {
+    def scalaVersion = flixScalaVersion
 
-  def scalacOptions = Seq("-deprecation", "-feature", "-Xfatal-warnings")
+    def scalacOptions = Seq("-deprecation", "-feature", "-Xfatal-warnings")
 
-  def compilerJar = Task.Source(moduleDir / os.up / "plugin" / "lib" / "flix.jar")
+    def compilerJar = Task.Source(moduleDir / os.up / os.up / "plugin" / "lib" / "flix.jar")
 
-  def compileClasspath = Task {
-    super.compileClasspath() ++ Seq(plugin.compile().classes, compilerJar())
+    def compileClasspath = Task {
+      super.compileClasspath() ++ Seq(plugin.compile().classes, compilerJar())
+    }
   }
-}
 
-/** An older adapter compiled in isolation against the oldest compiler in its ABI family. */
-object flix0680 extends ScalaModule {
-  def scalaVersion = flixScalaVersion
+  /** An older adapter compiled in isolation against the oldest compiler in its ABI family. */
+  object flix0680 extends ScalaModule {
+    def scalaVersion = flixScalaVersion
 
-  def scalacOptions = Seq("-deprecation", "-feature", "-Xfatal-warnings")
+    def scalacOptions = Seq("-deprecation", "-feature", "-Xfatal-warnings")
 
-  def compilerJar = Task.Source(moduleDir / os.up / "plugin" / "lib" / "flix-0.68.0.jar")
+    def compilerJar = Task.Source(
+      moduleDir / os.up / os.up / "plugin" / "lib" / "flix-0.68.0.jar")
 
-  def compileClasspath = Task {
-    super.compileClasspath() ++ Seq(plugin.compile().classes, compilerJar())
+    def compileClasspath = Task {
+      super.compileClasspath() ++ Seq(plugin.compile().classes, compilerJar())
+    }
   }
-}
 
-/** The pre-0.68 adapter, compiled in isolation against its oldest compiler family member. */
-object flix0672 extends ScalaModule {
-  def scalaVersion = flixScalaVersion
+  /** The pre-0.68 adapter, compiled in isolation against its oldest compiler family member. */
+  object flix0672 extends ScalaModule {
+    def scalaVersion = flixScalaVersion
 
-  def scalacOptions = Seq("-deprecation", "-feature", "-Xfatal-warnings")
+    def scalacOptions = Seq("-deprecation", "-feature", "-Xfatal-warnings")
 
-  def compilerJar = Task.Source(moduleDir / os.up / "plugin" / "lib" / "flix-0.67.2.jar")
+    def compilerJar = Task.Source(
+      moduleDir / os.up / os.up / "plugin" / "lib" / "flix-0.67.2.jar")
 
-  def compileClasspath = Task {
-    super.compileClasspath() ++ Seq(plugin.compile().classes, compilerJar())
+    def compileClasspath = Task {
+      super.compileClasspath() ++ Seq(plugin.compile().classes, compilerJar())
+    }
   }
-}
 
-/** The pre-0.67.2 adapter, compiled in isolation against its oldest compiler family member. */
-object flix0661 extends ScalaModule {
-  def scalaVersion = flixScalaVersion
+  /** The pre-0.67.2 adapter, compiled in isolation against its oldest compiler family member. */
+  object flix0661 extends ScalaModule {
+    def scalaVersion = flixScalaVersion
 
-  def scalacOptions = Seq("-deprecation", "-feature", "-Xfatal-warnings")
+    def scalacOptions = Seq("-deprecation", "-feature", "-Xfatal-warnings")
 
-  def compilerJar = Task.Source(moduleDir / os.up / "plugin" / "lib" / "flix-0.66.1.jar")
+    def compilerJar = Task.Source(
+      moduleDir / os.up / os.up / "plugin" / "lib" / "flix-0.66.1.jar")
 
-  def compileClasspath = Task {
-    super.compileClasspath() ++ Seq(plugin.compile().classes, compilerJar())
+    def compileClasspath = Task {
+      super.compileClasspath() ++ Seq(plugin.compile().classes, compilerJar())
+    }
   }
-}
 
-/** The Validation-era adapter, compiled in isolation against its oldest compiler family member. */
-object flix0610 extends ScalaModule {
-  def scalaVersion = flixScalaVersion
+  /** The Validation-era adapter, compiled in isolation against its oldest compiler family member. */
+  object flix0610 extends ScalaModule {
+    def scalaVersion = flixScalaVersion
 
-  def scalacOptions = Seq("-deprecation", "-feature", "-Xfatal-warnings")
+    def scalacOptions = Seq("-deprecation", "-feature", "-Xfatal-warnings")
 
-  def compilerJar = Task.Source(moduleDir / os.up / "plugin" / "lib" / "flix-0.61.0.jar")
+    def compilerJar = Task.Source(
+      moduleDir / os.up / os.up / "plugin" / "lib" / "flix-0.61.0.jar")
 
-  def compileClasspath = Task {
-    super.compileClasspath() ++ Seq(plugin.compile().classes, compilerJar())
+    def compileClasspath = Task {
+      super.compileClasspath() ++ Seq(plugin.compile().classes, compilerJar())
+    }
   }
-}
 
-/** The pre-extensible-match adapter, compiled in isolation against Flix 0.60.0. */
-object flix0600 extends ScalaModule {
-  def scalaVersion = flixScalaVersion
+  /** The pre-extensible-match adapter, compiled in isolation against Flix 0.60.0. */
+  object flix0600 extends ScalaModule {
+    def scalaVersion = flixScalaVersion
 
-  def scalacOptions = Seq("-deprecation", "-feature", "-Xfatal-warnings")
+    def scalacOptions = Seq("-deprecation", "-feature", "-Xfatal-warnings")
 
-  def compilerJar = Task.Source(moduleDir / os.up / "plugin" / "lib" / "flix-0.60.0.jar")
+    def compilerJar = Task.Source(
+      moduleDir / os.up / os.up / "plugin" / "lib" / "flix-0.60.0.jar")
 
-  def compileClasspath = Task {
-    super.compileClasspath() ++ Seq(plugin.compile().classes, compilerJar())
+    def compileClasspath = Task {
+      super.compileClasspath() ++ Seq(plugin.compile().classes, compilerJar())
+    }
   }
 }
 
 /**
- * Compiler-neutral plugin code. Every Scala adapter is compiled in its own sibling module,
- * so compiler types are unavailable here even at compile time.
+ * Compiler-neutral plugin code. Every Scala adapter is compiled in its own module under
+ * `adapter`, so compiler types are unavailable here even at compile time.
  */
 object plugin extends ScalaModule {
 
@@ -116,9 +124,10 @@ object plugin extends ScalaModule {
 
   /** Package every adapter family, but none of the compiler jars used to compile them. */
   override def localClasspath = Task {
-    super.localClasspath() ++ Seq(flix0753.compile().classes, flix0680.compile().classes,
-      flix0672.compile().classes, flix0661.compile().classes, flix0610.compile().classes,
-      flix0600.compile().classes)
+    super.localClasspath() ++ Seq(adapter.flix0753.compile().classes,
+      adapter.flix0680.compile().classes, adapter.flix0672.compile().classes,
+      adapter.flix0661.compile().classes, adapter.flix0610.compile().classes,
+      adapter.flix0600.compile().classes)
   }
 
   /**
@@ -164,9 +173,9 @@ object plugin extends ScalaModule {
     /** Test-only: parse emitted JSON with the Gson already bundled in the pinned compiler jar. */
     override def compileClasspath = Task {
       super.compileClasspath() ++ plugin.flixJar() ++
-        Seq(flix0753.compile().classes, flix0680.compile().classes,
-          flix0672.compile().classes, flix0661.compile().classes,
-          flix0610.compile().classes, flix0600.compile().classes)
+        Seq(adapter.flix0753.compile().classes, adapter.flix0680.compile().classes,
+          adapter.flix0672.compile().classes, adapter.flix0661.compile().classes,
+          adapter.flix0610.compile().classes, adapter.flix0600.compile().classes)
     }
 
     def check() = Task.Command {
@@ -190,11 +199,11 @@ object plugin extends ScalaModule {
       }
       val fixture = moduleDir / "fixtures" / "semantic"
       val compiler = plugin.flixJar().head.path
-      val olderCompiler = flix0680.compilerJar().path
-      val oldestCompiler = flix0672.compilerJar().path
-      val earliestCompiler = flix0661.compilerJar().path
-      val validationCompiler = flix0610.compilerJar().path
-      val preExtMatchCompiler = flix0600.compilerJar().path
+      val olderCompiler = adapter.flix0680.compilerJar().path
+      val oldestCompiler = adapter.flix0672.compilerJar().path
+      val earliestCompiler = adapter.flix0661.compilerJar().path
+      val validationCompiler = adapter.flix0610.compilerJar().path
+      val preExtMatchCompiler = adapter.flix0600.compilerJar().path
       val integrationCp = cp + java.io.File.pathSeparator + compiler
       val olderIntegrationCp = cp + java.io.File.pathSeparator + olderCompiler
       val oldestIntegrationCp = cp + java.io.File.pathSeparator + oldestCompiler
