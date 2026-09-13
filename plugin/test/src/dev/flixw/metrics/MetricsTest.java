@@ -38,6 +38,14 @@ public final class MetricsTest {
         String text = noApi.render(Metrics.Format.TEXT);
         require(text.contains("docCoveragePercent: N/A") && text.contains("purityPercent: N/A"),
             "undefined percentages are N/A for people");
+
+        Metrics.Report ordered = Metrics.of(2, model(List.of(
+            def("Z.last", "src/Z.flix", false, true, true),
+            def("A.first", "src/A.flix", false, true, true))), emptyText());
+        String orderedJson = ordered.render(Metrics.Format.JSON);
+        require(orderedJson.indexOf("\"name\": \"A.first\"")
+                < orderedJson.indexOf("\"name\": \"Z.last\""),
+            "machine output orders definitions independently of compiler map iteration");
         System.out.println("MetricsTest: ok");
     }
 

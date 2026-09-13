@@ -377,7 +377,15 @@ final class Metrics {
     }
 
     static Report of(int files, CompilerModel.Model m, SourceMetrics text, MetricsConfig config) {
-        List<CompilerModel.DefInfo> defs = m.defs();
+        // Compiler maps do not promise a useful iteration order. Keep the report stable so a
+        // source-identical run does not manufacture a large JSON diff for an agent to inspect.
+        List<CompilerModel.DefInfo> defs = m.defs().stream()
+            .sorted(java.util.Comparator.comparing(CompilerModel.DefInfo::file)
+                .thenComparingInt(CompilerModel.DefInfo::line)
+                .thenComparing(CompilerModel.DefInfo::name))
+            .toList();
+        List<CompilerModel.ModuleInfo> modules = m.modules().stream()
+            .sorted(java.util.Comparator.comparing(CompilerModel.ModuleInfo::name)).toList();
         CompilerModel.LineInfo lines = includedLines(m, config);
         int localDefs = defs.stream().mapToInt(CompilerModel.DefInfo::localDefs).sum();
         int effectful = (int) defs.stream().filter(d -> !d.isPure()).count();
@@ -402,12 +410,12 @@ final class Metrics {
         List<CompilerModel.DefInfo> rankedDefs = defs.stream()
             .filter(d -> !config.isExcluded(d.file())).toList();
         List<SourceMetrics.Smell> smells = new java.util.ArrayList<>(text.smells());
-        smells.addAll(Thresholds.apply(defs, m.modules(), config));
+        smells.addAll(Thresholds.apply(defs, modules, config));
         smells.removeIf(smell -> config.isSuppressed(smell) || config.isExcluded(smell.file()));
         smells.sort(java.util.Comparator.comparing(SourceMetrics.Smell::file)
             .thenComparingInt(SourceMetrics.Smell::line)
             .thenComparing(SourceMetrics.Smell::rule));
-        return new Report(files, m.modules().size(), defs.size(), localDefs, effectful, cognitive,
+        return new Report(files, modules.size(), defs.size(), localDefs, effectful, cognitive,
             m.traits(), m.instances(), m.enums(), m.structs(), m.effects(), m.typeAliases(),
             lines.total(), lines.code(), lines.comment(), lines.docComment(),
             lines.blank(), percent(lines.comment() + lines.docComment(), lines.total()),
@@ -418,7 +426,7 @@ final class Metrics {
             percent(api.stream().filter(CompilerModel.DefInfo::hasDoc).count(), api.size()),
             percent(api.stream().filter(CompilerModel.DefInfo::isPure).count(), api.size()),
             text.excludedSources(), List.copyOf(smells),
-            Rankings.of(rankedDefs, m.modules()), defs, m.modules());
+            Rankings.of(rankedDefs, modules), defs, modules);
     }
 
     private static CompilerModel.LineInfo includedLines(CompilerModel.Model model,
