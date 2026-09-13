@@ -392,7 +392,8 @@ public final class Main {
                 + " [--output path] [--diagnostics]\n\n"
                 + "Measures the project and writes a report to stdout or atomically to --output.\n"
                 + "Finding filters affect presentation only; --severity means at least that level."
-                + " --file uses portable * and ** globs.";
+                + " --file uses portable * and ** globs, and never excludes a module-level"
+                + " finding (e.g. wide-coupling), which has no file of its own to match against.";
             case "init" -> "usage: ./flixw metrics init [--allow-dirty] [--diagnostics]\n\n"
                 + "Creates a starter policy and clean-tree metrics baseline without overwriting"
                 + " files.";

@@ -134,6 +134,15 @@ public final class FormatsTest {
                 .contains("\"ruleId\": "),
             "SARIF applies the same presentation-only file filter");
 
+        // A module-level finding (wide-coupling) has no file of its own -- it spans every file
+        // the module contains, by definition. A --file scope narrows findings that are located
+        // somewhere; one with no location was never in scope to exclude, so it must survive
+        // every file glob rather than being silently dropped because "" never matches one.
+        String scopedJson = report.render(Metrics.Format.JSON, null, MetricsConfig.defaults(),
+            null, Metrics.View.FINDINGS, PresentationFilter.of(null, null, "src/**"));
+        require(scopedJson.contains("\"rule\": \"wide-coupling\""),
+            "a --file scope never excludes a finding with no file to exclude it by");
+
         // The ranking heading names what the table is, not what to do about it -- a project
         // with findings still reads the extremes as plain fact, with no "nothing to act on"
         // caveat that would only make sense when nothing above found anything.

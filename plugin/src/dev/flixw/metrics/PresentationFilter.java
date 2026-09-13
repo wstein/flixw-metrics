@@ -36,7 +36,12 @@ record PresentationFilter(String rule, String minimumSeverity, String fileGlob,
             && (minimumSeverity == null || RuleDefinitions.levelRank(
                 RuleDefinitions.byId(finding.rule()).level())
                 >= RuleDefinitions.levelRank(minimumSeverity))
-            && (filePattern == null || filePattern.matcher(
+            // A module-level finding has no file of its own -- it spans every file the module
+            // contains, by definition (see Thresholds.WIDE_COUPLING). A --file scope can only
+            // ever narrow findings that are located somewhere, so one with no location is
+            // never in scope to exclude; dropping it silently hid real findings (six of them,
+            // in one real project) behind what looked like a narrower, not different, view.
+            && (filePattern == null || finding.file().isEmpty() || filePattern.matcher(
                 finding.file().replace('\\', '/')).matches());
     }
 
