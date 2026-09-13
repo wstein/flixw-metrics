@@ -1,6 +1,8 @@
 package dev.flixw.metrics;
 
 import dev.flixw.metrics.sdk.CompilerModel.DefInfo;
+import dev.flixw.metrics.sdk.CompilerModel.EffectInfo;
+import dev.flixw.metrics.sdk.CompilerModel.EffectOperationInfo;
 import dev.flixw.metrics.sdk.CompilerModel.ModuleInfo;
 
 import java.util.List;
@@ -41,6 +43,11 @@ public final class CompilerModelTest {
         require(def.handlers() == 2 && def.handledOperations() == 5
                 && def.maxHandlerOperations() == 3 && def.resumptions() == 4,
             "effect-handler fields retain their named values");
+        EffectInfo effect = new EffectInfo("A.Console", "src/A.flix", 2, 1,
+            List.of(new EffectOperationInfo("print", 1),
+                new EffectOperationInfo("format", 3)));
+        require(effect.operationCount() == 2 && effect.maxOperationArity() == 3,
+            "effect operation shape is derived from stable operation records");
         ModuleInfo module = new ModuleInfo("A", 2, 30, 2, 1,
             List.of("Z", "B"), List.of("C", "B"));
         require(module.dependencies().equals(List.of("B", "Z"))

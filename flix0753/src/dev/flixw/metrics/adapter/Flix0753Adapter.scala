@@ -2,7 +2,7 @@ package dev.flixw.metrics.adapter
 
 import dev.flixw.metrics.sdk.CompilerModel
 import dev.flixw.metrics.DatalogGraph
-import dev.flixw.metrics.sdk.CompilerModel.{DefInfo, LineInfo, Model, ModelFailure, ModuleInfo, SourceInfo}
+import dev.flixw.metrics.sdk.CompilerModel.{DefInfo, EffectInfo, EffectOperationInfo, LineInfo, Model, ModelFailure, ModuleInfo, SourceInfo}
 
 import ca.uwaterloo.flix.api.{Bootstrap, Flix}
 import ca.uwaterloo.flix.language.ast.shared.{Input, Source}
@@ -79,6 +79,7 @@ final class Flix0753Adapter extends CompilerModel {
       throw new ModelFailure("the project does not compile; the compiler's errors are above"))
 
     val defs = selected(root.defs.values, include)(_.loc)
+    val effects = selected(root.effects.values, include)(_.loc)
     // Self-edges dropped: a module calling itself is not coupling.
     val edges: Set[(String, String)] =
       defs.flatMap(references).toSet.filter(e => e._1 != e._2)
@@ -93,10 +94,16 @@ final class Flix0753Adapter extends CompilerModel {
       selected(root.instances.values, include)(_.loc).size,
       selected(root.enums.values, include)(_.loc).size,
       selected(root.structs.values, include)(_.loc).size,
-      selected(root.effects.values, include)(_.loc).size,
+      effects.size,
       selected(root.typeAliases.values, include)(_.loc).size,
-      lexed.map(src => new SourceInfo(sourceName(src.source, projectRoot), src.lines)).asJava)
+      lexed.map(src => new SourceInfo(sourceName(src.source, projectRoot), src.lines)).asJava,
+      effects.map(measureEffect(_, projectRoot)).asJava)
   }
+
+  private def measureEffect(effect: TypedAst.Effect, projectRoot: Path): EffectInfo =
+    new EffectInfo(effect.sym.toString, relativise(effect.loc, projectRoot), effect.loc.startLine,
+      effect.tparams.size, effect.ops.map(op => new EffectOperationInfo(op.sym.name,
+        declaredParameters(op.spec.fparams.toList))).asJava)
 
   // ---- lines ----------------------------------------------------------------------------
 

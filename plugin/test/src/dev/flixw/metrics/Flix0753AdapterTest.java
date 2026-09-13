@@ -2,6 +2,7 @@ package dev.flixw.metrics;
 
 import dev.flixw.metrics.adapter.Flix0753Adapter;
 import dev.flixw.metrics.sdk.CompilerModel.DefInfo;
+import dev.flixw.metrics.sdk.CompilerModel.EffectInfo;
 import dev.flixw.metrics.sdk.CompilerModel.Model;
 
 import java.nio.file.Files;
@@ -61,6 +62,23 @@ public final class Flix0753AdapterTest {
                     && beta.dependents().isEmpty(),
                 "resolved module edge names cross the adapter boundary");
 
+            // Effect declarations measured before handlers are added: assertEffectMetrics
+            // checks the model's total effect count, and HandlerMetrics.flix below declares
+            // two effects of its own that would otherwise inflate it.
+            writeEffectFixture(project);
+            Model effects = new Flix0753Adapter().measure(project);
+            assertEffectMetrics(effects);
+            Files.writeString(project.resolve("src/GenericEffect.flix"), """
+                eff GenericEffect[a, b] {
+                    def combine(left: a, right: b): (a, b)
+                }
+                """);
+            Model generic = new Flix0753Adapter().measure(project);
+            EffectInfo genericEffect = effect(generic, "GenericEffect");
+            require(genericEffect.typeParameters() == 2
+                    && genericEffect.operationCount() == 1
+                    && genericEffect.maxOperationArity() == 2,
+                "generic effect parameters and typed operation arity are measured");
             writeHandlerFixture(project);
             assertHandlerMetrics(new Flix0753Adapter().measure(project));
 
@@ -152,6 +170,42 @@ public final class Flix0753AdapterTest {
 
     private static DefInfo definition(Model model, String name) {
         return model.defs().stream().filter(d -> d.name().equals(name)).findFirst().orElseThrow();
+    }
+
+    static void writeEffectFixture(Path project) throws Exception {
+        Files.writeString(project.resolve("src/EffectMetrics.flix"), """
+            eff SmallEffect {
+                def ping(): Unit
+            }
+
+            eff BroadEffect {
+                def reset(): Unit
+                def combine(left: Int32, right: Int32): Int32
+            }
+            """);
+    }
+
+    static void assertEffectMetrics(Model model) {
+        require(model.effects() == 2 && model.effectDeclarations().size() == model.effects(),
+            "the effect aggregate agrees with its declaration records");
+        EffectInfo small = effect(model, "SmallEffect");
+        require(small.file().equals("src/EffectMetrics.flix") && small.line() == 1
+                && small.typeParameters() == 0 && small.operationCount() == 1
+                && small.operations().get(0).name().equals("ping")
+                && small.operations().get(0).arity() == 0,
+            "a nongeneric effect retains its location and nullary operation");
+        EffectInfo broad = effect(model, "BroadEffect");
+        require(broad.line() == 5 && broad.operationCount() == 2
+                && broad.maxOperationArity() == 2
+                && broad.operations().get(0).name().equals("reset")
+                && broad.operations().get(1).name().equals("combine")
+                && broad.operations().get(1).arity() == 2,
+            "effect operations retain deterministic declaration order and typed arity");
+    }
+
+    private static EffectInfo effect(Model model, String name) {
+        return model.effectDeclarations().stream().filter(e -> e.name().equals(name))
+            .findFirst().orElseThrow();
     }
 
     static Path copyFixture(Path fixture) throws Exception {

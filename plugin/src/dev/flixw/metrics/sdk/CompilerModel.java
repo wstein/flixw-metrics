@@ -317,14 +317,40 @@ public interface CompilerModel {
     /** Lexer-derived line classes retained per source so report policy can exclude a file. */
     record SourceInfo(String file, LineInfo lines) { }
 
+    /** One compiler-typed operation signature in an effect declaration. */
+    record EffectOperationInfo(String name, int arity) { }
+
+    /** One effect declaration and the operation surface it exposes. */
+    record EffectInfo(String name, String file, int line, int typeParameters,
+                      List<EffectOperationInfo> operations) {
+        public EffectInfo {
+            operations = List.copyOf(operations);
+        }
+
+        /** Number of declared operations. */
+        public int operationCount() { return operations.size(); }
+
+        /** Largest compiler-typed operation parameter list, or zero when there are no operations. */
+        public int maxOperationArity() {
+            return operations.stream().mapToInt(EffectOperationInfo::arity).max().orElse(0);
+        }
+    }
+
     /** Everything an adapter reports. Counts that have no per-declaration detail stay counts. */
     record Model(List<DefInfo> defs, List<ModuleInfo> modules, LineInfo lines, int traits,
                  int instances, int enums, int structs, int effects, int typeAliases,
-                 List<SourceInfo> sources) {
+                 List<SourceInfo> sources, List<EffectInfo> effectDeclarations) {
         public Model(List<DefInfo> defs, List<ModuleInfo> modules, LineInfo lines, int traits,
                      int instances, int enums, int structs, int effects, int typeAliases) {
             this(defs, modules, lines, traits, instances, enums, structs, effects, typeAliases,
-                List.of());
+                List.of(), List.of());
+        }
+
+        public Model(List<DefInfo> defs, List<ModuleInfo> modules, LineInfo lines, int traits,
+                     int instances, int enums, int structs, int effects, int typeAliases,
+                     List<SourceInfo> sources) {
+            this(defs, modules, lines, traits, instances, enums, structs, effects, typeAliases,
+                sources, List.of());
         }
     }
 

@@ -62,7 +62,8 @@ final class Metrics {
                   int tests, int docCoveragePercent,
                   int purityPercent, List<MetricsConfig.ExcludedSource> excludedSources,
                   List<SourceMetrics.Smell> smells, List<Rankings.Rank> ranks,
-                  List<CompilerModel.DefInfo> defs, List<CompilerModel.ModuleInfo> modulesList) {
+                  List<CompilerModel.DefInfo> defs, List<CompilerModel.ModuleInfo> modulesList,
+                  List<CompilerModel.EffectInfo> effectDeclarations) {
 
         /**
          * The output schema, for consumers. It is deliberately not what the cache checks:
@@ -72,7 +73,7 @@ final class Metrics {
         // A method so javac cannot inline yesterday's value into Baseline. Incremental builds
         // must ask the current report class which contract it emits.
         static int schemaVersion() {
-            return 30;
+            return 31;
         }
 
         /** A finding's physical span and compiler-level owner, ready for editor tooling. */
@@ -148,7 +149,7 @@ final class Metrics {
                 widestReturn, widestEffectSurface, widestDatalogDependencyBreadth,
                 deepestDatalogDependency, mostRecursiveDatalogPredicates,
                 longestFlixdocResultCharacters, tests, docCoveragePercent, purityPercent,
-                excludedSources, selected, ranks, defs, modulesList);
+                excludedSources, selected, ranks, defs, modulesList, effectDeclarations);
         }
 
         /**
@@ -238,6 +239,24 @@ final class Metrics {
                  + ", \"dependencies\": " + stringList(m.dependencies())
                  + ", \"dependents\": " + stringList(m.dependents())
                  + ", \"instability\": " + String.format(Locale.ROOT, "%.3f", m.instability()) + "}";
+        }
+
+        private static String effectJson(CompilerModel.EffectInfo effect) {
+            StringBuilder operations = new StringBuilder("[");
+            for (int i = 0; i < effect.operations().size(); i++) {
+                if (i > 0) operations.append(", ");
+                CompilerModel.EffectOperationInfo operation = effect.operations().get(i);
+                operations.append("{\"name\": ")
+                    .append(SourceMetrics.Smell.quote(operation.name()))
+                    .append(", \"arity\": ").append(operation.arity()).append('}');
+            }
+            return "{\"name\": " + SourceMetrics.Smell.quote(effect.name())
+                + ", \"file\": " + SourceMetrics.Smell.quote(effect.file())
+                + ", \"line\": " + effect.line()
+                + ", \"typeParameters\": " + effect.typeParameters()
+                + ", \"operationCount\": " + effect.operationCount()
+                + ", \"maxOperationArity\": " + effect.maxOperationArity()
+                + ", \"operations\": " + operations.append(']') + "}";
         }
 
         private static String stringList(List<String> values) {
@@ -347,6 +366,12 @@ final class Metrics {
                     b.append(i == 0 ? "\n" : ",\n").append("    ").append(defJson(defs.get(i)));
                 }
                 b.append(defs.isEmpty() ? "]" : "\n  ]");
+                b.append(",\n  \"effectDeclarations\": [");
+                for (int i = 0; i < effectDeclarations.size(); i++) {
+                    b.append(i == 0 ? "\n" : ",\n").append("    ")
+                        .append(effectJson(effectDeclarations.get(i)));
+                }
+                b.append(effectDeclarations.isEmpty() ? "]" : "\n  ]");
                 b.append(",\n  \"modules\": [");
                 for (int i = 0; i < modulesList.size(); i++) {
                     b.append(i == 0 ? "\n" : ",\n").append("    ").append(moduleJson(modulesList.get(i)));
@@ -467,6 +492,11 @@ final class Metrics {
             .toList();
         List<CompilerModel.ModuleInfo> modules = m.modules().stream()
             .sorted(java.util.Comparator.comparing(CompilerModel.ModuleInfo::name)).toList();
+        List<CompilerModel.EffectInfo> effects = m.effectDeclarations().stream()
+            .sorted(java.util.Comparator.comparing(CompilerModel.EffectInfo::file)
+                .thenComparingInt(CompilerModel.EffectInfo::line)
+                .thenComparing(CompilerModel.EffectInfo::name))
+            .toList();
         CompilerModel.LineInfo lines = includedLines(m, config);
         int localDefs = defs.stream().mapToInt(CompilerModel.DefInfo::localDefs).sum();
         int effectful = (int) defs.stream().filter(d -> !d.isPure()).count();
@@ -507,7 +537,7 @@ final class Metrics {
             percent(api.stream().filter(CompilerModel.DefInfo::hasDoc).count(), api.size()),
             percent(api.stream().filter(CompilerModel.DefInfo::isPure).count(), api.size()),
             text.excludedSources(), List.copyOf(smells),
-            Rankings.of(rankedDefs, modules), defs, modules);
+            Rankings.of(rankedDefs, modules), defs, modules, effects);
     }
 
     private static CompilerModel.LineInfo includedLines(CompilerModel.Model model,

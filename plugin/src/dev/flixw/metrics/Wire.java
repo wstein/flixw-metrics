@@ -1,6 +1,8 @@
 package dev.flixw.metrics;
 
 import dev.flixw.metrics.sdk.CompilerModel.DefInfo;
+import dev.flixw.metrics.sdk.CompilerModel.EffectInfo;
+import dev.flixw.metrics.sdk.CompilerModel.EffectOperationInfo;
 import dev.flixw.metrics.sdk.CompilerModel.LineInfo;
 import dev.flixw.metrics.sdk.CompilerModel.Model;
 import dev.flixw.metrics.sdk.CompilerModel.ModuleInfo;
@@ -37,7 +39,7 @@ final class Wire {
     private Wire() { }
 
     /** Bumped when a record's field order changes; a mismatch is a cache miss, never a guess. */
-    static final int VERSION = 10;
+    static final int VERSION = 11;
 
     static String encode(Model m) {
         StringBuilder b = new StringBuilder();
@@ -60,6 +62,18 @@ final class Wire {
                 String.join(",", d.recursiveDatalogPredicates()), d.flixdocResultCharacters(),
                 d.maxLocalParametersOwner(), d.maxLocalParametersLine(), d.handlers(),
                 d.handledOperations(), d.maxHandlerOperations(), d.resumptions());
+        }
+        for (EffectInfo effect : m.effectDeclarations()) {
+            List<Object> fields = new ArrayList<>();
+            fields.add(effect.name());
+            fields.add(effect.file());
+            fields.add(effect.line());
+            fields.add(effect.typeParameters());
+            for (EffectOperationInfo operation : effect.operations()) {
+                fields.add(operation.name());
+                fields.add(operation.arity());
+            }
+            row(b, "e", fields.toArray());
         }
         for (ModuleInfo mi : m.modules()) {
             row(b, "m", mi.name(), mi.definitions(), mi.lines(), mi.fanIn(), mi.fanOut(),
@@ -89,6 +103,7 @@ final class Wire {
             List<DefInfo> defs = new ArrayList<>();
             List<ModuleInfo> modules = new ArrayList<>();
             List<SourceInfo> sources = new ArrayList<>();
+            List<EffectInfo> effects = new ArrayList<>();
 
             for (String[] f : rows.subList(1, rows.size())) {
                 switch (f[0]) {
@@ -114,6 +129,14 @@ final class Wire {
                         .handlers(i(f[31])).handledOperations(i(f[32]))
                         .maxHandlerOperations(i(f[33])).resumptions(i(f[34]))
                         .build());
+                    case "e" -> {
+                        if (f.length < 5 || (f.length - 5) % 2 != 0) return null;
+                        List<EffectOperationInfo> operations = new ArrayList<>();
+                        for (int at = 5; at < f.length; at += 2)
+                            operations.add(new EffectOperationInfo(un(f[at]), i(f[at + 1])));
+                        effects.add(new EffectInfo(un(f[1]), un(f[2]), i(f[3]), i(f[4]),
+                            operations));
+                    }
                     case "m" -> modules.add(new ModuleInfo(un(f[1]), i(f[2]), i(f[3]), i(f[4]),
                         i(f[5]), csv(f[6]), csv(f[7])));
                     default -> { }
@@ -121,7 +144,7 @@ final class Wire {
             }
             if (lines == null || counts == null) return null;
             return new Model(defs, modules, lines, counts[0], counts[1], counts[2], counts[3],
-                counts[4], counts[5], sources);
+                counts[4], counts[5], sources, effects);
         } catch (RuntimeException e) {
             // Any malformed entry at all: a miss, not an exception thrown at a user who only
             // asked for their metrics.

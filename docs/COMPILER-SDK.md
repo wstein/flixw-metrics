@@ -195,11 +195,19 @@ native JSON facts only: there is no project summary, ranking, finding, or thresh
 
 This additive measurement changes machine compatibility intentionally. `CompilerModel.DefInfo`
 adds four integer components (the named builder defaults each to zero), the internal wire format
-is version 10 so version-9 measurement caches become misses, and native JSON schema 30 requires the
-four non-negative fields. A schema-29 baseline is rejected rather than compared as if the
+is version 11 so version-10 measurement caches become misses, and native JSON schema 31 requires the
+four non-negative fields. A schema-30 baseline is rejected rather than compared as if the
 measurements existed. Text, Markdown, SARIF, CLI, and capability-JSON shapes are unchanged; the
 bytecode-derived capability contract automatically includes the extra typed-AST members used by
 each adapter.
+
+Effect declarations are measured the same additive way. `CompilerModel` gains `EffectInfo` and
+`EffectOperationInfo` records and a `Model.effectDeclarations` list; each adapter reports the
+declaration's qualified name, source location, type-parameter count, and its operations in source
+order with compiler-derived arities. Flix 0.60.0 reports `typeParameters` as zero explicitly,
+since that release's AST carries no such member. The aggregate `effects` per-definition surface
+and `effectCount` keep their existing capability semantics unchanged; declaration detail is
+additive and appears only in full native JSON, under the same wire and schema version bump above.
 
 ### FlixDoc parameter noise comes from the typed signature and its documentation
 
