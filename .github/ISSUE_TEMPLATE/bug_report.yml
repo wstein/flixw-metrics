@@ -1,0 +1,71 @@
+name: Bug report
+description: Report reproducible incorrect behavior in flixw-metrics
+title: "bug: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a problem. Remove secrets and private paths before posting.
+        Security vulnerabilities must use private vulnerability reporting instead.
+  - type: input
+    id: plugin-version
+    attributes:
+      label: flixw-metrics version
+      placeholder: v0.2.0
+    validations:
+      required: true
+  - type: input
+    id: toolchain
+    attributes:
+      label: Toolchain
+      description: Include the flixw, Flix compiler, Java, and operating-system versions.
+      placeholder: flixw 0.25.10; Flix 0.76.0; Temurin 21; Ubuntu 24.04
+    validations:
+      required: true
+  - type: textarea
+    id: command
+    attributes:
+      label: Command and configuration
+      description: Include the exact command and relevant sanitized policy configuration.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Include complete sanitized output and exit status where useful.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: Provide the smallest project or steps that reproduce the problem.
+    validations:
+      required: true
+  - type: textarea
+    id: capabilities
+    attributes:
+      label: Capabilities output
+      description: Paste sanitized `./flixw metrics capabilities` JSON for compiler-loading problems.
+      render: json
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I searched existing issues for this problem.
+          required: true
+        - label: This report contains no secrets or private source code.
+          required: true
+        - label: This is not a security vulnerability.
+          required: true

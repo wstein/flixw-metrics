@@ -1,0 +1,53 @@
+name: Feature request
+description: Propose a metric, report, policy, or tooling improvement
+title: "feat: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Explain the observable need before prescribing an implementation. Metric proposals
+        should identify a compiler-derived source of truth and a calibration plan.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What decision or workflow is difficult with the current behavior?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: Define the desired behavior precisely, including examples where useful.
+    validations:
+      required: true
+  - type: textarea
+    id: compiler-source
+    attributes:
+      label: Compiler-derived source of truth
+      description: For a metric, identify the typed AST or lexer information that should be measured.
+  - type: textarea
+    id: output
+    attributes:
+      label: Output and compatibility impact
+      description: Note expected SDK, wire/cache, JSON schema, report format, CLI, or adapter impact.
+  - type: textarea
+    id: calibration
+    attributes:
+      label: Calibration and validation
+      description: Describe fixtures, real projects, distributions, or counterexamples needed to validate it.
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I searched existing issues for this request.
+          required: true
+        - label: I separated unrelated features into different requests.
+          required: true
