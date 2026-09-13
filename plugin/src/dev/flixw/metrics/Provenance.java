@@ -1,6 +1,7 @@
 package dev.flixw.metrics;
 
 import java.nio.file.Path;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -44,19 +45,40 @@ record Provenance(String commit, boolean dirty, String version, String when,
      * and it says so in the header rather than refusing to be written.
      */
     private static String git(Path root, String... args) {
+        List<String> command = new java.util.ArrayList<>(List.of("git"));
+        command.addAll(List.of(args));
+        return command(root, Duration.ofSeconds(10), command);
+    }
+
+    /** Runs a bounded command and reads its output only after it has exited successfully. */
+    static String command(Path root, Duration timeout, List<String> command) {
+        Path output = null;
+        Process process = null;
         try {
-            List<String> cmd = new java.util.ArrayList<>(List.of("git"));
-            cmd.addAll(List.of(args));
-            Process p = new ProcessBuilder(cmd).directory(root.toFile())
-                            .redirectErrorStream(true).start();
-            String out = new String(p.getInputStream().readAllBytes(),
-                                    java.nio.charset.StandardCharsets.UTF_8).trim();
-            return p.waitFor(10, TimeUnit.SECONDS) && p.exitValue() == 0 ? out : "";
+            output = java.nio.file.Files.createTempFile("flixw-metrics-git-", ".out");
+            process = new ProcessBuilder(command).directory(root.toFile())
+                .redirectError(ProcessBuilder.Redirect.DISCARD)
+                .redirectOutput(output.toFile()).start();
+            if (!process.waitFor(timeout.toMillis(), TimeUnit.MILLISECONDS)) {
+                process.destroyForcibly();
+                process.waitFor(1, TimeUnit.SECONDS);
+                return "";
+            }
+            if (process.exitValue() != 0) return "";
+            return java.nio.file.Files.readString(output,
+                java.nio.charset.StandardCharsets.UTF_8).trim();
         } catch (java.io.IOException e) {
             return "";
         } catch (InterruptedException e) {
+            if (process != null) process.destroyForcibly();
             Thread.currentThread().interrupt();
             return "";
+        } finally {
+            if (output != null) try {
+                java.nio.file.Files.deleteIfExists(output);
+            } catch (java.io.IOException ignored) {
+                // Provenance is best-effort; scratch cleanup cannot make a report fail.
+            }
         }
     }
 }
