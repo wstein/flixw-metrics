@@ -99,6 +99,11 @@ public final class FormatsTest {
         require(priorityMd.indexOf("### `deeply-nested`")
                 < priorityMd.indexOf("### `line-too-long`"),
             "configured severity outranks incomparable threshold multiples");
+        String priorityJson = priority.render(Metrics.Format.JSON, null,
+            MetricsConfig.defaults(), null, Metrics.View.FINDINGS);
+        require(priorityJson.indexOf("\"rule\": \"deeply-nested\"")
+                < priorityJson.indexOf("\"rule\": \"line-too-long\""),
+            "compact findings put the highest-severity work first");
 
         // The ranking heading names what the table is, not what to do about it -- a project
         // with findings still reads the extremes as plain fact, with no "nothing to act on"
@@ -221,7 +226,9 @@ public final class FormatsTest {
                 0, 0, 0, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0,
                 List.of(), List.of(
                     new SourceMetrics.Smell("dense", "A.f", "src/A.flix", 1,
-                        1.5, 1.0, "", "complexity per line")),
+                        1.5, 1.0, "", "complexity per line"),
+                    new SourceMetrics.Smell("wide-coupling", "A", "", 0,
+                        2, 1, "", "modules depended on")),
                 List.of(new Rankings.Rank("densest", "A.f", "src/A.flix", 1,
                     String.format(Locale.ROOT, "%.1f complexity/line", 1.5))),
                 List.of(def), List.of(module));
@@ -234,6 +241,9 @@ public final class FormatsTest {
             require(json.contains("\"dependencies\": [\"B\", \"C\"]")
                     && json.contains("\"dependents\": [\"Foundation\"]"),
                 "module JSON names coupling edges needed to plan a refactor");
+            require(json.contains("\"context\": {\"dependencies\": [\"B\", \"C\"],"
+                    + " \"dependents\": [\"Foundation\"]}"),
+                "a compact coupling finding carries the names needed to plan the edit");
             require(json.contains("\"location\": {\"path\": \"src/A.flix\","
                     + " \"startLine\": 1, \"endLine\": 2,"
                     + " \"logicalName\": \"A.f\", \"kind\": \"function\"}"),

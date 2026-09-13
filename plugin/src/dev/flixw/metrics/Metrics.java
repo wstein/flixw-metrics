@@ -72,7 +72,7 @@ final class Metrics {
         // A method so javac cannot inline yesterday's value into Baseline. Incremental builds
         // must ask the current report class which contract it emits.
         static int schemaVersion() {
-            return 27;
+            return 28;
         }
 
         /** A finding's physical span and compiler-level owner, ready for editor tooling. */
@@ -254,8 +254,29 @@ final class Metrics {
 
         private String findingJson(SourceMetrics.Smell smell, String baselineState) {
             String flat = smell.json(baselineState);
-            return flat.substring(0, flat.length() - 1) + ", \"location\": "
-                + location(smell).json() + "}";
+            StringBuilder out = new StringBuilder(flat.substring(0, flat.length() - 1))
+                .append(", \"location\": ").append(location(smell).json());
+            if (smell.rule().equals("wide-coupling")) {
+                modulesList.stream().filter(m -> m.name().equals(smell.subject())).findFirst()
+                    .ifPresent(m -> out.append(", \"context\": {\"dependencies\": ")
+                        .append(stringList(m.dependencies())).append(", \"dependents\": ")
+                        .append(stringList(m.dependents())).append('}'));
+            }
+            return out.append('}').toString();
+        }
+
+        private static int compareFindings(SourceMetrics.Smell left,
+                                           SourceMetrics.Smell right) {
+            int severity = Integer.compare(
+                RuleDefinitions.levelRank(RuleDefinitions.byId(right.rule()).level()),
+                RuleDefinitions.levelRank(RuleDefinitions.byId(left.rule()).level()));
+            if (severity != 0) return severity;
+            int magnitude = Double.compare(right.overBy(), left.overBy());
+            if (magnitude != 0) return magnitude;
+            int file = left.file().compareTo(right.file());
+            if (file != 0) return file;
+            int line = Integer.compare(left.line(), right.line());
+            return line != 0 ? line : left.rule().compareTo(right.rule());
         }
 
         private String json(Provenance p, MetricsConfig config, Baseline.Comparison comparison,
@@ -320,6 +341,8 @@ final class Metrics {
                 ? smells.stream().filter(s -> comparison.isAdded(s.id())
                     || comparison.isWorsened(s.id())).toList()
                 : smells;
+            if (view == View.FINDINGS || view == View.CHANGES)
+                shown = shown.stream().sorted(Report::compareFindings).toList();
             b.append(",\n");
             b.append("  \"smells\": [");
             for (int i = 0; i < shown.size(); i++) {

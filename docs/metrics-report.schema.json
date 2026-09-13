@@ -7,7 +7,7 @@
   "required": ["schemaVersion", "configuration", "ruleCatalog", "excludedSources", "summary"],
   "properties": {
     "$schema": {"const": "https://raw.githubusercontent.com/wstein/flixw-metrics/main/docs/metrics-report.schema.json"},
-    "schemaVersion": {"const": 27},
+    "schemaVersion": {"const": 28},
     "provenance": {"type": "object"},
     "configuration": {"type": "object"},
     "baseline": {"type": "object"},
@@ -79,7 +79,14 @@
         "note": {"type": "string"},
         "detail": {"type": "string"},
         "baselineState": {"enum": ["new", "updated", "unchanged"]},
-        "location": {"$ref": "#/$defs/location"}
+        "location": {"$ref": "#/$defs/location"},
+        "context": {
+          "type": "object",
+          "properties": {
+            "dependencies": {"type": "array", "items": {"type": "string"}},
+            "dependents": {"type": "array", "items": {"type": "string"}}
+          }
+        }
       }
     },
     "ranking": {
