@@ -73,7 +73,7 @@ final class Metrics {
         // A method so javac cannot inline yesterday's value into Baseline. Incremental builds
         // must ask the current report class which contract it emits.
         static int schemaVersion() {
-            return 31;
+            return 32;
         }
 
         /** A finding's physical span and compiler-level owner, ready for editor tooling. */
@@ -186,6 +186,16 @@ final class Metrics {
             }
             DocumentationMetrics.ParameterDocs parameterDocs =
                 DocumentationMetrics.parameters(d.formalParameterNames(), d.docText());
+            StringBuilder effectDetails = new StringBuilder("[");
+            for (int i = 0; i < d.effectDetails().size(); i++) {
+                if (i > 0) effectDetails.append(", ");
+                CompilerModel.DefInfo.EffectDetail detail = d.effectDetails().get(i);
+                effectDetails.append("{\"name\": ")
+                    .append(SourceMetrics.Smell.quote(detail.name()))
+                    .append(", \"argumentCount\": ").append(detail.argumentCount())
+                    .append(", \"arguments\": ").append(stringList(detail.arguments()))
+                    .append('}');
+            }
             return "{\"name\": " + SourceMetrics.Smell.quote(d.name())
                  + ", \"module\": " + SourceMetrics.Smell.quote(d.module())
                  + ", \"file\": " + SourceMetrics.Smell.quote(d.file())
@@ -224,6 +234,7 @@ final class Metrics {
                  + ", \"hasDoc\": " + d.hasDoc()
                  + ", \"effectCount\": " + d.effectCount()
                  + ", \"effects\": " + e.append(']')
+                 + ", \"effectDetails\": " + effectDetails.append(']')
                  + ", \"handlers\": " + d.handlers()
                  + ", \"handledOperations\": " + d.handledOperations()
                  + ", \"maxHandlerOperations\": " + d.maxHandlerOperations()

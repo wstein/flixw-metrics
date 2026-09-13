@@ -7,7 +7,7 @@
   "required": ["schemaVersion", "configuration", "ruleCatalog", "excludedSources", "summary"],
   "properties": {
     "$schema": {"const": "https://raw.githubusercontent.com/wstein/flixw-metrics/main/docs/metrics-report.schema.json"},
-    "schemaVersion": {"const": 31},
+    "schemaVersion": {"const": 32},
     "presentationFilter": {
       "type": "object",
       "required": ["rule", "minimumSeverity", "file"],
@@ -44,14 +44,25 @@
   },
   "additionalProperties": false,
   "$defs": {
+    "effectDetail": {
+      "type": "object",
+      "required": ["name", "argumentCount", "arguments"],
+      "properties": {
+        "name": {"type": "string"},
+        "argumentCount": {"type": "integer", "minimum": 0},
+        "arguments": {"type": "array", "items": {"type": "string"}}
+      },
+      "additionalProperties": false
+    },
     "definition": {
       "type": "object",
-      "required": ["handlers", "handledOperations", "maxHandlerOperations", "resumptions"],
+      "required": ["handlers", "handledOperations", "maxHandlerOperations", "resumptions", "effectDetails"],
       "properties": {
         "handlers": {"type": "integer", "minimum": 0},
         "handledOperations": {"type": "integer", "minimum": 0},
         "maxHandlerOperations": {"type": "integer", "minimum": 0},
-        "resumptions": {"type": "integer", "minimum": 0}
+        "resumptions": {"type": "integer", "minimum": 0},
+        "effectDetails": {"type": "array", "items": {"$ref": "#/$defs/effectDetail"}}
       }
     },
     "effectOperation": {
