@@ -107,6 +107,7 @@ public interface CompilerModel {
      *     recursive components are collapsed, or zero when no relational dependency edge exists
      * @param recursiveDatalogPredicates predicates participating in a self or mutual dependency
      *     cycle, sorted by name
+     * @param flixdocResultCharacters Unicode code points in the compiler-rendered result type
      */
     record DefInfo(String name, String module, String file, int line, int lines, int codeLines,
                    int parameters, int maxLocalParameters, int localDefs, int nesting, int cognitive,
@@ -115,7 +116,23 @@ public interface CompilerModel {
                    boolean isPublic, boolean isTest, boolean hasDoc, List<String> effects,
                    int flixdocParameterCharacters, List<String> formalParameterNames,
                    String docText, List<String> datalogDependencies, int datalogDependencyDepth,
-                   List<String> recursiveDatalogPredicates) {
+                   List<String> recursiveDatalogPredicates, int flixdocResultCharacters) {
+
+        public DefInfo(String name, String module, String file, int line, int lines, int codeLines,
+                       int parameters, int maxLocalParameters, int localDefs, int nesting,
+                       int cognitive, int maxLineTokens, int maxLineTokensLine,
+                       String maxLineTokensOwner, int datalogRules, int datalogFacts,
+                       int returnWidth, boolean isPublic, boolean isTest, boolean hasDoc,
+                       List<String> effects, int flixdocParameterCharacters,
+                       List<String> formalParameterNames, String docText,
+                       List<String> datalogDependencies, int datalogDependencyDepth,
+                       List<String> recursiveDatalogPredicates) {
+            this(name, module, file, line, lines, codeLines, parameters, maxLocalParameters,
+                localDefs, nesting, cognitive, maxLineTokens, maxLineTokensLine,
+                maxLineTokensOwner, datalogRules, datalogFacts, returnWidth, isPublic, isTest,
+                hasDoc, effects, flixdocParameterCharacters, formalParameterNames, docText,
+                datalogDependencies, datalogDependencyDepth, recursiveDatalogPredicates, 0);
+        }
 
         public DefInfo(String name, String module, String file, int line, int lines, int codeLines,
                        int parameters, int maxLocalParameters, int localDefs, int nesting,
@@ -129,7 +146,7 @@ public interface CompilerModel {
                 localDefs, nesting, cognitive, maxLineTokens, maxLineTokensLine,
                 maxLineTokensOwner, datalogRules, datalogFacts, returnWidth, isPublic, isTest,
                 hasDoc, effects, flixdocParameterCharacters, formalParameterNames, docText,
-                datalogDependencies, 0, List.of());
+                datalogDependencies, 0, List.of(), 0);
         }
 
         public DefInfo(String name, String module, String file, int line, int lines, int codeLines,
@@ -143,7 +160,7 @@ public interface CompilerModel {
                 localDefs, nesting, cognitive, maxLineTokens, maxLineTokensLine,
                 maxLineTokensOwner, datalogRules, datalogFacts, returnWidth, isPublic, isTest,
                 hasDoc, effects, flixdocParameterCharacters, formalParameterNames, docText,
-                List.of(), 0, List.of());
+                List.of(), 0, List.of(), 0);
         }
 
         public DefInfo(String name, String module, String file, int line, int lines, int codeLines,
@@ -155,7 +172,7 @@ public interface CompilerModel {
             this(name, module, file, line, lines, codeLines, parameters, maxLocalParameters,
                 localDefs, nesting, cognitive, maxLineTokens, maxLineTokensLine,
                 maxLineTokensOwner, datalogRules, datalogFacts, returnWidth, isPublic, isTest,
-                hasDoc, effects, 0, List.of(), "", List.of(), 0, List.of());
+                hasDoc, effects, 0, List.of(), "", List.of(), 0, List.of(), 0);
         }
 
         /** Complexity per code line; blank or comment-only padding cannot lower it. */

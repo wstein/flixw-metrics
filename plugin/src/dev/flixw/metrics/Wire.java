@@ -37,7 +37,7 @@ final class Wire {
     private Wire() { }
 
     /** Bumped when a record's field order changes; a mismatch is a cache miss, never a guess. */
-    static final int VERSION = 6;
+    static final int VERSION = 7;
 
     static String encode(Model m) {
         StringBuilder b = new StringBuilder();
@@ -57,7 +57,7 @@ final class Wire {
                 d.hasDoc(), String.join(",", d.effects()), d.flixdocParameterCharacters(),
                 String.join(",", d.formalParameterNames()), d.docText(),
                 String.join(",", d.datalogDependencies()), d.datalogDependencyDepth(),
-                String.join(",", d.recursiveDatalogPredicates()));
+                String.join(",", d.recursiveDatalogPredicates()), d.flixdocResultCharacters());
         }
         for (ModuleInfo mi : m.modules()) {
             row(b, "m", mi.name(), mi.definitions(), mi.lines(), mi.fanIn(), mi.fanOut());
@@ -101,7 +101,8 @@ final class Wire {
                         i(f[22]), un(f[23]).isEmpty() ? List.of() : List.of(un(f[23]).split(",")),
                         un(f[24]), un(f[25]).isEmpty() ? List.of()
                             : List.of(un(f[25]).split(",")), i(f[26]),
-                        un(f[27]).isEmpty() ? List.of() : List.of(un(f[27]).split(","))));
+                        un(f[27]).isEmpty() ? List.of() : List.of(un(f[27]).split(",")),
+                        i(f[28])));
                     case "m" -> modules.add(new ModuleInfo(un(f[1]), i(f[2]), i(f[3]), i(f[4]),
                         i(f[5])));
                     default -> { }

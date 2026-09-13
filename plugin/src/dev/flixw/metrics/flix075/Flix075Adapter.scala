@@ -206,7 +206,8 @@ final class Flix075Adapter extends CompilerModel {
       d.spec.mod.isPublic, d.spec.ann.isTest, hasDoc(d),
       effectsOf(d.spec.eff).asJava, flixdocParameterCharacters(d.spec.fparams.toList),
       sourceFormalParams(d.spec.fparams.toList).map(_.bnd.sym.text).asJava, d.spec.doc.text,
-      datalog.dependencies.asJava, datalog.depth, datalog.recursive.asJava)
+      datalog.dependencies.asJava, datalog.depth, datalog.recursive.asJava,
+      renderedCharacters(d.spec.retTpe))
   }
 
   /**
@@ -285,6 +286,12 @@ final class Flix075Adapter extends CompilerModel {
       label.codePointCount(0, label.length)
     }
     if (rendered.isEmpty) 0 else 2 + rendered.sum + 2 * (rendered.length - 1)
+  }
+
+  /** Unicode width of the result type FlixDoc renders after the formal-parameter span. */
+  private def renderedCharacters(tpe: Type)(implicit flix: Flix): Int = {
+    val rendered = FormatType.formatType(tpe)
+    rendered.codePointCount(0, rendered.length)
   }
 
   private def spannedLines(loc: SourceLocation): Int = loc.endLine - loc.startLine + 1

@@ -79,12 +79,17 @@ public final class PluginIntegrationTest {
                     .equals("Alpha.documented"))
                 .findFirst().orElseThrow();
             require(documented.get("flixdocParameterCharacters").getAsInt() == 20
+                    && documented.get("flixdocResultCharacters").getAsInt() == 14
                     && documented.get("parameterDocEntries").getAsInt() == 2
                     && documented.get("redundantParameterDocEntries").getAsInt() == 2
                     && coldJson.getAsJsonArray("smells").asList().stream().anyMatch(element ->
                         element.getAsJsonObject().get("rule").getAsString()
                             .equals("redundant-parameter-doc")),
                 "packaged JSON carries both FlixDoc metrics and their conservative finding");
+            require(coldJson.getAsJsonArray("rankings").asList().stream().anyMatch(element ->
+                    element.getAsJsonObject().get("measure").getAsString()
+                        .equals("longest-flixdoc-result")),
+                "the packaged report ranks compiler-rendered FlixDoc result types");
             JsonObject datalog = coldJson.getAsJsonArray("definitions").asList().stream()
                 .map(element -> element.getAsJsonObject())
                 .filter(definition -> definition.get("name").getAsString().equals("Alpha.datalog"))

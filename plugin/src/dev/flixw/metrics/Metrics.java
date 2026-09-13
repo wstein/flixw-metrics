@@ -40,7 +40,8 @@ final class Metrics {
                   int longestLine, int linesOverLimit, int datalogRules, int datalogFacts,
                   int widestReturn, int widestEffectSurface,
                   int widestDatalogDependencyBreadth, int deepestDatalogDependency,
-                  int mostRecursiveDatalogPredicates, int tests, int docCoveragePercent,
+                  int mostRecursiveDatalogPredicates, int longestFlixdocResultCharacters,
+                  int tests, int docCoveragePercent,
                   int purityPercent, List<MetricsConfig.ExcludedSource> excludedSources,
                   List<SourceMetrics.Smell> smells, List<Rankings.Rank> ranks,
                   List<CompilerModel.DefInfo> defs, List<CompilerModel.ModuleInfo> modulesList) {
@@ -53,7 +54,7 @@ final class Metrics {
         // A method so javac cannot inline yesterday's value into Baseline. Incremental builds
         // must ask the current report class which contract it emits.
         static int schemaVersion() {
-            return 22;
+            return 23;
         }
 
 
@@ -136,6 +137,7 @@ final class Metrics {
                  + recursiveDatalogPredicates.append(']')
                  + ", \"returnWidth\": " + d.returnWidth()
                  + ", \"flixdocParameterCharacters\": " + d.flixdocParameterCharacters()
+                 + ", \"flixdocResultCharacters\": " + d.flixdocResultCharacters()
                  + ", \"formalParameterNames\": " + parameterNames.append(']')
                  + ", \"parameterDocEntries\": " + parameterDocs.entries()
                  + ", \"redundantParameterDocEntries\": "
@@ -259,6 +261,7 @@ final class Metrics {
                 {"widestDatalogDependencyBreadth", "" + widestDatalogDependencyBreadth},
                 {"deepestDatalogDependency", "" + deepestDatalogDependency},
                 {"mostRecursiveDatalogPredicates", "" + mostRecursiveDatalogPredicates},
+                {"longestFlixdocResultCharacters", "" + longestFlixdocResultCharacters},
                 {"tests", "" + tests},
                 {"docCoveragePercent", percentage(docCoveragePercent, machine)},
                 {"purityPercent", percentage(purityPercent, machine)},
@@ -303,6 +306,9 @@ final class Metrics {
             .mapToInt(CompilerModel.DefInfo::datalogDependencyDepth).max().orElse(0);
         int mostRecursiveDatalogPredicates = defs.stream()
             .mapToInt(CompilerModel.DefInfo::recursiveDatalogPredicateCount).max().orElse(0);
+        int longestFlixdocResultCharacters = defs.stream()
+            .filter(d -> d.isPublic() && !d.isTest() && !Thresholds.inTests(d.file()))
+            .mapToInt(CompilerModel.DefInfo::flixdocResultCharacters).max().orElse(0);
         List<CompilerModel.DefInfo> api = defs.stream()
             .filter(d -> d.isPublic() && !d.isTest() && !Thresholds.inTests(d.file())
                 && !config.isExcluded(d.file())).toList();
@@ -318,7 +324,7 @@ final class Metrics {
             lines.blank(), percent(lines.comment() + lines.docComment(), lines.total()),
             text.longestLine(), text.linesOverLimit(), datalogRules, datalogFacts, widestReturn,
             widestEffectSurface, widestDatalogDependencyBreadth, deepestDatalogDependency,
-            mostRecursiveDatalogPredicates,
+            mostRecursiveDatalogPredicates, longestFlixdocResultCharacters,
             (int) defs.stream().filter(CompilerModel.DefInfo::isTest).count(),
             percent(api.stream().filter(CompilerModel.DefInfo::hasDoc).count(), api.size()),
             percent(api.stream().filter(CompilerModel.DefInfo::isPure).count(), api.size()),

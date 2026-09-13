@@ -106,6 +106,8 @@ final class Rankings {
         top(out, documentedApi, "longest-flixdoc-parameters",
             DefInfo::flixdocParameterCharacters,
             d -> d.flixdocParameterCharacters() + " rendered characters");
+        top(out, documentedApi, "longest-flixdoc-result", DefInfo::flixdocResultCharacters,
+            d -> d.flixdocResultCharacters() + " rendered characters");
         // Only when it is more than one part; every definition returns something, and a ranking
         // of "returns 1 thing" three times over is noise where a place to look should be.
         top(out, defs, "widest-return", d -> d.returnWidth() > 1 ? d.returnWidth() : 0,

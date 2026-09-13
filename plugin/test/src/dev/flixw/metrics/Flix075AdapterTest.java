@@ -25,8 +25,9 @@ public final class Flix075AdapterTest {
             require(select.cognitive() == 2 && select.codeLines() == 4,
                 "branches, booleans, and definition code lines are measured");
             DefInfo documented = definition(model, "Alpha.documented");
-            require(documented.returnWidth() == 2,
-                "typed return shape is measured");
+            require(documented.returnWidth() == 2
+                    && documented.flixdocResultCharacters() == 14,
+                "typed return shape and its compiler-rendered FlixDoc width are measured");
             require(documented.flixdocParameterCharacters() == 20
                     && documented.formalParameterNames().equals(java.util.List.of("x", "y"))
                     && documented.docText().contains("given argument x"),
