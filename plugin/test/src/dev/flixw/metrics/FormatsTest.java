@@ -208,7 +208,8 @@ public final class FormatsTest {
             var def = dev.flixw.metrics.sdk.CompilerModel.DefInfo.builder(
                     "A.f", "A", "src/A.flix", 1)
                 .lines(2).codeLines(2).nesting(1).cognitive(3).hasDoc(true).build();
-            var module = new dev.flixw.metrics.sdk.CompilerModel.ModuleInfo("A", 1, 2, 1, 2);
+            var module = new dev.flixw.metrics.sdk.CompilerModel.ModuleInfo("A", 1, 2, 1, 2,
+                List.of("B", "C"), List.of("Foundation"));
             Metrics.Report localized = new Metrics.Report(1, 1, 1, 0, 0, 3, 0, 0, 0,
                 0, 0, 0, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0,
                 List.of(), List.of(
@@ -223,6 +224,9 @@ public final class FormatsTest {
                 "JSON decimals are independent of the process locale");
             require(json.contains("\"instability\": 0.667"),
                 "module JSON decimals are independent of the process locale");
+            require(json.contains("\"dependencies\": [\"B\", \"C\"]")
+                    && json.contains("\"dependents\": [\"Foundation\"]"),
+                "module JSON names coupling edges needed to plan a refactor");
             require(json.contains("\"overBy\": 1.50"),
                 "finding JSON decimals are independent of the process locale");
             require(localized.render(Metrics.Format.MARKDOWN).contains("1.5x"),

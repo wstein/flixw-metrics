@@ -182,7 +182,18 @@ final class Metrics {
                  + ", \"lines\": " + m.lines()
                  + ", \"fanIn\": " + m.fanIn()
                  + ", \"fanOut\": " + m.fanOut()
+                 + ", \"dependencies\": " + stringList(m.dependencies())
+                 + ", \"dependents\": " + stringList(m.dependents())
                  + ", \"instability\": " + String.format(Locale.ROOT, "%.3f", m.instability()) + "}";
+        }
+
+        private static String stringList(List<String> values) {
+            StringBuilder out = new StringBuilder("[");
+            for (int i = 0; i < values.size(); i++) {
+                if (i > 0) out.append(", ");
+                out.append(SourceMetrics.Smell.quote(values.get(i)));
+            }
+            return out.append(']').toString();
         }
 
         /** The same label/value pairs both renderers use; Markdown needs them too. */
