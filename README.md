@@ -56,6 +56,8 @@ linesOverLimit: 3
 datalogRules: 0
 datalogFacts: 0
 widestReturn: 1
+widestEffectSurface: 1
+widestDatalogDependencyBreadth: 0
 tests: 1
 docCoveragePercent: 25
 purityPercent: 75
@@ -66,6 +68,7 @@ where each measure peaks
   most-complex       11 complexity                      Json.size  (src/Json.flix:33)
   deepest            3 levels nested                    Json.size  (src/Json.flix:33)
   widest             2 parameters                       Json.size  (src/Json.flix:33)
+  widest-effect-surface 1 declared effect               Json.write  (src/Json.flix:42)
   crammed-line       43 tokens on one line              Json.encode  (src/Json.flix:24)
   most-coupled       3 modules called, call-instability 1.00   Json
 
@@ -209,7 +212,7 @@ Three things get measured, and where each comes from is deliberate:
   not.
 - **From thresholds over both** — the findings.
 
-Four measures are worth knowing about because they catch what totals hide:
+Six measures are worth knowing about because they catch what totals hide:
 
 **Cognitive complexity is nesting-weighted.** Five nested conditions cost more than five
 consecutive ones. Divided by lexer-confirmed code lines, it separates *long* from *hard*: a
@@ -235,6 +238,19 @@ list items such as ``- `input`: ...`` only when `input` is an actual outer forma
 boilerplate such as “the given argument”; two produce a `redundant-parameter-doc` note. Free prose,
 unrelated named lists, and useful descriptions are not guessed at. The signature already supplies
 names and types; documentation should add constraints, relationships, or behavior.
+
+**Effect-surface width measures capabilities promised to callers.** `effectCount` is the size of
+the compiler-normalized declared effect set; pure definitions are zero. The
+`widest-effect-surface` ranking retains the effect names in native JSON so a broad orchestration
+boundary is inspectable rather than reduced to a number. It is a measurement, not a finding:
+combining several effects is often exactly an application's job.
+
+**Datalog dependency breadth measures relations read by derived rules.**
+`datalogDependencyBreadth` is the number of distinct relational predicate names appearing in the
+bodies of a definition's constraints. Repeated atoms count once, recursive reads count, and facts,
+guards, and functional predicates do not inflate it. `widest-datalog-dependency` ranks the
+definitions with the broadest relation dependency surface; no threshold turns that context into
+debt.
 
 **Parameters and crammed lines are attributed to the local definition that owns them.** In
 the sample above, `Json.size.loop` is blamed for its own crammed line — not `Json.size`, the

@@ -140,6 +140,14 @@ enough variety to exercise the upper tail rather than only its threshold:
 - Datalog counts matched source inspection: `qual-effect-system` contributes seven derived rules;
   the four Flix examples contribute 25 rules and 28 facts. Commit `3bcae21` now exercises separate
   rule/fact counts through both the real compiler adapter and packaged JSON report.
+- Declared effect width is strongly concentrated: among 2,952 definitions, 2,435 are pure, 459
+  declare one effect, and only 13 declare four or more. The maximum is six, reached by three
+  game-engine orchestration definitions whose retained effect names make the architectural role
+  visible. This supports a ranking but not a finding.
+- Seven definitions contain Datalog body dependencies. Their distinct-predicate breadths are
+  1, 1, 2, 2, 2, 5, and 9. The upper two are the dependency-resolution and railroad examples,
+  where inspecting the retained predicate names confirms that the ordering reflects the size of
+  each logic program's relation surface rather than repeated atoms.
 
 Selected distribution points show why thresholds were not tuned merely to manufacture findings:
 
@@ -154,8 +162,9 @@ Selected distribution points show why thresholds were not tuned merely to manufa
 | qual-effect-system | 32/75 | 4/4 | 3/5 | 30/34 | 3/6 |
 
 The expanded corpus therefore validates tuple and record widths from two through eight, plus both
-Datalog rules and facts. Datalog totals are measurements rather than findings and have no arbitrary
-threshold to calibrate.
+Datalog rules and facts. Effect width and Datalog dependency breadth remain measurements and
+rankings rather than findings: the observations establish a useful upper tail, not an arbitrary
+universal threshold.
 
 ## Runtime and cache behavior
 
@@ -215,6 +224,8 @@ Ratings are confidence that the action improves signal, from 1 (speculative) to 
 | **4/5** | Add a first-run initializer for policy and baseline adoption. **Done.** | One compiler-backed command creates a documented default policy, captures the compatible native baseline, prints the warning gate, and refuses to overwrite reviewed files. |
 | **4/5** | Disclose the `dense` minimum-size condition in reports. **Done.** | Tiny definitions remain useful ranking context but are ineligible for findings below four code lines; human and machine formats now explain that distinction. |
 | **4/5** | Measure generated FlixDoc formal-parameter load. **Done.** | The 140-character boundary selects 29 of 1,484 public signatures and catches long rendered types even when parameter count is small. |
+| **4/5** | Rank declared effect-surface width. **Done.** | Only 13 of 2,952 definitions declare four or more effects; sorted effect names distinguish intentional orchestration boundaries from an unexplained count without asserting a smell. |
+| **4/5** | Rank Datalog dependency breadth. **Done.** | Seven corpus definitions read relational predicates; their distinct breadth reaches nine, and the retained predicate names make repeated atoms, recursion, and broad logic programs auditable. |
 | **4/5** | Use project configuration for established line-length and documentation conventions. | A universal increase would erase useful notes for compact projects; the existing per-rule limits and suppressions preserve local policy. |
 | **4/5** | Automate the pinned calibration corpus as a scheduled workflow. **Done.** | The weekly read-only job verifies full source SHAs and exact per-target results without adding network-heavy calibration to every pull request. |
 | **4/5** | Add first-class exclusions for generated or embedded-data sources. **Done.** | Exclusions keep sources in the compiler while removing their line totals and located quality signals; every report discloses matched paths and reasons. |

@@ -118,12 +118,13 @@ child loader parented to the platform loader.
 | `modules` | the namespaces the definitions' own symbols carry |
 | module `fanIn`, `fanOut`, `instability` | resolved cross-module direct definition calls |
 | `localDefinitions` | `LocalDef` nodes — definitions the outer signature hides |
-| `effectfulDefinitions`, `purityPercent` | the *declared* effect on each signature |
+| `effectfulDefinitions`, `purityPercent`, per-definition `effectCount` and `effects` | the compiler-normalized *declared* effect set on each signature |
 | `cognitive` | branches weighted by nesting, plus boolean operators and match guards |
 | `returnWidth` | a tuple's arity, or a record's top-level field count |
 | `flixdocParameterCharacters` | Unicode characters in FlixDoc's generated outer formal-parameter span |
 | `parameterDocEntries`, `redundantParameterDocEntries` | strict Markdown entries for real formal names, and the subset containing only signature boilerplate |
 | `datalogRules`, `datalogFacts` | constraints with and without a body |
+| `datalogDependencyBreadth`, `datalogDependencies` | distinct relational predicate names read by constraint bodies |
 | `tests`, `docCoveragePercent` | `@Test` annotations and doc comments on the production public surface |
 | `lines`, `codeLines`, `commentLines`, `docCommentLines`, `blankLines` | the compiler's own lexer |
 | `longestLine`, `linesOverLimit` | the source text |
@@ -290,7 +291,11 @@ when someone is most likely to be looking.
 through the definition, and counting the match would say one.
 
 `effectfulDefinitions` asks the declared effect rather than inferring from the body, because
-the declaration is the promise the definition makes to its callers.
+the declaration is the promise the definition makes to its callers. `effectCount` measures the
+width of that normalized set and `widest-effect-surface` locates its upper tail. Pure is the empty
+set. Native JSON retains the sorted names so two equally wide but materially different capability
+surfaces are not made indistinguishable. There is deliberately no finding: effect orchestration is
+often an architectural boundary rather than a defect.
 
 Documentation and purity percentages exclude both `@Test` definitions and definitions whose
 portable project-relative path is under `test/`. If no production public definitions exist,
@@ -307,6 +312,13 @@ different limits would say one is more forgivable than the other.
 code, and a thousand of them is a data file rather than a thousand things to understand. A
 `query … from P(x, y)` desugars into a constraint and counts as a rule: it derives a relation
 from others, which is what a rule is.
+
+`datalogDependencyBreadth` complements that size count with the number of distinct relational
+predicate names read across all derived rules in one definition. Two atoms over `Edge` contribute
+one dependency; a recursive `Path` body contributes `Path`; head predicates, facts, guards, and
+functional body predicates contribute none. The compiler adapter retains the sorted names and the
+`widest-datalog-dependency` ranking points to the owning definition. This too remains a measurement:
+the corpus supports meaningful ordering, not a universal smell threshold.
 
 ### The AST walk is generic
 
