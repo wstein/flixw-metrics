@@ -29,7 +29,7 @@ public final class CompilerCapabilitiesTest {
             require(AdapterAbi.contracts().stream().anyMatch(contract -> noApi.missing().containsAll(
                 contract.references().stream().map(AdapterAbi.Reference::display).toList())),
                 "the capability gate reports every reference in its closest adapter contract");
-            require(AdapterAbi.contracts().size() == 3,
+            require(AdapterAbi.contracts().size() == 4,
                 "the capability gate derives a separate contract for each adapter");
             require(linked.stream().anyMatch(r -> r.contains("formatType$default$2:()")),
                 "the bytecode contract includes Scala default-argument accessors");
@@ -66,6 +66,8 @@ public final class CompilerCapabilitiesTest {
             CompilerCapabilities found = inspect(metrics);
             require(found.hasFlixApi() && !found.hasEngineApi() && found.hasNativeMetrics(),
                 "fixture distinguishes Flix presence from the adapter engine API");
+            require(found.missing().contains("class dev.flix.runtime.Global"),
+                "the gate requires the compiler runtime class used by its standard library");
 
             // The gate must name the members the engine truly calls. A jar carrying a Flix
             // class with the *old* gate's members and none of the engine's must still fail:
@@ -121,6 +123,16 @@ public final class CompilerCapabilitiesTest {
                     "the oldest compiler does not satisfy either newer adapter contract");
                 require(missing(oldest, AdapterAbi.contracts().get(2)).isEmpty(),
                     "the oldest compiler satisfies its dedicated adapter contract");
+            }
+            if (args.length >= 4) {
+                Path earliest = Path.of(args[3]);
+                CompilerCapabilities stock = inspect(earliest);
+                require(stock.hasEngineApi() && stock.missing().isEmpty(),
+                    "the earliest compiler satisfies one bytecode-derived adapter requirement");
+                require(!missing(earliest, AdapterAbi.contracts().get(2)).isEmpty(),
+                    "the earliest compiler does not satisfy the 0.67.2 adapter contract");
+                require(missing(earliest, AdapterAbi.contracts().get(3)).isEmpty(),
+                    "the earliest compiler satisfies its dedicated adapter contract");
             }
         } finally {
             delete(work);

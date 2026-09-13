@@ -15,6 +15,8 @@ FLIX_0680_VERSION=0.68.0
 FLIX_0680_SHA256=af568a2d4046207f908f8ec37786409b3dccdec944c2df5f571444599fb6b7c8
 FLIX_0672_VERSION=0.67.2
 FLIX_0672_SHA256=3162ba033d77e481c8cd731441e1f279bd8f44e5f278b2b21632149c30f8ed3f
+FLIX_0661_VERSION=0.66.1
+FLIX_0661_SHA256=71b46d37d9c2e24b4eabd67ed2491a33adbb1a039e7bc49ef1f7556870e6344d
 
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd -P)
 if command -v sha256sum >/dev/null 2>&1; then sum=sha256sum; else sum="shasum -a 256"; fi
@@ -51,3 +53,4 @@ fetch() {
 fetch "$FLIX_VERSION" "$FLIX_SHA256" "$root/plugin/lib/flix.jar"
 fetch "$FLIX_0680_VERSION" "$FLIX_0680_SHA256" "$root/plugin/lib/flix-0.68.0.jar"
 fetch "$FLIX_0672_VERSION" "$FLIX_0672_SHA256" "$root/plugin/lib/flix-0.67.2.jar"
+fetch "$FLIX_0661_VERSION" "$FLIX_0661_SHA256" "$root/plugin/lib/flix-0.66.1.jar"

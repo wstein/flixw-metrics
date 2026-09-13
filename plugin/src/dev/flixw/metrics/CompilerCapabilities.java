@@ -3,6 +3,7 @@ package dev.flixw.metrics;
 import dev.flixw.metrics.sdk.AdapterAbi;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
@@ -31,6 +32,11 @@ record CompilerCapabilities(boolean hasFlixApi, boolean hasEngineApi, boolean ha
             .map(contract -> AdapterAbi.missing(contract, compiler)).toList();
         List<String> missing = failures.stream().anyMatch(List::isEmpty) ? List.of()
             : failures.stream().min(Comparator.comparingInt(List::size)).orElseGet(List::of);
+        if (!present(compiler, "dev.flix.runtime.Global")) {
+            ArrayList<String> withRuntime = new ArrayList<>(missing);
+            withRuntime.add("class dev.flix.runtime.Global");
+            missing = List.copyOf(withRuntime);
+        }
 
         return new CompilerCapabilities(flix, missing.isEmpty(),
             present(compiler, "ca.uwaterloo.flix.tools.Metrics$"), List.copyOf(missing));
