@@ -40,9 +40,10 @@ public interface CompilerModel {
      * never seen -- the two need a way to say whether they agree. While every adapter is
      * compiled in the same module, they cannot disagree, so nothing checks it.
      *
-     * <p>Today's scope is deliberately narrower than that: <b>Flix 0.75 and up</b>, one
-     * adapter, in-tree. Versioning the SDK before there is a second party to version against
-     * would be ceremony; leaving no version at all would make the first one a breaking change.
+     * <p>Today's scope is deliberately narrower than that: <b>Flix 0.75.x–0.76.x</b>, one
+     * in-tree adapter compatibility family. Versioning the SDK before there is a second party
+     * to version against would be ceremony; leaving no version at all would make the first one
+     * a breaking change.
      */
     int SDK_VERSION = 1;
 

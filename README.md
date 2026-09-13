@@ -330,14 +330,16 @@ download a compiler, choose one, or run anything else.
 
 ## Supported compilers
 
-Flix **0.75.x**. The engine reads the compiler's internal AST, which carries no
+Flix **0.75.x–0.76.x**. Both releases belong to the linkage generation implemented by
+`Flix075Adapter`; the name records where that compatibility family began. The engine reads the
+compiler's internal AST, which carries no
 compatibility promise, so it is compiled against one release and checks what is actually in
 front of it before running:
 
 ```console
 $ ./flixw metrics capabilities
 {
-  "compilerJar": "/Users/you/Library/Caches/flixw/compilers/flix-0.75.3-bf123cdb....jar",
+  "compilerJar": "/Users/you/Library/Caches/flixw/compilers/flix-0.76.0-d8d9a387....jar",
   "hasFlixApi": true,
   "hasEngineApi": true,
   "hasNativeMetrics": false,
@@ -346,8 +348,9 @@ $ ./flixw metrics capabilities
 ```
 
 An unsupported compiler gets a sentence naming what is missing, rather than a wrong number
-or a stack trace. Supporting another Flix generation is one adapter class — see
-[docs/COMPILER-SDK.md](docs/COMPILER-SDK.md).
+or a stack trace. Supporting another Flix generation is one adapter class; release-specific
+evidence lives in [docs/compiler-compatibility](docs/compiler-compatibility/README.md), and the
+boundary itself is described in [docs/COMPILER-SDK.md](docs/COMPILER-SDK.md).
 
 ## Building it yourself
 

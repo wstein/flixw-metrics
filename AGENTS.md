@@ -3,7 +3,7 @@
 ## Project Structure & Module Organization
 
 The analyzer is a mixed Java/Scala Mill module. Compiler-neutral code lives in
-`plugin/src/dev/flixw/metrics/`. The version-specific Flix adapter
+`plugin/src/dev/flixw/metrics/`. The Flix compatibility-family adapter
 is isolated in `plugin/src/dev/flixw/metrics/flix075/`; the stable boundary is under
 `plugin/src/dev/flixw/metrics/sdk/`. Tests live in `plugin/test/src/` and use the Flix fixture in
 `plugin/test/fixtures/semantic/`. Calibration inputs and budgets live in `calibration/`, project
@@ -18,14 +18,16 @@ ABI compatibility promise between releases. All knowledge of those types is conf
 the stable `sdk.CompilerModel`/`sdk.Adapters` boundary — stays plain Java that knows nothing about Flix.
 `CompilerModel` returns counts and strings only, deliberately, never compiler types or an AST cursor.
 
-The engine is Scala specifically because Flix's AST is a sealed hierarchy: `-Xfatal-warnings` makes an
-inexhaustive `match` over it a *build failure*, not a silent undercount. The reflective predecessor this
-replaced classified nodes by simple class name and silently ignored unrecognized ones — a
+The engine is Scala specifically because Flix's AST is a sealed hierarchy: typed patterns make removed
+or misspelled nodes build failures. The metric classifier deliberately has a catch-all and generic
+`Product` descent, so release-specific semantic fixtures and corpus comparison remain required. The
+reflective predecessor classified nodes by simple class name and silently ignored unrecognized ones — a
 `TypeMatchRule` that didn't exist was counted and the real `ExtMatchRule` was missed, with no error
 anywhere. That failure mode is why the AST-facing half of the plugin is Scala at all; see
-`docs/COMPILER-SDK.md` for the full contract.
+`docs/COMPILER-SDK.md` and `docs/compiler-compatibility/` for the full contract and release evidence.
 
-Supporting a new Flix generation means adding one adapter class plus a line in `Adapters.KNOWN` — never
+`Flix075Adapter` names the linkage generation introduced by Flix 0.75 and currently verified through
+Flix 0.76. Supporting an incompatible Flix generation means adding one adapter class plus a line in `Adapters.KNOWN` — never
 touching the report, findings, formats, cache, or CLI. Adapters are selected by **linkage, not version
 string**: `Adapters.resolve()` instantiates each known adapter and keeps the first that loads, catching
 `LinkageError` alongside reflective exceptions, so an incompatible AST fails at a controlled point
@@ -41,9 +43,9 @@ via `--bridge` with `-cp plugin.jar:flix.jar`) launched with a 64 MiB thread sta
 constraint generation is recursive and overflows the default stack on real projects). An isolated
 `URLClassLoader` was tried and doesn't work — the Flix standard library resolves some of its own Java
 dependencies (e.g. `dev.flix.runtime.Global`) through the application class path regardless of which
-loader defined the compiler classes. Consequence: `flix.jar` bundles ASM, JLine, gson, and json4s
-**unshaded** on that flat class path, so any dependency this plugin adds must be shaded or classpath
-order decides which copy wins.
+loader defined the compiler classes. Consequence: `flix.jar` bundles ASM, JLine, gson, json4s, and in
+0.76 Byte Buddy and jsr305, **unshaded** on that flat class path, so any dependency this plugin adds
+must be shaded or classpath order decides which copy wins.
 
 `flix.jar` is wired in via `compileClasspath` in `build.mill`, not `unmanagedClasspath` — it must stay
 compile-time only. At runtime the compiler is whatever flixw pinned for the target project; bundling a

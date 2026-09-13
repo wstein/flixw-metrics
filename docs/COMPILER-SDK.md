@@ -27,8 +27,9 @@ Supporting another Flix generation is a class and a line in `Adapters.KNOWN`. It
 
 `SDK_VERSION` is declared and unused. The moment an adapter ships separately from this jar,
 the two need a way to say whether they agree; while every adapter is compiled in this module
-they cannot disagree, so nothing checks it. Today's scope is narrower on purpose: **Flix 0.75
-and up, one adapter, in-tree.**
+they cannot disagree, so nothing checks it. Today's scope is narrower on purpose: **Flix
+0.75.x–0.76.x, one in-tree adapter compatibility family.** The investigation supporting each
+release is recorded under [`docs/compiler-compatibility`](compiler-compatibility/README.md).
 
 ### Adapters are selected by linkage, not by version string
 
@@ -44,14 +45,18 @@ arrives as `NoClassDefFoundError`, which is an `Error` and not an `Exception`.
 
 ## Why the engine is Scala
 
-Flix's AST is a sealed hierarchy, so a match over it is **checked**. Stock 0.75.3 has 76 `Expr`
-constructs; with `-Xfatal-warnings` the build names every one the engine does not classify.
+Flix's AST is a sealed hierarchy, so typed patterns over it are checked. Stock 0.75.3 and 0.76.0
+both have 76 `Expr` constructs. The classifier intentionally has a catch-all because only a small
+subset contributes directly to metrics, while generic `Product` descent still reaches their
+children. Consequently a new AST alternative does not by itself produce an inexhaustive-match
+failure: every compiler repin also needs semantic fixtures and corpus comparison.
 
 The reflective predecessor could not know that. It classified nodes by simple class name and
 ignored the rest in silence, which cost precisely what it sounds like: it named a
 `TypeMatchRule` that does not exist and missed the `ExtMatchRule` that does, so every extensible
-match was undercounted and nothing said so. That is not a bug that was fixed — it is a bug this
-build makes unrepresentable.
+match was undercounted and nothing said so. Typed patterns prevent misspelling or matching a node
+that does not exist; release-specific semantic regressions prevent new or reshaped nodes from
+passing unnoticed.
 
 Scala also caught, at compile time, that `Bootstrap.bootstrap` takes its formatter and stream as
 **implicit** parameters. Erasure makes an implicit parameter list look like any other, so the
@@ -106,9 +111,10 @@ errors before a single line of the project is typed. Setting the thread context 
 does not change it. Both were measured against a real compiler.
 
 The consequence has to be lived with: `flix.jar` bundles ASM **unshaded** at
-`org/objectweb/asm`, plus JLine, gson and json4s, and on a flat class path they are visible to
-this plugin. **Any dependency added to this plugin must be shaded**, because otherwise which
-copy wins is decided by class-path ordering rather than by intent.
+`org/objectweb/asm`, plus JLine, gson and json4s. Flix 0.76 also bundles Byte Buddy and jsr305.
+On a flat class path all of them are visible to this plugin. **Any dependency added to this plugin
+must be shaded**, because otherwise which copy wins is decided by class-path ordering rather than
+by intent.
 
 Class loading *for inspection* is a different question and is still isolated: the gate uses
 `Class.forName(name, false, loader)`, which never runs compiler code, so it can afford a
@@ -122,7 +128,7 @@ child loader parented to the platform loader.
 | `modules` | the namespaces the definitions' own symbols carry |
 | module `fanIn`, `fanOut`, `instability` | resolved cross-module direct definition calls |
 | `localDefinitions` | `LocalDef` nodes — definitions the outer signature hides |
-| `effectfulDefinitions`, `purityPercent`, per-definition `effectCount` and `effects` | the compiler-normalized *declared* effect set on each signature |
+| `effectfulDefinitions`, `purityPercent`, per-definition `effectCount` and `effects` | the compiler-normalized *declared* effect set on each signature; a saturated polymorphic effect is atomic |
 | `cognitive` | branches weighted by nesting, plus boolean operators and match guards |
 | `returnWidth` | a tuple's arity, or a record's top-level field count |
 | `flixdocParameterCharacters` | Unicode characters in FlixDoc's generated outer formal-parameter span |
@@ -189,7 +195,7 @@ finding—stable foundations are expected to have high fan-in—and the ranking 
 
 ### Lines are classified by the compiler's lexer, not by scanning for `//`
 
-`Lexer.lex(Source)` and `TokenKind.isComment` are both in stock 0.75.3 — an earlier note here
+`Lexer.lex(Source)` and `TokenKind.isComment` are both in stock 0.75.3 and 0.76.0 — an earlier note here
 claimed otherwise and was simply wrong. A line holding code and a trailing comment counts as
 code, because it is a line you have to read as code; a line inside a block comment counts as a
 comment though nothing on it says so, which is exactly where a text scan goes wrong.

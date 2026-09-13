@@ -1,6 +1,6 @@
 <!-- markdownlint-disable MD013 -->
 
-# Real-project calibration, 2026-09-12
+# Real-project calibration, updated 2026-09-13
 
 This is a dogfood run, not a claim that eight targets represent all Flix code. Its purpose is
 to test whether the defaults produce useful review leads on code the analyzer was not written
@@ -21,24 +21,31 @@ The interpretation follows three useful constraints from the background research
 
 ## Corpus and method
 
-The analyzer baseline was commit `17de59e`; the final policy includes the calibrated threshold in
-`5f44ff9`. All runs used OpenJDK 21.0.12.1 on Darwin arm64 and the pinned Flix 0.75.3 artifact with
-SHA-256 `bf123cdb6494d6e0cbff6399bf185314d332bbe97bfd776e4abc03a5d39dd954`.
+The original analyzer baseline was commit `17de59e`; the final policy includes the calibrated
+threshold in `5f44ff9`. The Flix 0.76 compatibility rerun used analyzer commit `8e47297` on OpenJDK
+21.0.12.1, Darwin arm64, and the pinned Flix 0.76.0 artifact with SHA-256
+`d8d9a3870e199c03ed6364ea9430f56f67bfd38c332c411628a6a7cb88b2b0b4`.
 
 | Target | Source commit | Declared Flix | Files | Definitions | Lines |
 | --- | --- | ---: | ---: | ---: | ---: |
-| [`flix/flix` Prelude](https://github.com/flix/flix/blob/1c26436689127913f7b447869712df0f04507996/main/src/library/Prelude.flix) | `1c264366` | 0.75.3 | 1 | 21 | 229 |
-| [`stephentetley/flix-basicdb`](https://github.com/stephentetley/flix-basicdb/tree/c83d571538ac4a16eed1ba8e1c445805897493e9) | `c83d5715` | 0.75.3 | 10 | 44 | 1,612 |
-| [`stephentetley/flix-parsec`](https://github.com/stephentetley/flix-parsec/tree/d549c99ab6034c859ae1b27b338f559e5c61d911) | `d549c99a` | 0.75.0 | 20 | 258 | 2,330 |
+| [`flix/flix` Prelude](https://github.com/flix/flix/blob/f2d4678c20bff1242f4cad5e23144db91027b762/main/src/library/Prelude.flix) | `f2d4678c` | 0.76.0 | 1 | 21 | 229 |
 | [`KengoTODA/flix-semver2`](https://github.com/KengoTODA/flix-semver2/tree/4473950e945e61717000a87d83b94320d0e7e78b) | `4473950e` | 0.73.0 | 2 | 36 | 299 |
 | [`mlutze/flix-json`](https://github.com/mlutze/flix-json/tree/ac9d50c40d1f3fcf5a5317735ab58116e9eaf2ee) | `ac9d50c4` | 0.49.0 | 15 | 113 | 1,478 |
 | [`ababup1192/flix_game_engine`](https://github.com/ababup1192/flix_game_engine/tree/a44ad70e479082bc506b2d741efe95dc7531e3b9) | `a44ad70e` | 0.75.1 | 176 | 2,396 | 33,171 |
 | [`Simmypeet/qual-effect-system`](https://github.com/Simmypeet/qual-effect-system/tree/5632eaf6f2a0c4d65cdf75ce3d62ea032a61d3be) | `5632eaf6` | 0.75.1 | 19 | 36 | 889 |
-| [`flix/flix` Datalog examples](https://github.com/flix/flix/tree/1c26436689127913f7b447869712df0f04507996/examples/datalog) | `1c264366` | 0.75.3 | 4 | 48 | 971 |
+| [`flix/flix` Datalog examples](https://github.com/flix/flix/tree/f2d4678c20bff1242f4cad5e23144db91027b762/examples/datalog) | `f2d4678c` | 0.76.0 | 4 | 48 | 971 |
 
-The older projects are compatibility probes, not evidence that the adapter supports every compiler
-between 0.49 and 0.75. They compile successfully with the pinned 0.75.3 compiler, so the measured
-AST is still the supported one.
+The older projects are source-compatibility probes, not evidence that the adapter supports their
+declared compiler versions. The four active projects compile successfully with the pinned 0.76.0
+compiler, so the measured AST is the supported one.
+
+Two original targets fail before measurement under Flix 0.76.0 and are retained, with their pins
+and last 0.75.3 results, in `calibration/corpus.json` under `incompatibleProjects`:
+
+| Target | Source commit | 0.76.0 failure |
+| --- | --- | --- |
+| [`flix-basicdb`](https://github.com/stephentetley/flix-basicdb/tree/c83d571538ac4a16eed1ba8e1c445805897493e9) | `c83d5715` | Its `flix-time` 0.23.0 dependency uses covariant Java returns that the descriptor-based resolver does not unify. |
+| [`flix-parsec`](https://github.com/stephentetley/flix-parsec/tree/d549c99ab6034c859ae1b27b338f559e5c61d911) | `d549c99a` | Its pre-public-module source fails the new module accessibility checks. |
 
 Normal projects were cloned at the commits above, packaged with `scripts/package.sh`, and measured
 with a fresh plugin cache. Prelude is compiler-embedded and is intentionally excluded from normal
@@ -69,7 +76,7 @@ sh scripts/calibrate-corpus.sh /tmp/flixw-calibration-results
 ```
 
 The runner builds the current analyzer, fetches every repository directly at its full commit SHA,
-measures Prelude, the six projects, and the four Datalog examples, then compares stable summaries
+measures Prelude, the four active projects, and the four Datalog examples, then compares stable summaries
 with the manifest. It exits 1 with a per-target diff when measurements change and exits 2 for an
 invalid manifest or unavailable input. Full native JSON reports and `summary.json` remain in the
 output directory for review. Every normal project and Datalog target is then measured again from
@@ -78,9 +85,9 @@ retained under `changes/`, and any non-empty finding or measurement delta fails 
 the sole exception because its dedicated standard-library harness is not a normal Flix project.
 
 For an offline repeat, set `CALIBRATION_SOURCE_ROOT` to a directory containing checkouts named
-`flix`, `flix-basicdb`, `flix-parsec`, `flix-semver2`, `flix-json`, `flix-game-engine`, and
-`qual-effect-system`. Their `HEAD`s must still equal the manifest's full SHAs; the runner refuses a
-nearby revision.
+`flix`, `flix-semver2`, `flix-json`, `flix-game-engine`, and `qual-effect-system`. Their `HEAD`s
+must still equal the manifest's full SHAs; the runner refuses a nearby revision. Incompatible
+projects are recorded but deliberately not cloned or measured.
 
 The `calibration` GitHub Actions workflow runs this every Monday at 05:23 UTC and can also be
 started manually. Its read-only job retains the reports for 30 days even when drift fails the run.
@@ -93,14 +100,17 @@ not a way to make unexpected counts pass.
 | Target | Findings | Finding counts by rule |
 | --- | ---: | --- |
 | Prelude | 5 | crammed-line 4; line-too-long 1 |
-| flix-basicdb | 87 | definition-too-long 6; line-too-long 47; undocumented-public 34 |
-| flix-parsec | 246 | crammed-line 21; deeply-nested 1; line-too-long 50; noisy-flixdoc-parameters 1; too-many-parameters 1; undocumented-public 170; wide-coupling 2 |
 | flix-semver2 | 7 | dense 1; undocumented-public 6 |
 | flix-json | 60 | crammed-line 8; dense 2; line-too-long 49; undocumented-public 1 |
 | flix-game-engine | 1,200 | crammed-line 109; deeply-nested 15; definition-too-long 23; dense 72; line-too-long 725; noisy-flixdoc-parameters 28; too-many-parameters 89; undocumented-public 122; wide-coupling 16; wide-return 1 |
 | qual-effect-system | 27 | deeply-nested 1; definition-too-long 1; line-too-long 4; undocumented-public 21 |
 | Flix Datalog examples | 50 | crammed-line 17; line-too-long 33 |
-| **Total** | **1,682** | 2,952 definitions and 40,979 lines |
+| **Total** | **1,349** | 2,650 definitions and 37,037 lines |
+
+Every active target retained its exact 0.75.3 summary and finding counts. The detailed distribution
+discussion below is preserved from the original threshold calibration and includes the two now
+incompatible projects where it names them; those observations remain historical threshold evidence,
+not claims that Flix 0.76.0 can compile those revisions.
 
 The expanded volume remains dominated by note-level policy: 909 lines over 100 UTF-16 code units,
 354 missing public doc comments, and 159 crammed lines. The game engine intentionally embeds shader
@@ -205,12 +215,12 @@ so a uniformly fast or slow runner cannot hide a broken measurement cache.
 
 | Measure | Local median | Hosted run 1 | Hosted run 2 | Budget |
 | --- | ---: | ---: | ---: | ---: |
-| Cold packaged run | 4,399 ms | 9,911 ms | 8,620 ms | at most 12,000 ms |
-| Warm packaged run | 261 ms | 458 ms | 415 ms | at most 1,200 ms |
-| Warm / cold | 5% | 4% | 4% | at most 25% |
+| Cold packaged run | 4,138 ms | 9,911 ms | 8,620 ms | at most 12,000 ms |
+| Warm packaged run | 336 ms | 458 ms | 415 ms | at most 1,200 ms |
+| Warm / cold | 8% | 4% | 4% | at most 25% |
 
-The local measurements were recorded on the same Darwin arm64 development machine as the
-calibration above. The hosted measurements are two independent Ubuntu runs of the scheduled job.
+The local measurements were recorded with Flix 0.76.0 on the same Darwin arm64 development machine
+as the calibration above. The hosted measurements are two earlier independent Ubuntu runs.
 The slower hosted cold median leaves 21% headroom under the ceiling, while both cache ratios are
 well inside budget. That supports keeping the current ceilings: tightening the cold limit now would
 mostly measure hosted-runner variance. CI retains each `performance.json` for 30 days so later

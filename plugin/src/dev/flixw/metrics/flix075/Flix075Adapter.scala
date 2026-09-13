@@ -19,11 +19,12 @@ import scala.jdk.CollectionConverters._
  *
  * ==Why this file is Scala==
  *
- * Flix's AST is a sealed hierarchy, so a match over it is '''checked'''. Stock 0.75.3 has 76
- * `Expr` constructs; `-Xfatal-warnings` makes the build name every one an exhaustive match
- * forgets. The reflective predecessor classified nodes by simple class name and ignored the rest
- * in silence, which cost exactly what it sounds like: it named a `TypeMatchRule` that does not
- * exist and missed the `ExtMatchRule` that does, so every extensible match was undercounted and
+ * `Flix075` names the linkage family introduced by Flix 0.75, not its newest supported release;
+ * the same typed surface is verified against 0.76. Typed Scala patterns make misspelled or removed
+ * nodes a build failure, while semantic fixtures cover the deliberately open classifier and its
+ * generic descent. The reflective predecessor classified nodes by simple class name and ignored
+ * the rest in silence, which cost exactly what it sounds like: it named a `TypeMatchRule` that does
+ * not exist and missed the `ExtMatchRule` that does, so every extensible match was undercounted and
  * nothing said so.
  *
  * ==What it costs==
