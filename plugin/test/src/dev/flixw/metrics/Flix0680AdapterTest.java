@@ -32,8 +32,10 @@ public final class Flix0680AdapterTest {
             require(datalog.datalogDependencyDepth() == 2
                     && datalog.recursiveDatalogPredicateCount() == 2,
                 "Datalog dependency analysis is stable on the older compiler");
-            require(definition(model, "testSelectValue").isTest(),
-                "compiler test annotations are measured");
+            require(definition(model, "testSelectValue").isTest()
+                    && definition(model, "testSelectValue").effects()
+                        .equals(java.util.List.of("Assert")),
+                "compiler test annotations and declared effects are measured");
             require(model.modules().stream().filter(m -> m.name().equals("Beta"))
                     .findFirst().orElseThrow().dependencies().equals(java.util.List.of("Alpha")),
                 "resolved module dependencies cross the older compiler adapter boundary");
