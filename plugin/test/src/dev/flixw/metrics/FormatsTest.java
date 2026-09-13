@@ -261,7 +261,7 @@ public final class FormatsTest {
             var module = new dev.flixw.metrics.sdk.CompilerModel.ModuleInfo("A", 1, 2, 1, 2,
                 List.of("B", "C"), List.of("Foundation"));
             Metrics.Report localized = new Metrics.Report(1, 1, 1, 0, 0, 0, 0, 0, 3,
-                0, 0, 0, 0, 0, 0, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0,
                 0, 0, 0,
                 List.of(), List.of(
                     new SourceMetrics.Smell("dense", "A.f", "src/A.flix", 1,
@@ -329,7 +329,7 @@ public final class FormatsTest {
                 new dev.flixw.metrics.sdk.CompilerModel.DefInfo.EffectDetail(
                     "State", List.of("Int32"))))
             .build();
-        return new Metrics.Report(1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+        return new Metrics.Report(1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             10, 8, 1, 1, 0, 10, 40, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 100, 100,
             List.of(), smells,
             List.of(rank), List.of(definition), List.of(), List.of(

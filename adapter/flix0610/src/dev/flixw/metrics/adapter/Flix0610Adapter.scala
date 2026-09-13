@@ -94,6 +94,7 @@ final class Flix0610Adapter extends CompilerModel {
       selected(root.traits.values, include)(_.loc).size,
       selected(root.instances.values, include)(_.loc).size,
       selected(root.enums.values, include)(_.loc).size,
+      selected(root.restrictableEnums.values, include)(_.loc).size,
       selected(root.structs.values, include)(_.loc).size,
       effects.size,
       selected(root.typeAliases.values, include)(_.loc).size,

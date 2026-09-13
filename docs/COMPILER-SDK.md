@@ -143,7 +143,7 @@ child loader parented to the platform loader.
 
 | metric | source |
 |---|---|
-| `definitions`, `traits`, `instances`, `enums`, `structs`, `effects`, `typeAliases` | the typed root, filtered to this project |
+| `definitions`, `traits`, `instances`, `enums`, `restrictableEnums`, `structs`, `effects`, `typeAliases` | the typed root, filtered to this project |
 | `modules` | the namespaces the definitions' own symbols carry |
 | module `fanIn`, `fanOut`, `instability` | resolved cross-module direct definition calls |
 | `localDefinitions` | `LocalDef` nodes — definitions the outer signature hides |

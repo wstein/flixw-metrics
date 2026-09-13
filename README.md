@@ -45,6 +45,7 @@ cognitive: 27
 traits: 0
 instances: 0
 enums: 1
+restrictableEnums: 0
 structs: 0
 effects: 0
 typeAliases: 0

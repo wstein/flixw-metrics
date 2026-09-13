@@ -54,7 +54,7 @@ final class Metrics {
     record Report(int files, int modules, int definitions, int localDefinitions,
                   int pureDefinitions, int groundEffectfulDefinitions,
                   int effectPolymorphicDefinitions, int effectfulDefinitions,
-                  int cognitive, int traits, int instances, int enums,
+                  int cognitive, int traits, int instances, int enums, int restrictableEnums,
                   int structs, int effects, int typeAliases, int lines, int codeLines,
                   int commentLines, int docCommentLines, int blankLines, int commentPercent,
                   int longestLine, int linesOverLimit, int datalogRules, int datalogFacts,
@@ -76,7 +76,7 @@ final class Metrics {
         // A method so javac cannot inline yesterday's value into Baseline. Incremental builds
         // must ask the current report class which contract it emits.
         static int schemaVersion() {
-            return 34;
+            return 35;
         }
 
         /** A finding's physical span and compiler-level owner, ready for editor tooling. */
@@ -147,7 +147,7 @@ final class Metrics {
             List<SourceMetrics.Smell> selected = smells.stream().filter(filter::matches).toList();
             return new Report(files, modules, definitions, localDefinitions, pureDefinitions,
                 groundEffectfulDefinitions, effectPolymorphicDefinitions, effectfulDefinitions,
-                cognitive, traits, instances, enums, structs, effects,
+                cognitive, traits, instances, enums, restrictableEnums, structs, effects,
                 typeAliases, lines, codeLines, commentLines, docCommentLines, blankLines,
                 commentPercent, longestLine, linesOverLimit, datalogRules, datalogFacts,
                 widestReturn, widestEffectSurface, widestDatalogDependencyBreadth,
@@ -478,7 +478,8 @@ final class Metrics {
                 {"effectPolymorphicDefinitions", "" + effectPolymorphicDefinitions},
                 {"effectfulDefinitions", "" + effectfulDefinitions}, {"cognitive", "" + cognitive},
                 {"traits", "" + traits}, {"instances", "" + instances}, {"enums", "" + enums},
-                {"structs", "" + structs}, {"effects", "" + effects},
+                {"restrictableEnums", "" + restrictableEnums}, {"structs", "" + structs},
+                {"effects", "" + effects},
                 {"typeAliases", "" + typeAliases}, {"lines", "" + lines},
                 {"codeLines", "" + codeLines}, {"commentLines", "" + commentLines},
                 {"docCommentLines", "" + docCommentLines}, {"blankLines", "" + blankLines},
@@ -572,7 +573,8 @@ final class Metrics {
             .thenComparing(SourceMetrics.Smell::rule));
         return new Report(files, modules.size(), defs.size(), localDefs, pure, groundEffectful,
             polymorphic, effectful, cognitive,
-            m.traits(), m.instances(), m.enums(), m.structs(), m.effects(), m.typeAliases(),
+            m.traits(), m.instances(), m.enums(), m.restrictableEnums(), m.structs(), m.effects(),
+            m.typeAliases(),
             lines.total(), lines.code(), lines.comment(), lines.docComment(),
             lines.blank(), percent(lines.comment() + lines.docComment(), lines.total()),
             text.longestLine(), text.linesOverLimit(), datalogRules, datalogFacts, widestReturn,

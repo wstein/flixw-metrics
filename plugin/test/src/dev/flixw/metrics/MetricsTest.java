@@ -82,6 +82,16 @@ public final class MetricsTest {
                 rank.measure().equals("largest-file")
                     && rank.subject().equals("src/A.flix") && rank.actual() == 10),
             "the largest-file ranking locates the biggest physical source");
+
+        Model declarations = new Model(List.of(), List.of(), new LineInfo(1, 1, 0, 0, 0),
+            0, 0, 1, 2, 3, 4, 5, List.of(), List.of());
+        Metrics.Report declarationReport = Metrics.of(1, declarations, emptyText());
+        require(declarationReport.enums() == 1 && declarationReport.restrictableEnums() == 2
+                && declarationReport.structs() == 3,
+            "restrictable enums remain a distinct declaration inventory");
+        require(declarationReport.render(Metrics.Format.JSON)
+                .contains("\"restrictableEnums\": 2"),
+            "the declaration inventory is exposed to report consumers");
         System.out.println("MetricsTest: ok");
     }
 

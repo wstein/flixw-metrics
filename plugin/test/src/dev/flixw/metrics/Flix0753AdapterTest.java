@@ -62,6 +62,9 @@ public final class Flix0753AdapterTest {
                     && beta.dependents().isEmpty(),
                 "resolved module edge names cross the adapter boundary");
 
+            writeRestrictableFixture(project);
+            assertRestrictableEnums(new Flix0753Adapter().measure(project));
+
             // Effect declarations measured before handlers are added: assertEffectMetrics
             // checks the model's total effect count, and HandlerMetrics.flix below declares
             // two effects of its own that would otherwise inflate it.
@@ -208,6 +211,20 @@ public final class Flix0753AdapterTest {
                 def combine(left: Int32, right: Int32): Int32
             }
             """);
+    }
+
+    static void writeRestrictableFixture(Path project) throws Exception {
+        Files.writeString(project.resolve("src/Restrictable.flix"), """
+            restrictable enum Choice[i] {
+                case First
+                case Second
+            }
+            """);
+    }
+
+    static void assertRestrictableEnums(Model model) {
+        require(model.restrictableEnums() == 1,
+            "restrictable-enum declarations cross the compiler adapter boundary");
     }
 
     static void assertEffectMetrics(Model model) {

@@ -368,19 +368,27 @@ public interface CompilerModel {
 
     /** Everything an adapter reports. Counts that have no per-declaration detail stay counts. */
     record Model(List<DefInfo> defs, List<ModuleInfo> modules, LineInfo lines, int traits,
-                 int instances, int enums, int structs, int effects, int typeAliases,
+                 int instances, int enums, int restrictableEnums, int structs, int effects,
+                 int typeAliases,
                  List<SourceInfo> sources, List<EffectInfo> effectDeclarations) {
         public Model(List<DefInfo> defs, List<ModuleInfo> modules, LineInfo lines, int traits,
                      int instances, int enums, int structs, int effects, int typeAliases) {
-            this(defs, modules, lines, traits, instances, enums, structs, effects, typeAliases,
+            this(defs, modules, lines, traits, instances, enums, 0, structs, effects, typeAliases,
                 List.of(), List.of());
         }
 
         public Model(List<DefInfo> defs, List<ModuleInfo> modules, LineInfo lines, int traits,
                      int instances, int enums, int structs, int effects, int typeAliases,
                      List<SourceInfo> sources) {
-            this(defs, modules, lines, traits, instances, enums, structs, effects, typeAliases,
+            this(defs, modules, lines, traits, instances, enums, 0, structs, effects, typeAliases,
                 sources, List.of());
+        }
+
+        public Model(List<DefInfo> defs, List<ModuleInfo> modules, LineInfo lines, int traits,
+                     int instances, int enums, int structs, int effects, int typeAliases,
+                     List<SourceInfo> sources, List<EffectInfo> effectDeclarations) {
+            this(defs, modules, lines, traits, instances, enums, 0, structs, effects, typeAliases,
+                sources, effectDeclarations);
         }
     }
 

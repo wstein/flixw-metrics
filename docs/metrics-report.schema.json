@@ -7,7 +7,7 @@
   "required": ["schemaVersion", "configuration", "ruleCatalog", "excludedSources", "summary"],
   "properties": {
     "$schema": {"const": "https://raw.githubusercontent.com/wstein/flixw-metrics/main/docs/metrics-report.schema.json"},
-    "schemaVersion": {"const": 34},
+    "schemaVersion": {"const": 35},
     "presentationFilter": {
       "type": "object",
       "required": ["rule", "minimumSeverity", "file"],

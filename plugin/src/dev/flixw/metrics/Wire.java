@@ -42,7 +42,7 @@ final class Wire {
     private Wire() { }
 
     /** Bumped when a record's field order changes; a mismatch is a cache miss, never a guess. */
-    static final int VERSION = 13;
+    static final int VERSION = 14;
 
     static String encode(Model m) {
         StringBuilder b = new StringBuilder();
@@ -50,7 +50,7 @@ final class Wire {
         row(b, "l", m.lines().total(), m.lines().code(), m.lines().comment(),
             m.lines().docComment(), m.lines().blank());
         row(b, "c", m.traits(), m.instances(), m.enums(), m.structs(), m.effects(),
-            m.typeAliases());
+            m.typeAliases(), m.restrictableEnums());
         for (SourceInfo source : m.sources())
             row(b, "s", source.file(), source.lines().total(), source.lines().code(),
                 source.lines().comment(), source.lines().docComment(), source.lines().blank());
@@ -113,7 +113,7 @@ final class Wire {
                 switch (f[0]) {
                     case "l" -> lines = new LineInfo(i(f[1]), i(f[2]), i(f[3]), i(f[4]), i(f[5]));
                     case "c" -> counts = new int[] {i(f[1]), i(f[2]), i(f[3]), i(f[4]), i(f[5]),
-                        i(f[6])};
+                        i(f[6]), i(f[7])};
                     case "s" -> sources.add(new SourceInfo(un(f[1]), new LineInfo(i(f[2]), i(f[3]),
                         i(f[4]), i(f[5]), i(f[6]))));
                     case "d" -> defs.add(DefInfo.builder(
@@ -149,8 +149,8 @@ final class Wire {
                 }
             }
             if (lines == null || counts == null) return null;
-            return new Model(defs, modules, lines, counts[0], counts[1], counts[2], counts[3],
-                counts[4], counts[5], sources, effects);
+            return new Model(defs, modules, lines, counts[0], counts[1], counts[2], counts[6],
+                counts[3], counts[4], counts[5], sources, effects);
         } catch (RuntimeException e) {
             // Any malformed entry at all: a miss, not an exception thrown at a user who only
             // asked for their metrics.

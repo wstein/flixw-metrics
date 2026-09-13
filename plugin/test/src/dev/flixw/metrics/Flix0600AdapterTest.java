@@ -35,6 +35,9 @@ public final class Flix0600AdapterTest {
             require(model.modules().stream().filter(m -> m.name().equals("Beta"))
                     .findFirst().orElseThrow().dependencies().equals(java.util.List.of("Alpha")),
                 "resolved module dependencies cross the older compiler adapter boundary");
+            Flix0753AdapterTest.writeRestrictableFixture(project);
+            Flix0753AdapterTest.assertRestrictableEnums(
+                new Flix0600Adapter().measure(project));
             // Effect declarations measured before handlers are added: assertEffectMetrics
             // checks the model's total effect count, and HandlerMetrics.flix below declares
             // two effects of its own that would otherwise inflate it.
