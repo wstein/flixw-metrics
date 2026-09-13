@@ -1,6 +1,7 @@
 package dev.flixw.metrics;
 
 import dev.flixw.metrics.sdk.CompilerModel.DefInfo;
+import dev.flixw.metrics.sdk.CompilerModel.ModuleInfo;
 
 import java.util.List;
 
@@ -32,6 +33,11 @@ public final class CompilerModelTest {
                 && def.recursiveDatalogPredicates().equals(List.of("Path"))
                 && def.flixdocResultCharacters() == 17,
             "new tail fields remain explicit rather than constructor-position dependent");
+        ModuleInfo module = new ModuleInfo("A", 2, 30, 2, 1,
+            List.of("Z", "B"), List.of("C", "B"));
+        require(module.dependencies().equals(List.of("B", "Z"))
+                && module.dependents().equals(List.of("B", "C")),
+            "module dependency context is retained in stable order");
         System.out.println("CompilerModelTest: ok");
     }
 

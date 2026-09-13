@@ -246,7 +246,17 @@ public interface CompilerModel {
      * @param fanIn how many modules depend on this one
      * @param fanOut how many modules this one depends on
      */
-    record ModuleInfo(String name, int definitions, int lines, int fanIn, int fanOut) {
+    record ModuleInfo(String name, int definitions, int lines, int fanIn, int fanOut,
+                      List<String> dependencies, List<String> dependents) {
+
+        public ModuleInfo {
+            dependencies = dependencies.stream().sorted().distinct().toList();
+            dependents = dependents.stream().sorted().distinct().toList();
+        }
+
+        public ModuleInfo(String name, int definitions, int lines, int fanIn, int fanOut) {
+            this(name, definitions, lines, fanIn, fanOut, List.of(), List.of());
+        }
 
         /**
          * Martin's instability: 0 is depended upon and depends on nothing, 1 is the reverse.

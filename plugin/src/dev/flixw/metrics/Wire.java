@@ -37,7 +37,7 @@ final class Wire {
     private Wire() { }
 
     /** Bumped when a record's field order changes; a mismatch is a cache miss, never a guess. */
-    static final int VERSION = 7;
+    static final int VERSION = 8;
 
     static String encode(Model m) {
         StringBuilder b = new StringBuilder();
@@ -60,7 +60,8 @@ final class Wire {
                 String.join(",", d.recursiveDatalogPredicates()), d.flixdocResultCharacters());
         }
         for (ModuleInfo mi : m.modules()) {
-            row(b, "m", mi.name(), mi.definitions(), mi.lines(), mi.fanIn(), mi.fanOut());
+            row(b, "m", mi.name(), mi.definitions(), mi.lines(), mi.fanIn(), mi.fanOut(),
+                String.join(",", mi.dependencies()), String.join(",", mi.dependents()));
         }
         return b.toString();
     }
@@ -108,7 +109,7 @@ final class Wire {
                         .recursiveDatalogPredicates(csv(f[27]))
                         .flixdocResultCharacters(i(f[28])).build());
                     case "m" -> modules.add(new ModuleInfo(un(f[1]), i(f[2]), i(f[3]), i(f[4]),
-                        i(f[5])));
+                        i(f[5]), csv(f[6]), csv(f[7])));
                     default -> { }
                 }
             }

@@ -476,9 +476,10 @@ final class Flix075Adapter extends CompilerModel {
 
   private def modules(defs: List[DefInfo], edges: Set[(String, String)]): List[ModuleInfo] =
     defs.groupBy(_.module).toList.sortBy(_._1).map { case (name, members) =>
+      val dependencies = edges.collect { case (`name`, to) => to }.toList.sorted
+      val dependents = edges.collect { case (from, `name`) => from }.toList.sorted
       new ModuleInfo(name, members.size, members.map(_.lines).sum,
-        edges.count { case (_, to) => to == name },
-        edges.count { case (from, _) => from == name })
+        dependents.size, dependencies.size, dependencies.asJava, dependents.asJava)
     }
 
   // ---- what belongs to the project ------------------------------------------------------

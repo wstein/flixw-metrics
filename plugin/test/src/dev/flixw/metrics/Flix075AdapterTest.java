@@ -51,6 +51,9 @@ public final class Flix075AdapterTest {
             var beta = model.modules().stream().filter(m -> m.name().equals("Beta")).findFirst()
                 .orElseThrow();
             require(beta.fanOut() == 1, "resolved direct definition calls form module edges");
+            require(beta.dependencies().equals(java.util.List.of("Alpha"))
+                    && beta.dependents().isEmpty(),
+                "resolved module edge names cross the adapter boundary");
 
             Model prelude = new Flix075Adapter().measureCompilerSource(project, "Prelude.flix");
             require(!prelude.defs().isEmpty(), "an exact compiler source can be calibrated");
