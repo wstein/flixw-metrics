@@ -13,6 +13,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Entry point for the flixw compiler-metrics plugin.
@@ -61,23 +62,24 @@ public final class Main {
             }
             Options options = parseOptions(args);
             if (options.init()) Initializer.preflight(context.projectRoot());
-            List<Path> sources = Metrics.projectFiles(context.projectRoot());
             MetricsConfig config = MetricsConfig.read(context.projectRoot());
-            String inputDigest = ResultCache.key(context, sources, version());
-            CompilerModel.Model hit = cached(context, inputDigest);
-            if (hit != null) {
-                // Findings, rankings and formatting are recomputed from the cached
-                // measurements, so a changed threshold takes effect on the next run rather
-                // than on the next cache miss.
-                Metrics.Report report = Metrics.of(sources.size(), hit,
-                    SourceMetrics.measure(context.projectRoot(), sources, config), config);
+            StableInputs.Result<Optional<Metrics.Report>> cached = StableInputs.run(context,
+                version(), ResultCache::key, (sources, digest) -> {
+                    CompilerModel.Model hit = cached(context, digest);
+                    if (hit == null) return Optional.empty();
+                    return Optional.of(Metrics.of(sources.size(), hit,
+                        SourceMetrics.measure(context.projectRoot(), sources, config), config));
+                });
+            if (cached.value().isPresent()) {
+                Metrics.Report report = cached.value().orElseThrow();
                 Baseline.Comparison comparison = emit(context, report, config, options,
-                    inputDigest);
+                    cached.digest());
                 if (options.shouldFail(report, comparison)) System.exit(1);
                 return;
             }
             System.exit(spawnBridge(context, args));
-        } catch (Usage | Metrics.Failure | MetricsConfig.Invalid | Baseline.Invalid e) {
+        } catch (Usage | Metrics.Failure | MetricsConfig.Invalid | Baseline.Invalid
+                | CompilerModel.ModelFailure e) {
             System.err.println("metrics: " + e.getMessage());
             System.exit(2);
         } catch (IOException e) {
@@ -92,27 +94,31 @@ public final class Main {
             Context context = Context.read();
             Options options = parseOptions(args);
             if (options.init()) Initializer.preflight(context.projectRoot());
-            List<Path> sources = Metrics.projectFiles(context.projectRoot());
-            String inputDigest = ResultCache.key(context, sources, version());
             // Resolved here, in the only JVM that has a compiler on its class path. The
             // adapter is what knows Flix's internals; nothing else in this plugin does.
             CompilerModel model = Adapters.resolve();
             if (model == null)
                 throw new Usage("no adapter links against the pinned compiler\n"
                     + "       this build supports: " + String.join(", ", Adapters.known()));
-            CompilerModel.Model m = model.measure(context.projectRoot());
-            // The measurements, written before anything is derived from them.
+            StableInputs.Result<Measured> stable = StableInputs.run(context, version(),
+                ResultCache::key, (sources, digest) -> {
+                    CompilerModel.Model measured = model.measure(context.projectRoot());
+                    MetricsConfig config = MetricsConfig.read(context.projectRoot());
+                    SourceMetrics text = SourceMetrics.measure(context.projectRoot(), sources, config);
+                    return new Measured(measured,
+                        Metrics.of(sources.size(), measured, text, config), config);
+                });
+            Measured measured = stable.value();
+            // Publish to the cache only after the post-measurement digest matched.
             if (context.pluginCache() != null)
-                ResultCache.write(context.pluginCache(), inputDigest, Wire.encode(m));
-            MetricsConfig config = MetricsConfig.read(context.projectRoot());
-            SourceMetrics text = SourceMetrics.measure(context.projectRoot(), sources, config);
-            Metrics.Report report = Metrics.of(sources.size(), m, text, config);
+                ResultCache.write(context.pluginCache(), stable.digest(), Wire.encode(measured.model()));
             // Written before rendering, and by this phase rather than the outer one. The outer
             // phase inherits this process's stdout, so it never sees the report as a value --
             // and parsing it back out of a stream the compiler also writes to would be reading
             // our own output past whatever Flix chose to print alongside it.
-            Baseline.Comparison comparison = emit(context, report, config, options, inputDigest);
-            if (options.shouldFail(report, comparison)) System.exit(1);
+            Baseline.Comparison comparison = emit(context, measured.report(), measured.config(),
+                options, stable.digest());
+            if (options.shouldFail(measured.report(), comparison)) System.exit(1);
         } catch (LinkageError e) {
             // The promise is a sentence, never a stack trace, and the capability probe cannot
             // enumerate every member the adapter touches. Whatever it misses arrives here: the
@@ -130,6 +136,8 @@ public final class Main {
             System.exit(2);
         }
     }
+
+    private record Measured(CompilerModel.Model model, Metrics.Report report, MetricsConfig config) { }
 
     private static Baseline.Comparison emit(Context context, Metrics.Report report,
                                              MetricsConfig config, Options options,
