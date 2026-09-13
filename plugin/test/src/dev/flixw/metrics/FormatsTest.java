@@ -59,6 +59,8 @@ public final class FormatsTest {
             "native JSON exposes compiler-typed effect declaration and operation shape");
         require(json.contains("\"id\": \"" + firstId + "\""),
             "native JSON carries the same stable finding id as SARIF");
+        require(json.contains("\"effectDetails\": ["),
+            "native JSON carries instantiated effect details");
         require(json.contains("\"ruleCatalog\": [")
                 && json.contains("\"title\": \"Deeply nested\"")
                 && json.contains("\"category\": \"complexity\"")
@@ -311,10 +313,16 @@ public final class FormatsTest {
 
     private static Metrics.Report reportWithRank(Rankings.Rank rank,
                                                  List<SourceMetrics.Smell> smells) {
+        var definition = dev.flixw.metrics.sdk.CompilerModel.DefInfo.builder(
+                "A.b", "A", "src/A.flix", 3)
+            .effectDetails(List.of(
+                new dev.flixw.metrics.sdk.CompilerModel.DefInfo.EffectDetail(
+                    "State", List.of("Int32"))))
+            .build();
         return new Metrics.Report(1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             10, 8, 1, 1, 0, 10, 40, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 100, 100,
             List.of(), smells,
-            List.of(rank), List.of(), List.of(), List.of(
+            List.of(rank), List.of(definition), List.of(), List.of(
                 new dev.flixw.metrics.sdk.CompilerModel.EffectInfo(
                     "A.Console", "src/A.flix", 2, 1, List.of(
                         new dev.flixw.metrics.sdk.CompilerModel.EffectOperationInfo("print", 1),

@@ -105,6 +105,7 @@ public interface CompilerModel {
      * @param handledOperations operation clauses across those handlers
      * @param maxHandlerOperations most operation clauses in one handler
      * @param resumptions direct invocations of handler-rule continuation parameters
+     * @param effectDetails instantiated effect constructors and their rendered type arguments
      */
     record DefInfo(String name, String module, String file, int line, int lines, int codeLines,
                    int parameters, int maxLocalParameters, String maxLocalParametersOwner,
@@ -116,7 +117,16 @@ public interface CompilerModel {
                    String docText, List<String> datalogDependencies, int datalogDependencyDepth,
                    List<String> recursiveDatalogPredicates, int flixdocResultCharacters,
                    int handlers, int handledOperations, int maxHandlerOperations,
-                   int resumptions) {
+                   int resumptions, List<EffectDetail> effectDetails) {
+
+        /** One declared capability with compiler-rendered type arguments. */
+        public record EffectDetail(String name, List<String> arguments) {
+            public EffectDetail {
+                arguments = List.copyOf(arguments);
+            }
+
+            public int argumentCount() { return arguments.size(); }
+        }
 
         /** Starts a definition whose remaining measurements are assigned by name. */
         public static Builder builder(String name, String module, String file, int line) {
@@ -162,6 +172,7 @@ public interface CompilerModel {
             private int handledOperations;
             private int maxHandlerOperations;
             private int resumptions;
+            private List<EffectDetail> effectDetails = List.of();
 
             private Builder(String name, String module, String file, int line) {
                 this.name = name;
@@ -230,6 +241,9 @@ public interface CompilerModel {
                 maxHandlerOperations = value; return this;
             }
             public Builder resumptions(int value) { resumptions = value; return this; }
+            public Builder effectDetails(List<EffectDetail> value) {
+                effectDetails = List.copyOf(value); return this;
+            }
 
             public DefInfo build() {
                 return new DefInfo(name, module, file, line, lines, codeLines, parameters,
@@ -239,7 +253,7 @@ public interface CompilerModel {
                     returnWidth, isPublic, isTest, hasDoc, effects, flixdocParameterCharacters,
                     formalParameterNames, docText, datalogDependencies, datalogDependencyDepth,
                     recursiveDatalogPredicates, flixdocResultCharacters, handlers,
-                    handledOperations, maxHandlerOperations, resumptions);
+                    handledOperations, maxHandlerOperations, resumptions, effectDetails);
             }
         }
 

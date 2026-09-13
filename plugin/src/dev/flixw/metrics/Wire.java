@@ -1,6 +1,7 @@
 package dev.flixw.metrics;
 
 import dev.flixw.metrics.sdk.CompilerModel.DefInfo;
+import dev.flixw.metrics.sdk.CompilerModel.DefInfo.EffectDetail;
 import dev.flixw.metrics.sdk.CompilerModel.EffectInfo;
 import dev.flixw.metrics.sdk.CompilerModel.EffectOperationInfo;
 import dev.flixw.metrics.sdk.CompilerModel.LineInfo;
@@ -9,6 +10,8 @@ import dev.flixw.metrics.sdk.CompilerModel.ModuleInfo;
 import dev.flixw.metrics.sdk.CompilerModel.SourceInfo;
 
 import java.util.ArrayList;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.List;
 
 /**
@@ -39,7 +42,7 @@ final class Wire {
     private Wire() { }
 
     /** Bumped when a record's field order changes; a mismatch is a cache miss, never a guess. */
-    static final int VERSION = 11;
+    static final int VERSION = 12;
 
     static String encode(Model m) {
         StringBuilder b = new StringBuilder();
@@ -61,7 +64,8 @@ final class Wire {
                 String.join(",", d.datalogDependencies()), d.datalogDependencyDepth(),
                 String.join(",", d.recursiveDatalogPredicates()), d.flixdocResultCharacters(),
                 d.maxLocalParametersOwner(), d.maxLocalParametersLine(), d.handlers(),
-                d.handledOperations(), d.maxHandlerOperations(), d.resumptions());
+                d.handledOperations(), d.maxHandlerOperations(), d.resumptions(),
+                effectDetails(d.effectDetails()));
         }
         for (EffectInfo effect : m.effectDeclarations()) {
             List<Object> fields = new ArrayList<>();
@@ -128,6 +132,7 @@ final class Wire {
                         .maxLocalParametersOwner(un(f[29])).maxLocalParametersLine(i(f[30]))
                         .handlers(i(f[31])).handledOperations(i(f[32]))
                         .maxHandlerOperations(i(f[33])).resumptions(i(f[34]))
+                        .effectDetails(effectDetails(un(f[35])))
                         .build());
                     case "e" -> {
                         if (f.length < 5 || (f.length - 5) % 2 != 0) return null;
@@ -155,6 +160,36 @@ final class Wire {
     private static List<String> csv(String field) {
         String value = un(field);
         return value.isEmpty() ? List.of() : List.of(value.split(","));
+    }
+
+    private static String effectDetails(List<EffectDetail> details) {
+        return details.stream().map(detail -> {
+            List<String> fields = new ArrayList<>();
+            fields.add(encoded(detail.name()));
+            detail.arguments().stream().map(Wire::encoded).forEach(fields::add);
+            return String.join(",", fields);
+        }).collect(java.util.stream.Collectors.joining(";"));
+    }
+
+    private static List<EffectDetail> effectDetails(String field) {
+        if (field.isEmpty()) return List.of();
+        List<EffectDetail> result = new ArrayList<>();
+        for (String item : field.split(";", -1)) {
+            String[] values = item.split(",", -1);
+            List<String> arguments = new ArrayList<>();
+            for (int at = 1; at < values.length; at++) arguments.add(decoded(values[at]));
+            result.add(new EffectDetail(decoded(values[0]), arguments));
+        }
+        return result;
+    }
+
+    private static String encoded(String value) {
+        return Base64.getUrlEncoder().withoutPadding()
+            .encodeToString(value.getBytes(StandardCharsets.UTF_8));
+    }
+
+    private static String decoded(String value) {
+        return new String(Base64.getUrlDecoder().decode(value), StandardCharsets.UTF_8);
     }
 
     private static void row(StringBuilder b, String tag, Object... fields) {

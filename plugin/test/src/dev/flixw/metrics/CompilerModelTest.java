@@ -1,6 +1,7 @@
 package dev.flixw.metrics;
 
 import dev.flixw.metrics.sdk.CompilerModel.DefInfo;
+import dev.flixw.metrics.sdk.CompilerModel.DefInfo.EffectDetail;
 import dev.flixw.metrics.sdk.CompilerModel.EffectInfo;
 import dev.flixw.metrics.sdk.CompilerModel.EffectOperationInfo;
 import dev.flixw.metrics.sdk.CompilerModel.ModuleInfo;
@@ -22,7 +23,8 @@ public final class CompilerModelTest {
             .docText("docs").datalogDependencies(List.of("Edge", "Path"))
             .datalogDependencyDepth(3).recursiveDatalogPredicates(List.of("Path"))
             .flixdocResultCharacters(17).handlers(2).handledOperations(5)
-            .maxHandlerOperations(3).resumptions(4).build();
+            .maxHandlerOperations(3).resumptions(4)
+            .effectDetails(List.of(new EffectDetail("State", List.of("Int32")))).build();
 
         require(def.line() == 7 && def.lines() == 30 && def.codeLines() == 20,
             "source span fields retain their named values");
@@ -43,6 +45,10 @@ public final class CompilerModelTest {
         require(def.handlers() == 2 && def.handledOperations() == 5
                 && def.maxHandlerOperations() == 3 && def.resumptions() == 4,
             "effect-handler fields retain their named values");
+        require(def.effectDetails().equals(List.of(
+                new EffectDetail("State", List.of("Int32"))))
+                && def.effectDetails().get(0).argumentCount() == 1,
+            "instantiated effect details retain typed arguments");
         EffectInfo effect = new EffectInfo("A.Console", "src/A.flix", 2, 1,
             List.of(new EffectOperationInfo("print", 1),
                 new EffectOperationInfo("format", 3)));
