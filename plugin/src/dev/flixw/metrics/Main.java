@@ -35,8 +35,9 @@ public final class Main {
             bridge(Arrays.copyOfRange(args, 1, args.length));
             return;
         }
-        if (args.length == 1 && "--help".equals(args[0])) {
-            usage();
+        String help = help(args);
+        if (help != null) {
+            System.out.println(help);
             return;
         }
         if (args.length == 1 && "--version".equals(args[0])) {
@@ -262,8 +263,13 @@ public final class Main {
         String failOnNew = null;
         java.util.Set<String> seen = new java.util.HashSet<>();
         for (int i = 0; i < rest.size(); i += 2) {
-            if (i + 1 >= rest.size()) throw usageError();
             String option = rest.get(i);
+            if (!option.startsWith("--"))
+                throw new Usage("unknown command or option " + option);
+            if (!List.of("--format", "--fail-on", "--baseline", "--fail-on-new")
+                    .contains(option))
+                throw new Usage("unknown option " + option);
+            if (i + 1 >= rest.size()) throw new Usage(option + " requires a value");
             if (!seen.add(option)) throw new Usage("repeated option " + option);
             switch (option) {
                 case "--format" -> format = Metrics.Format.parse(rest.get(i + 1));
@@ -282,7 +288,7 @@ public final class Main {
                             + " (expected note, warning or error)");
                     failOnNew = level;
                 }
-                default -> throw usageError();
+                default -> throw new AssertionError("validated option " + option);
             }
         }
         if (failOnNew != null && baseline == null)
@@ -290,22 +296,32 @@ public final class Main {
         return new Options(format, failOn, baseline, failOnNew, false);
     }
 
-    private static Usage usageError() {
-        return new Usage("usage: ./flixw metrics [report] [--format text|json|md|sarif]"
-            + " [--fail-on note|warning|error] [--baseline report.json]"
-            + " [--fail-on-new note|warning|error]\n"
-            + "       ./flixw metrics init");
+    static String help(String[] args) {
+        if (args.length == 1 && "--help".equals(args[0])) return usage();
+        if (args.length != 2 || !"--help".equals(args[1])) return null;
+        return switch (args[0]) {
+            case "report" -> "usage: ./flixw metrics report"
+                + " [--format text|json|md|sarif]"
+                + " [--fail-on note|warning|error] [--baseline report.json]"
+                + " [--fail-on-new note|warning|error]\n\n"
+                + "Measures the project and writes a report to stdout.";
+            case "init" -> "usage: ./flixw metrics init\n\n"
+                + "Creates a starter policy and metrics baseline without overwriting files.";
+            case "capabilities" -> "usage: ./flixw metrics capabilities\n\n"
+                + "Reports compiler compatibility and the adapter ABI gate as JSON.";
+            default -> null;
+        };
     }
 
-    private static void usage() {
-        System.out.println("usage: ./flixw metrics [report] [--format text|json|md|sarif]"
+    private static String usage() {
+        return "usage: ./flixw metrics [report] [--format text|json|md|sarif]"
             + " [--fail-on note|warning|error] [--baseline report.json]"
             + " [--fail-on-new note|warning|error]\n"
             + "       ./flixw metrics init\n"
             + "       ./flixw metrics capabilities\n\n"
             + "Reads typed compiler data through a supported compiler adapter.\n"
             + "Results are cached under FLIXW_PLUGIN_CACHE and reused until the sources, the\n"
-            + "manifest, the pinned compiler or this plugin change.");
+            + "manifest, the pinned compiler or this plugin change.";
     }
 
     record Context(Path projectRoot, Path compilerJar, Path java, Path pluginCache) {

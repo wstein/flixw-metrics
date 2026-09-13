@@ -8,6 +8,17 @@ public final class MainOptionsTest {
     private MainOptionsTest() { }
 
     public static void main(String[] args) {
+        require(Main.help(new String[] {"--help"}).contains("metrics capabilities"),
+            "top-level help lists the available commands");
+        require(Main.help(new String[] {"report", "--help"}).contains("--fail-on-new"),
+            "report help documents report-only options");
+        require(Main.help(new String[] {"init", "--help"}).contains("metrics init"),
+            "init help is available without parsing report options");
+        require(Main.help(new String[] {"capabilities", "--help"})
+                .contains("compiler compatibility"),
+            "capabilities help explains the command");
+        require(Main.help(new String[] {"report"}) == null,
+            "ordinary commands do not accidentally request help");
         Main.Options defaults = Main.parseOptions(new String[] {});
         require(defaults.format() == Metrics.Format.TEXT && defaults.failOn() == null
                 && defaults.baseline() == null && defaults.failOnNew() == null
@@ -43,6 +54,9 @@ public final class MainOptionsTest {
                     FormatsTest.reportWithSmells(List.of()), newWarning),
             "a new warning crosses a warning-only baseline gate");
         expectUsage(new String[] {"--fail-on-new", "warning"}, "requires --baseline");
+        expectUsage(new String[] {"report", "--unknown"}, "unknown option --unknown");
+        expectUsage(new String[] {"report", "--format"}, "--format requires a value");
+        expectUsage(new String[] {"unknown"}, "unknown command or option unknown");
         for (String option : List.of("--format", "--fail-on", "--baseline", "--fail-on-new")) {
             String value = option.equals("--format") ? "json"
                 : option.equals("--baseline") ? "baseline.json" : "warning";
