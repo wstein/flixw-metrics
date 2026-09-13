@@ -34,8 +34,6 @@ import scala.jdk.CollectionConverters._
  */
 final class Flix075Adapter extends CompilerModel {
 
-  override def targets: String = "Flix 0.75.x"
-
   @throws(classOf[ModelFailure])
   override def measure(projectRoot: Path): Model =
     measureSelected(projectRoot, projectSource(_, projectRoot))

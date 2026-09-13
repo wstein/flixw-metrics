@@ -47,15 +47,6 @@ public interface CompilerModel {
     int SDK_VERSION = 1;
 
     /**
-     * What this adapter was written against, for a diagnostic rather than for dispatch.
-     *
-     * <p>Selection is by whether the adapter links, not by comparing this string: a fork
-     * reporting an unfamiliar version may still have the AST the adapter needs, and a
-     * compiler reporting a familiar one may not.
-     */
-    String targets();
-
-    /**
      * Measures one project, or throws.
      *
      * <p>Throws {@code ModelFailure} when the project cannot be typed, which is a fact about the
