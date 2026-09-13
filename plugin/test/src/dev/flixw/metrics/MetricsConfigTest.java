@@ -66,9 +66,10 @@ public final class MetricsConfigTest {
                     && json.contains("\"exclusions\""),
                 "machine reports disclose their effective policy");
 
-            DefInfo generatedDef = new DefInfo("Generated.large", "Generated",
-                "src/generated/Data.flix", 1, 200, 10, 9, 9, 0, 8, 20, 50, 1,
-                "Generated.large", 0, 0, 1, true, false, false, List.of());
+            DefInfo generatedDef = DefInfo.builder("Generated.large", "Generated",
+                    "src/generated/Data.flix", 1)
+                .lines(200).codeLines(10).parameters(9).maxLocalParameters(9).nesting(8)
+                .cognitive(20).maxLineTokens(50).isPublic(true).build();
             var generatedModel = new dev.flixw.metrics.sdk.CompilerModel.Model(
                 List.of(generatedDef), List.of(),
                 new dev.flixw.metrics.sdk.CompilerModel.LineInfo(201, 11, 0, 0, 190),
@@ -131,13 +132,12 @@ public final class MetricsConfigTest {
     }
 
     private static DefInfo def(String name, int lines, int cognitive) {
-        return new DefInfo(name, "Api", "src/Api.flix", 1, lines, lines, 0, 0, 0, 0, cognitive,
-            0, 1, name, 0, 0, 1, false, false, true, List.of());
+        return DefInfo.builder(name, "Api", "src/Api.flix", 1).lines(lines).codeLines(lines)
+            .cognitive(cognitive).hasDoc(true).build();
     }
 
     private static DefInfo ranked(String name, String file, int lines) {
-        return new DefInfo(name, "Api", file, 1, lines, lines, 0, 0, 0, 0, 0, 0, 1, name,
-            0, 0, 1, false, false, false, List.of());
+        return DefInfo.builder(name, "Api", file, 1).lines(lines).codeLines(lines).build();
     }
 
     private static void requireInvalid(Path root, String message) {

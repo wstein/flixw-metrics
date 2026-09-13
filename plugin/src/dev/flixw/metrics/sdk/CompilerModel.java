@@ -118,61 +118,105 @@ public interface CompilerModel {
                    String docText, List<String> datalogDependencies, int datalogDependencyDepth,
                    List<String> recursiveDatalogPredicates, int flixdocResultCharacters) {
 
-        public DefInfo(String name, String module, String file, int line, int lines, int codeLines,
-                       int parameters, int maxLocalParameters, int localDefs, int nesting,
-                       int cognitive, int maxLineTokens, int maxLineTokensLine,
-                       String maxLineTokensOwner, int datalogRules, int datalogFacts,
-                       int returnWidth, boolean isPublic, boolean isTest, boolean hasDoc,
-                       List<String> effects, int flixdocParameterCharacters,
-                       List<String> formalParameterNames, String docText,
-                       List<String> datalogDependencies, int datalogDependencyDepth,
-                       List<String> recursiveDatalogPredicates) {
-            this(name, module, file, line, lines, codeLines, parameters, maxLocalParameters,
-                localDefs, nesting, cognitive, maxLineTokens, maxLineTokensLine,
-                maxLineTokensOwner, datalogRules, datalogFacts, returnWidth, isPublic, isTest,
-                hasDoc, effects, flixdocParameterCharacters, formalParameterNames, docText,
-                datalogDependencies, datalogDependencyDepth, recursiveDatalogPredicates, 0);
+        /** Starts a definition whose remaining measurements are assigned by name. */
+        public static Builder builder(String name, String module, String file, int line) {
+            return new Builder(name, module, file, line);
         }
 
-        public DefInfo(String name, String module, String file, int line, int lines, int codeLines,
-                       int parameters, int maxLocalParameters, int localDefs, int nesting,
-                       int cognitive, int maxLineTokens, int maxLineTokensLine,
-                       String maxLineTokensOwner, int datalogRules, int datalogFacts,
-                       int returnWidth, boolean isPublic, boolean isTest, boolean hasDoc,
-                       List<String> effects, int flixdocParameterCharacters,
-                       List<String> formalParameterNames, String docText,
-                       List<String> datalogDependencies) {
-            this(name, module, file, line, lines, codeLines, parameters, maxLocalParameters,
-                localDefs, nesting, cognitive, maxLineTokens, maxLineTokensLine,
-                maxLineTokensOwner, datalogRules, datalogFacts, returnWidth, isPublic, isTest,
-                hasDoc, effects, flixdocParameterCharacters, formalParameterNames, docText,
-                datalogDependencies, 0, List.of(), 0);
-        }
+        /**
+         * Named construction prevents adjacent same-typed measurements from silently swapping.
+         * Defaults describe an absent measurement, so adapters only assign facts they observed.
+         */
+        public static final class Builder {
+            private final String name;
+            private final String module;
+            private final String file;
+            private final int line;
+            private int lines;
+            private int codeLines;
+            private int parameters;
+            private int maxLocalParameters;
+            private int localDefs;
+            private int nesting;
+            private int cognitive;
+            private int maxLineTokens;
+            private int maxLineTokensLine;
+            private String maxLineTokensOwner;
+            private int datalogRules;
+            private int datalogFacts;
+            private int returnWidth = 1;
+            private boolean isPublic;
+            private boolean isTest;
+            private boolean hasDoc;
+            private List<String> effects = List.of();
+            private int flixdocParameterCharacters;
+            private List<String> formalParameterNames = List.of();
+            private String docText = "";
+            private List<String> datalogDependencies = List.of();
+            private int datalogDependencyDepth;
+            private List<String> recursiveDatalogPredicates = List.of();
+            private int flixdocResultCharacters;
 
-        public DefInfo(String name, String module, String file, int line, int lines, int codeLines,
-                       int parameters, int maxLocalParameters, int localDefs, int nesting,
-                       int cognitive, int maxLineTokens, int maxLineTokensLine,
-                       String maxLineTokensOwner, int datalogRules, int datalogFacts,
-                       int returnWidth, boolean isPublic, boolean isTest, boolean hasDoc,
-                       List<String> effects, int flixdocParameterCharacters,
-                       List<String> formalParameterNames, String docText) {
-            this(name, module, file, line, lines, codeLines, parameters, maxLocalParameters,
-                localDefs, nesting, cognitive, maxLineTokens, maxLineTokensLine,
-                maxLineTokensOwner, datalogRules, datalogFacts, returnWidth, isPublic, isTest,
-                hasDoc, effects, flixdocParameterCharacters, formalParameterNames, docText,
-                List.of(), 0, List.of(), 0);
-        }
+            private Builder(String name, String module, String file, int line) {
+                this.name = name;
+                this.module = module;
+                this.file = file;
+                this.line = line;
+                this.maxLineTokensLine = line;
+                this.maxLineTokensOwner = name;
+            }
 
-        public DefInfo(String name, String module, String file, int line, int lines, int codeLines,
-                       int parameters, int maxLocalParameters, int localDefs, int nesting,
-                       int cognitive, int maxLineTokens, int maxLineTokensLine,
-                       String maxLineTokensOwner, int datalogRules, int datalogFacts,
-                       int returnWidth, boolean isPublic, boolean isTest, boolean hasDoc,
-                       List<String> effects) {
-            this(name, module, file, line, lines, codeLines, parameters, maxLocalParameters,
-                localDefs, nesting, cognitive, maxLineTokens, maxLineTokensLine,
-                maxLineTokensOwner, datalogRules, datalogFacts, returnWidth, isPublic, isTest,
-                hasDoc, effects, 0, List.of(), "", List.of(), 0, List.of(), 0);
+            public Builder lines(int value) { lines = value; return this; }
+            public Builder codeLines(int value) { codeLines = value; return this; }
+            public Builder parameters(int value) { parameters = value; return this; }
+            public Builder maxLocalParameters(int value) {
+                maxLocalParameters = value; return this;
+            }
+            public Builder localDefs(int value) { localDefs = value; return this; }
+            public Builder nesting(int value) { nesting = value; return this; }
+            public Builder cognitive(int value) { cognitive = value; return this; }
+            public Builder maxLineTokens(int value) { maxLineTokens = value; return this; }
+            public Builder maxLineTokensLine(int value) {
+                maxLineTokensLine = value; return this;
+            }
+            public Builder maxLineTokensOwner(String value) {
+                maxLineTokensOwner = value; return this;
+            }
+            public Builder datalogRules(int value) { datalogRules = value; return this; }
+            public Builder datalogFacts(int value) { datalogFacts = value; return this; }
+            public Builder returnWidth(int value) { returnWidth = value; return this; }
+            public Builder isPublic(boolean value) { isPublic = value; return this; }
+            public Builder isTest(boolean value) { isTest = value; return this; }
+            public Builder hasDoc(boolean value) { hasDoc = value; return this; }
+            public Builder effects(List<String> value) { effects = List.copyOf(value); return this; }
+            public Builder flixdocParameterCharacters(int value) {
+                flixdocParameterCharacters = value; return this;
+            }
+            public Builder formalParameterNames(List<String> value) {
+                formalParameterNames = List.copyOf(value); return this;
+            }
+            public Builder docText(String value) { docText = value; return this; }
+            public Builder datalogDependencies(List<String> value) {
+                datalogDependencies = List.copyOf(value); return this;
+            }
+            public Builder datalogDependencyDepth(int value) {
+                datalogDependencyDepth = value; return this;
+            }
+            public Builder recursiveDatalogPredicates(List<String> value) {
+                recursiveDatalogPredicates = List.copyOf(value); return this;
+            }
+            public Builder flixdocResultCharacters(int value) {
+                flixdocResultCharacters = value; return this;
+            }
+
+            public DefInfo build() {
+                return new DefInfo(name, module, file, line, lines, codeLines, parameters,
+                    maxLocalParameters, localDefs, nesting, cognitive, maxLineTokens,
+                    maxLineTokensLine, maxLineTokensOwner, datalogRules, datalogFacts,
+                    returnWidth, isPublic, isTest, hasDoc, effects, flixdocParameterCharacters,
+                    formalParameterNames, docText, datalogDependencies, datalogDependencyDepth,
+                    recursiveDatalogPredicates, flixdocResultCharacters);
+            }
         }
 
         /** Complexity per code line; blank or comment-only padding cannot lower it. */

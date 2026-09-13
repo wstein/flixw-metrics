@@ -197,17 +197,33 @@ final class Flix075Adapter extends CompilerModel {
       .map { case (name, _) => d.sym.toString + "." + name }
       .getOrElse(d.sym.toString)
     val datalog = analyzeDatalog(tally.datalogEdges.toSet)
-    new DefInfo(
-      d.sym.toString, moduleOf(d.sym), relativise(d.loc, projectRoot),
-      d.loc.startLine, spannedLines(d.loc), codeLines, declaredParameters(d.spec.fparams.toList),
-      tally.widestLocalParams, tally.localDefs, deepestChain(tally.branches.toList),
-      cognitive(tally), crammedTokens, crammedLine, owner,
-      tally.datalogRules, tally.datalogFacts, shapeWidth(d.spec.retTpe),
-      d.spec.mod.isPublic, d.spec.ann.isTest, hasDoc(d),
-      effectsOf(d.spec.eff).asJava, flixdocParameterCharacters(d.spec.fparams.toList),
-      sourceFormalParams(d.spec.fparams.toList).map(_.bnd.sym.text).asJava, d.spec.doc.text,
-      datalog.dependencies.asJava, datalog.depth, datalog.recursive.asJava,
-      renderedCharacters(d.spec.retTpe))
+    DefInfo.builder(d.sym.toString, moduleOf(d.sym), relativise(d.loc, projectRoot),
+      d.loc.startLine)
+      .lines(spannedLines(d.loc))
+      .codeLines(codeLines)
+      .parameters(declaredParameters(d.spec.fparams.toList))
+      .maxLocalParameters(tally.widestLocalParams)
+      .localDefs(tally.localDefs)
+      .nesting(deepestChain(tally.branches.toList))
+      .cognitive(cognitive(tally))
+      .maxLineTokens(crammedTokens)
+      .maxLineTokensLine(crammedLine)
+      .maxLineTokensOwner(owner)
+      .datalogRules(tally.datalogRules)
+      .datalogFacts(tally.datalogFacts)
+      .returnWidth(shapeWidth(d.spec.retTpe))
+      .isPublic(d.spec.mod.isPublic)
+      .isTest(d.spec.ann.isTest)
+      .hasDoc(hasDoc(d))
+      .effects(effectsOf(d.spec.eff).asJava)
+      .flixdocParameterCharacters(flixdocParameterCharacters(d.spec.fparams.toList))
+      .formalParameterNames(sourceFormalParams(d.spec.fparams.toList).map(_.bnd.sym.text).asJava)
+      .docText(d.spec.doc.text)
+      .datalogDependencies(datalog.dependencies.asJava)
+      .datalogDependencyDepth(datalog.depth)
+      .recursiveDatalogPredicates(datalog.recursive.asJava)
+      .flixdocResultCharacters(renderedCharacters(d.spec.retTpe))
+      .build()
   }
 
   /**

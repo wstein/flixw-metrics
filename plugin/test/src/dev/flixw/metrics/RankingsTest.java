@@ -29,10 +29,10 @@ public final class RankingsTest {
         require(!longestTest.eligible() && longestTest.ineligibilityReason().contains("test"),
             "a ranked test discloses its definition-too-long exemption");
 
-        DefInfo publicApi = new DefInfo("A.publicApi", "A", "src/A.flix", 1, 1, 1,
-            2, 0, 0, 0, 0, 0, 1, "A.publicApi", 0, 0, 1, true, false, true, List.of(),
-            120, List.of("input", "predicate"), "Returns matching values.", List.of(), 0,
-            List.of(), 80);
+        DefInfo publicApi = DefInfo.builder("A.publicApi", "A", "src/A.flix", 1)
+            .lines(1).codeLines(1).parameters(2).isPublic(true).hasDoc(true)
+            .flixdocParameterCharacters(120).formalParameterNames(List.of("input", "predicate"))
+            .docText("Returns matching values.").flixdocResultCharacters(80).build();
         List<Rankings.Rank> apiRanks = Rankings.of(List.of(publicApi), List.of());
         require(rank(apiRanks, "longest-flixdoc-parameters", "A.publicApi").value()
                 .equals("120 rendered characters"),
@@ -41,10 +41,12 @@ public final class RankingsTest {
                 .equals("80 rendered characters"),
             "public FlixDoc result types have their own ranking");
 
-        DefInfo effectfulDatalog = new DefInfo("A.orchestrate", "A", "src/A.flix", 2, 5, 5,
-            0, 0, 0, 0, 0, 0, 2, "A.orchestrate", 3, 1, 1, true, false, true,
-            List.of("Console", "FileRead", "Network"), 0, List.of(), "",
-            List.of("Edge", "Path", "Reachable"), 4, List.of("Path", "Reachable"), 7);
+        DefInfo effectfulDatalog = DefInfo.builder("A.orchestrate", "A", "src/A.flix", 2)
+            .lines(5).codeLines(5).datalogRules(3).datalogFacts(1).isPublic(true).hasDoc(true)
+            .effects(List.of("Console", "FileRead", "Network"))
+            .datalogDependencies(List.of("Edge", "Path", "Reachable"))
+            .datalogDependencyDepth(4).recursiveDatalogPredicates(List.of("Path", "Reachable"))
+            .flixdocResultCharacters(7).build();
         List<Rankings.Rank> semanticRanks = Rankings.of(List.of(effectfulDatalog), List.of());
         require(rank(semanticRanks, "widest-effect-surface", "A.orchestrate").value()
                 .equals("3 declared effects"),
@@ -71,8 +73,8 @@ public final class RankingsTest {
 
     private static DefInfo definition(String name, String file, int codeLines, int cognitive,
                                       boolean isTest) {
-        return new DefInfo(name, "A", file, 1, codeLines, codeLines, 0, 0, 0, 1, cognitive,
-            1, 1, name, 0, 0, 1, false, isTest, true, List.of());
+        return DefInfo.builder(name, "A", file, 1).lines(codeLines).codeLines(codeLines)
+            .nesting(1).cognitive(cognitive).maxLineTokens(1).isTest(isTest).hasDoc(true).build();
     }
 
     private static Rankings.Rank rank(List<Rankings.Rank> ranks, String measure, String subject) {

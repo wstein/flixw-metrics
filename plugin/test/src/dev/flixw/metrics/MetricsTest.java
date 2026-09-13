@@ -12,8 +12,8 @@ public final class MetricsTest {
     private MetricsTest() { }
 
     public static void main(String[] args) {
-        DefInfo padded = new DefInfo("Api.padded", "Api", "src/Api.flix", 1, 100, 4,
-            0, 0, 0, 0, 5, 0, 1, "Api.padded", 0, 0, 1, false, false, true, List.of());
+        DefInfo padded = DefInfo.builder("Api.padded", "Api", "src/Api.flix", 1)
+            .lines(100).codeLines(4).cognitive(5).hasDoc(true).build();
         require(Math.abs(padded.cognitiveDensity() - 1.25) < 0.001,
             "blank and comment-only span does not lower cognitive density");
 
@@ -43,8 +43,9 @@ public final class MetricsTest {
 
     private static DefInfo def(String name, String file, boolean isPublic, boolean pure,
                                boolean documented) {
-        return new DefInfo(name, "Api", file, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, name,
-            0, 0, 1, isPublic, false, documented, pure ? List.of() : List.of("IO"));
+        return DefInfo.builder(name, "Api", file, 1).lines(1).codeLines(1)
+            .isPublic(isPublic).hasDoc(documented).effects(pure ? List.of() : List.of("IO"))
+            .build();
     }
 
     private static Model model(List<DefInfo> defs) {

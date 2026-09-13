@@ -94,15 +94,19 @@ final class Wire {
                         i(f[6])};
                     case "s" -> sources.add(new SourceInfo(un(f[1]), new LineInfo(i(f[2]), i(f[3]),
                         i(f[4]), i(f[5]), i(f[6]))));
-                    case "d" -> defs.add(new DefInfo(un(f[1]), un(f[2]), un(f[3]), i(f[4]),
-                        i(f[5]), i(f[6]), i(f[7]), i(f[8]), i(f[9]), i(f[10]), i(f[11]), i(f[12]),
-                        i(f[13]), un(f[14]), i(f[15]), i(f[16]), i(f[17]), b(f[18]), b(f[19]),
-                        b(f[20]), un(f[21]).isEmpty() ? List.of() : List.of(un(f[21]).split(",")),
-                        i(f[22]), un(f[23]).isEmpty() ? List.of() : List.of(un(f[23]).split(",")),
-                        un(f[24]), un(f[25]).isEmpty() ? List.of()
-                            : List.of(un(f[25]).split(",")), i(f[26]),
-                        un(f[27]).isEmpty() ? List.of() : List.of(un(f[27]).split(",")),
-                        i(f[28])));
+                    case "d" -> defs.add(DefInfo.builder(
+                            un(f[1]), un(f[2]), un(f[3]), i(f[4]))
+                        .lines(i(f[5])).codeLines(i(f[6])).parameters(i(f[7]))
+                        .maxLocalParameters(i(f[8])).localDefs(i(f[9])).nesting(i(f[10]))
+                        .cognitive(i(f[11])).maxLineTokens(i(f[12]))
+                        .maxLineTokensLine(i(f[13])).maxLineTokensOwner(un(f[14]))
+                        .datalogRules(i(f[15])).datalogFacts(i(f[16])).returnWidth(i(f[17]))
+                        .isPublic(b(f[18])).isTest(b(f[19])).hasDoc(b(f[20]))
+                        .effects(csv(f[21])).flixdocParameterCharacters(i(f[22]))
+                        .formalParameterNames(csv(f[23])).docText(un(f[24]))
+                        .datalogDependencies(csv(f[25])).datalogDependencyDepth(i(f[26]))
+                        .recursiveDatalogPredicates(csv(f[27]))
+                        .flixdocResultCharacters(i(f[28])).build());
                     case "m" -> modules.add(new ModuleInfo(un(f[1]), i(f[2]), i(f[3]), i(f[4]),
                         i(f[5])));
                     default -> { }
@@ -116,6 +120,11 @@ final class Wire {
             // asked for their metrics.
             return null;
         }
+    }
+
+    private static List<String> csv(String field) {
+        String value = un(field);
+        return value.isEmpty() ? List.of() : List.of(value.split(","));
     }
 
     private static void row(StringBuilder b, String tag, Object... fields) {

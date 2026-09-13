@@ -75,11 +75,17 @@ public final class ResultCacheTest {
             // The cache holds the compiler's *measurements*, not the report, so this is what
             // has to survive: a definition with everything set, and a symbol carrying the tab
             // the format itself uses to separate fields.
-            var def = new dev.flixw.metrics.sdk.CompilerModel.DefInfo(
-                "Foo.od\td", "Foo", "src/A.flix", 3, 40, 30, 2, 9, 1, 4, 12, 31, 7, "Foo.odd.loop",
-                2, 5, 6, true, false, true, List.of("IO", "Net"), 47,
-                List.of("left", "right"), "First line.\nSecond line with a tab:\tend.",
-                List.of("Edge", "Path"), 3, List.of("Path", "Reach"), 88);
+            var def = dev.flixw.metrics.sdk.CompilerModel.DefInfo.builder(
+                    "Foo.od\td", "Foo", "src/A.flix", 3)
+                .lines(40).codeLines(30).parameters(2).maxLocalParameters(9).localDefs(1)
+                .nesting(4).cognitive(12).maxLineTokens(31).maxLineTokensLine(7)
+                .maxLineTokensOwner("Foo.odd.loop").datalogRules(2).datalogFacts(5)
+                .returnWidth(6).isPublic(true).hasDoc(true).effects(List.of("IO", "Net"))
+                .flixdocParameterCharacters(47).formalParameterNames(List.of("left", "right"))
+                .docText("First line.\nSecond line with a tab:\tend.")
+                .datalogDependencies(List.of("Edge", "Path")).datalogDependencyDepth(3)
+                .recursiveDatalogPredicates(List.of("Path", "Reach"))
+                .flixdocResultCharacters(88).build();
             var mod = new dev.flixw.metrics.sdk.CompilerModel.ModuleInfo("Foo", 1, 40, 2, 3);
             var sourceInfo = new dev.flixw.metrics.sdk.CompilerModel.SourceInfo("src/A.flix",
                 new dev.flixw.metrics.sdk.CompilerModel.LineInfo(40, 30, 4, 3, 3));

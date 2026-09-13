@@ -58,8 +58,10 @@ public final class ThresholdsTest {
 
         // Reported against the local, not the definition it sits in -- the whole point of
         // measuring which local owns the line.
-        DefInfo crammed = new DefInfo("Foo.outer", "Foo", "src/Foo.flix", 1, 90, 80, 1, 0, 1, 1, 0,
-            44, 57, "Foo.outer.loop", 0, 0, 1, false, false, true, List.of());
+        DefInfo crammed = DefInfo.builder("Foo.outer", "Foo", "src/Foo.flix", 1)
+            .lines(90).codeLines(80).parameters(1).localDefs(1).nesting(1)
+            .maxLineTokens(44).maxLineTokensLine(57).maxLineTokensOwner("Foo.outer.loop")
+            .hasDoc(true).build();
         List<SourceMetrics.Smell> found = Thresholds.apply(List.of(crammed), List.of());
         // The owner is the *subject* now, not buried in prose: a consumer can group by it.
         require(found.stream().anyMatch(s -> s.rule().equals("crammed-line")
@@ -67,9 +69,9 @@ public final class ThresholdsTest {
             && s.actual() == 44 && s.limit() == Thresholds.MAX_LINE_TOKENS),
             "a crammed line names the local that owns it, its line, and both numbers");
 
-        DefInfo calibratedBoundary = new DefInfo("Foo.combinator", "Foo", "src/Foo.flix", 1,
-            1, 1, 1, 0, 0, 0, 0, 35, 1, "Foo.combinator", 0, 0, 1,
-            false, false, true, List.of());
+        DefInfo calibratedBoundary = DefInfo.builder(
+                "Foo.combinator", "Foo", "src/Foo.flix", 1)
+            .lines(1).codeLines(1).parameters(1).maxLineTokens(35).hasDoc(true).build();
         require(!has(Thresholds.apply(List.of(calibratedBoundary), List.of()), "crammed-line"),
             "the calibrated 35-token boundary is not reported");
 
@@ -102,15 +104,17 @@ public final class ThresholdsTest {
 
     private static DefInfo def(String name, int lines, int params, int localParams, int nesting,
                                int cognitive, boolean isPublic, boolean isTest, boolean hasDoc) {
-        return new DefInfo(name, "Foo", "src/Foo.flix", 1, lines, lines, params, localParams, 0, nesting,
-            cognitive, 0, 1, name, 0, 0, 1, isPublic, isTest, hasDoc, List.of());
+        return DefInfo.builder(name, "Foo", "src/Foo.flix", 1).lines(lines).codeLines(lines)
+            .parameters(params).maxLocalParameters(localParams).nesting(nesting)
+            .cognitive(cognitive).isPublic(isPublic).isTest(isTest).hasDoc(hasDoc).build();
     }
 
     private static DefInfo documentedApi(int parameterCharacters, List<String> parameterNames,
                                          String docText) {
-        return new DefInfo("Foo.api", "Foo", "src/Foo.flix", 1, 4, 4, parameterNames.size(),
-            0, 0, 0, 0, 0, 1, "Foo.api", 0, 0, 1, true, false, true, List.of(),
-            parameterCharacters, parameterNames, docText);
+        return DefInfo.builder("Foo.api", "Foo", "src/Foo.flix", 1).lines(4).codeLines(4)
+            .parameters(parameterNames.size()).isPublic(true).hasDoc(true)
+            .flixdocParameterCharacters(parameterCharacters).formalParameterNames(parameterNames)
+            .docText(docText).build();
     }
 
     private static boolean has(List<SourceMetrics.Smell> smells, String rule) {
