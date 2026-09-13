@@ -93,6 +93,20 @@ public final class MetricsConfigTest {
                         .contains("\"excludedSources\""),
                 "every report format discloses exclusions");
 
+            DefInfo first = ranked("Api.first", "src/Api.flix", 30);
+            DefInfo second = ranked("Api.second", "src/Api.flix", 20);
+            DefInfo third = ranked("Api.third", "src/Api.flix", 10);
+            DefInfo excludedFirst = ranked("Generated.first", "src/generated/Data.flix", 400);
+            var rankingModel = new dev.flixw.metrics.sdk.CompilerModel.Model(
+                List.of(excludedFirst, first, second, third), List.of(),
+                new dev.flixw.metrics.sdk.CompilerModel.LineInfo(1, 1, 0, 0, 0),
+                0, 0, 0, 0, 0, 0);
+            List<String> longest = Metrics.of(2, rankingModel, excludedText, config).ranks().stream()
+                .filter(rank -> rank.measure().equals("longest"))
+                .map(dev.flixw.metrics.Rankings.Rank::subject).toList();
+            require(longest.equals(List.of("Api.first", "Api.second", "Api.third")),
+                "exclusions are applied before top-three truncation so ranks are backfilled");
+
             MetricsConfig expired = MetricsConfig.read(root, LocalDate.parse("2026-09-13"));
             require(!expired.isSuppressed(found.get(0)), "an expired suppression stops matching");
 
@@ -119,6 +133,11 @@ public final class MetricsConfigTest {
     private static DefInfo def(String name, int lines, int cognitive) {
         return new DefInfo(name, "Api", "src/Api.flix", 1, lines, lines, 0, 0, 0, 0, cognitive,
             0, 1, name, 0, 0, 1, false, false, true, List.of());
+    }
+
+    private static DefInfo ranked(String name, String file, int lines) {
+        return new DefInfo(name, "Api", file, 1, lines, lines, 0, 0, 0, 0, 0, 0, 1, name,
+            0, 0, 1, false, false, false, List.of());
     }
 
     private static void requireInvalid(Path root, String message) {

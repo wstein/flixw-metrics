@@ -312,6 +312,8 @@ final class Metrics {
         List<CompilerModel.DefInfo> api = defs.stream()
             .filter(d -> d.isPublic() && !d.isTest() && !Thresholds.inTests(d.file())
                 && !config.isExcluded(d.file())).toList();
+        List<CompilerModel.DefInfo> rankedDefs = defs.stream()
+            .filter(d -> !config.isExcluded(d.file())).toList();
         List<SourceMetrics.Smell> smells = new java.util.ArrayList<>(text.smells());
         smells.addAll(Thresholds.apply(defs, m.modules(), config));
         smells.removeIf(smell -> config.isSuppressed(smell) || config.isExcluded(smell.file()));
@@ -329,8 +331,7 @@ final class Metrics {
             percent(api.stream().filter(CompilerModel.DefInfo::hasDoc).count(), api.size()),
             percent(api.stream().filter(CompilerModel.DefInfo::isPure).count(), api.size()),
             text.excludedSources(), List.copyOf(smells),
-            Rankings.of(defs, m.modules()).stream()
-                .filter(rank -> !config.isExcluded(rank.file())).toList(), defs, m.modules());
+            Rankings.of(rankedDefs, m.modules()), defs, m.modules());
     }
 
     private static CompilerModel.LineInfo includedLines(CompilerModel.Model model,
