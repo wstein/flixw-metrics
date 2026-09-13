@@ -20,16 +20,17 @@ would put compiler concepts straight back into the callers it exists to protect.
 |---|---|---|
 | `Main`, `Metrics`, `ResultCache`, `SourceMetrics` | nothing | Java |
 | `sdk.CompilerModel`, `sdk.Adapters` | nothing | Java |
-| `flix075.Flix075Adapter` | everything | Scala |
+| `flix0753.Flix0753Adapter` | everything | Scala |
 
 Supporting another Flix generation is a class and a line in `Adapters.KNOWN`. It is explicitly
 *not* an edit to the report, the smells, the formats, the cache or the CLI.
 
 `SDK_VERSION` is declared and unused. The moment an adapter ships separately from this jar,
 the two need a way to say whether they agree; while every adapter is compiled in this module
-they cannot disagree, so nothing checks it. Today's scope is narrower on purpose: **Flix
-0.75.x–0.76.x, one in-tree adapter compatibility family.** The investigation supporting each
-release is recorded under [`docs/compiler-compatibility`](compiler-compatibility/README.md).
+they cannot disagree, so nothing checks it. Today's scope is narrower on purpose: **Flix 0.75.3
+and 0.76.0, one in-tree adapter compatibility family.** `Flix0753` names the oldest compatible
+release, not a closed range or the current compiler pin. The investigation supporting each release
+is recorded under [`docs/compiler-compatibility`](compiler-compatibility/README.md).
 
 ### Adapters are selected by linkage, not by version string
 
@@ -67,7 +68,7 @@ and answer on a machine where the adapter would not link at all.
 
 ## The gate names what the engine links against
 
-The capability gate reads the packaged `Flix075Adapter` class files and checks every Flix class,
+The capability gate reads the packaged `Flix0753Adapter` class files and checks every Flix class,
 field, constructor, and method they link against using its exact JVM descriptor. Following generated
 nested adapter classes keeps Scala's closure placement from creating an unchecked call. The resulting
 contract includes:

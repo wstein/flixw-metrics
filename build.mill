@@ -19,7 +19,7 @@ import mill._, scalalib._
 object plugin extends ScalaModule {
 
   /**
-   * Matched to what the compiler jar bundles -- 2.13.18 in the Flix 0.75/0.76 generation --
+   * Matched to what the compiler jar bundles -- 2.13.18 in the Flix 0.75.3/0.76.0 generation --
    * rather than to the newest Scala. The engine's classes are loaded alongside the compiler's on one class path,
    * so the two have to agree; 2.13 is binary compatible within its series, so this pins a
    * series and not a patch.

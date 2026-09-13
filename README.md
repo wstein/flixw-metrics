@@ -330,9 +330,11 @@ download a compiler, choose one, or run anything else.
 
 ## Supported compilers
 
-Flix **0.75.x–0.76.x**. Both releases belong to the linkage generation implemented by
-`Flix075Adapter`; the name records where that compatibility family began. The engine reads the
-compiler's internal AST, which carries no
+Flix **0.75.3 and 0.76.0** are verified. Both releases belong to the linkage generation
+implemented by `Flix0753Adapter`; the name records the oldest compatible release. The plugin's
+own version follows its independent SemVer lifecycle because analyzer behavior, rules, formats,
+and schemas do not share the compiler's release cadence. The engine reads the compiler's internal
+AST, which carries no
 compatibility promise, so it is compiled against one release and checks what is actually in
 front of it before running:
 
@@ -351,6 +353,10 @@ An unsupported compiler gets a sentence naming what is missing, rather than a wr
 or a stack trace. Supporting another Flix generation is one adapter class; release-specific
 evidence lives in [docs/compiler-compatibility](docs/compiler-compatibility/README.md), and the
 boundary itself is described in [docs/COMPILER-SDK.md](docs/COMPILER-SDK.md).
+
+The full test suite also locks the lower boundary: it requires 0.75.2 to fail the derived ABI gate
+and runs the packaged integration test with 0.75.3. A release not named above may still link, but it
+is unsupported until its own compatibility investigation is recorded.
 
 ## Building it yourself
 

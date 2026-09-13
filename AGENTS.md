@@ -4,7 +4,7 @@
 
 The analyzer is a mixed Java/Scala Mill module. Compiler-neutral code lives in
 `plugin/src/dev/flixw/metrics/`. The Flix compatibility-family adapter
-is isolated in `plugin/src/dev/flixw/metrics/flix075/`; the stable boundary is under
+is isolated in `plugin/src/dev/flixw/metrics/flix0753/`; the stable boundary is under
 `plugin/src/dev/flixw/metrics/sdk/`. Tests live in `plugin/test/src/` and use the Flix fixture in
 `plugin/test/fixtures/semantic/`. Calibration inputs and budgets live in `calibration/`, project
 documentation in `docs/`, automation in `scripts/`, and CI workflows in `.github/workflows/`.
@@ -14,7 +14,7 @@ Do not commit generated `out/`, `dist/`, or the downloaded `plugin/lib/flix.jar`
 
 The Java/Scala split is load-bearing, not incidental. `Bootstrap`/`TypedAst`/etc. in `flix.jar` carry no
 ABI compatibility promise between releases. All knowledge of those types is confined to one file,
-`flix075/Flix075Adapter.scala`; everything else — `Main`, `Metrics`, `ResultCache`, `SourceMetrics`, and
+`flix0753/Flix0753Adapter.scala`; everything else — `Main`, `Metrics`, `ResultCache`, `SourceMetrics`, and
 the stable `sdk.CompilerModel`/`sdk.Adapters` boundary — stays plain Java that knows nothing about Flix.
 `CompilerModel` returns counts and strings only, deliberately, never compiler types or an AST cursor.
 
@@ -26,8 +26,9 @@ reflective predecessor classified nodes by simple class name and silently ignore
 anywhere. That failure mode is why the AST-facing half of the plugin is Scala at all; see
 `docs/COMPILER-SDK.md` and `docs/compiler-compatibility/` for the full contract and release evidence.
 
-`Flix075Adapter` names the linkage generation introduced by Flix 0.75 and currently verified through
-Flix 0.76. Supporting an incompatible Flix generation means adding one adapter class plus a line in `Adapters.KNOWN` — never
+`Flix0753Adapter` names the linkage generation whose oldest compatible release is Flix 0.75.3 and
+which is currently verified with Flix 0.76.0. Supporting an incompatible Flix generation means
+adding one adapter class plus a line in `Adapters.KNOWN` — never
 touching the report, findings, formats, cache, or CLI. Adapters are selected by **linkage, not version
 string**: `Adapters.resolve()` instantiates each known adapter and keeps the first that loads, catching
 `LinkageError` alongside reflective exceptions, so an incompatible AST fails at a controlled point
@@ -66,10 +67,11 @@ independently, so the two can't drift apart.
 
 - `make lint` fetches the pinned compiler and compiles with all warnings fatal.
 - `make test` runs linting, calibration and performance-contract tests, all executable unit tests,
-  the real-compiler fixture, and integration tests. Its packaging check deliberately builds twice with
-  a two-second gap to prove reproducibility; that pause is expected.
+  the real-compiler fixture, integration tests, and the 0.75.2/0.75.3 compatibility boundary. It
+  downloads those two historical compiler jars into ignored `out/` storage when absent. Its packaging
+  check deliberately builds twice with a two-second gap to prove reproducibility; that pause is expected.
 - `sh scripts/test-one.sh MetricsTest` compiles as needed and runs one test main. The wrapper also supplies
-  the special fixtures and classpaths required by `CompilerCapabilitiesTest`, `Flix075AdapterTest`, and
+  the special fixtures and classpaths required by `CompilerCapabilitiesTest`, `Flix0753AdapterTest`, and
   `PluginIntegrationTest`.
 - `make package` creates `dist/plugin.jar` and `dist/SHA256SUMS`.
 - `sh scripts/validate-report-schema.sh` validates a packaged fixture report with
@@ -94,7 +96,7 @@ for example `definition-too-long`. Run `make format` and `make lint` before comm
 
 Tests are dependency-free classes named `*Test.java` with a `main` method and exact assertions.
 Add a failing regression before behavioral fixes. Use temporary directories and clean them in
-`finally`. Adapter changes must extend `Flix075AdapterTest`; packaging or process changes should
+`finally`. Adapter changes must extend `Flix0753AdapterTest`; packaging or process changes should
 extend `PluginIntegrationTest`. Use `scripts/test-one.sh` while iterating; `./mill plugin.test.test`
 does not exist because `testFramework = "none"`. Run `make test` before opening a pull request. CodeQL supplements,
 but does not replace, regression coverage.

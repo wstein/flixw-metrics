@@ -34,8 +34,9 @@ compiler and standard-library runtime loading can move back to an isolated loade
 
 ## Adapter impact
 
-The existing `Flix075Adapter` is source- and binary-compatible and remains the adapter for the
-linkage family introduced in 0.75. No duplicate 0.76 adapter or `Adapters.KNOWN` change is needed.
+The existing adapter is source- and binary-compatible. It is named `Flix0753Adapter` for the
+oldest release satisfying its exact bytecode contract. No duplicate 0.76 adapter or
+`Adapters.KNOWN` entry is needed.
 The descriptor payloads are not metrics inputs, but a Java-interoperability regression now proves
 that constructor, method, `instanceof`, and catch nodes do not disrupt generic descent or branch
 measurement.
@@ -54,9 +55,9 @@ compiler regression locks in that behavior.
 | Artifact digest | `scripts/fetch-flix.sh` | matched the release asset |
 | Adapter source build | `make lint` | passed with fatal warnings |
 | Bytecode-derived ABI gate | packaged `capabilities` and `CompilerCapabilitiesTest` | `hasEngineApi=true`; no missing members |
-| Semantic fixture | `scripts/test-one.sh Flix075AdapterTest` | passed, including polymorphic effects and Java descriptors |
+| Semantic fixture | `scripts/test-one.sh Flix0753AdapterTest` | passed, including polymorphic effects and Java descriptors |
 | Packaged integration | `PluginIntegrationTest` with the 0.76 JAR | passed |
-| Cross-generation check | adapter compiled against 0.76, fixture checked with 0.75.3 | passed |
+| Compatibility floor | `scripts/test-compiler-compatibility.sh` | 0.75.2 rejected; packaged 0.75.3 integration passed |
 | Corpus calibration | `scripts/calibrate-corpus.sh /tmp/flixw-calibration-076c` | all 9 active targets matched exactly |
 | Performance contract | `scripts/measure-performance.sh /tmp/flixw-performance-076.json` | cold median 4,138 ms; warm 336 ms; 8% ratio |
 | Packaged report schema | `check-jsonschema` via `uvx` | passed |
@@ -75,7 +76,7 @@ previous stable summaries and findings.
 
 ## Decision and compatibility impact
 
-- Supported range: Flix 0.75.x–0.76.x through `Flix075Adapter`.
+- Verified releases: Flix 0.75.3 and 0.76.0 through `Flix0753Adapter`. Flix 0.75.2 is the locked, rejected predecessor.
 - Required implementation change: count saturated polymorphic effects atomically.
 - Report schema: unchanged.
 - Wire format and cache: unchanged; compiler artifact bytes already invalidate cached measurements.
