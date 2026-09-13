@@ -147,7 +147,9 @@ child loader parented to the platform loader.
 | `modules` | the namespaces the definitions' own symbols carry |
 | module `fanIn`, `fanOut`, `instability` | resolved cross-module direct definition calls |
 | `localDefinitions` | `LocalDef` nodes — definitions the outer signature hides |
-| `effectfulDefinitions`, `purityPercent`, per-definition `effectCount` and `effects` | the compiler-normalized *declared* effect set on each signature; a saturated polymorphic effect is atomic |
+| `pureDefinitions`, `groundEffectfulDefinitions`, `effectPolymorphicDefinitions`, `effectfulDefinitions` | the compiler-normalized *declared* effect on each signature, partitioned with the same rules as Flix `stat` |
+| `purityPercent` | exact-`Pure` declarations among public, non-test definitions |
+| per-definition `declaredPure`, `effectPolymorphic`, `effectCount`, and `effects` | declared-effect classification plus its named constructors; a saturated polymorphic effect constructor is atomic |
 | per-definition `handlers`, `handledOperations`, `maxHandlerOperations`, `resumptions` | typed handler literals, their clauses, the widest handler, and direct continuation-parameter calls |
 | per-definition `effectDetails` | each effect constructor with its argument count and compiler-rendered type arguments; does not widen `effects` |
 | `effectDeclarations` | each effect declaration's qualified name, source location, type-parameter count, and source-ordered operation names and arities |
@@ -395,11 +397,25 @@ when someone is most likely to be looking.
 through the definition, and counting the match would say one.
 
 `effectfulDefinitions` asks the declared effect rather than inferring from the body, because
-the declaration is the promise the definition makes to its callers. `effectCount` measures the
-width of that normalized set and `widest-effect-surface` locates its upper tail. Pure is the empty
-set. Native JSON retains the sorted names so two equally wide but materially different capability
-surfaces are not made indistinguishable. There is deliberately no finding: effect orchestration is
-often an architectural boundary rather than a defect.
+the declaration is the promise the definition makes to its callers. Its classification matches
+Flix `stat`: exact `Pure` declarations are pure; non-pure declarations containing any type
+variable are effect polymorphic; the rest are ground effectful. Thus
+`effectfulDefinitions == groundEffectfulDefinitions + effectPolymorphicDefinitions`. A bare
+effect variable is non-pure and polymorphic even though it contributes no named constructor.
+
+`effectCount` measures the width of the normalized set of named constructors and
+`widest-effect-surface` locates its upper tail. Native JSON retains the sorted names so two equally
+wide but materially different capability surfaces are not made indistinguishable. There is
+deliberately no finding: effect orchestration is often an architectural boundary rather than a
+defect.
+
+The similarly shaped `flixw stat` output is a concise compiler census, not an alternate rendering
+of this report. Its module count follows the compiler's module inventory and its `types` total
+combines enums, structs, and restrictable enums. Metrics counts definition-owning namespaces,
+keeps declaration categories separate, applies configured project-source exclusions, and adds
+per-definition measurements, policy findings, rankings, baselines, and provenance. Its
+`purityPercent` is narrower than the census partition because it describes only the public,
+non-test API.
 
 Documentation and purity percentages exclude both `@Test` definitions and definitions whose
 portable project-relative path is under `test/`. If no production public definitions exist,

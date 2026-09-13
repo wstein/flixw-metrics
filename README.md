@@ -37,6 +37,9 @@ files: 3
 modules: 2
 definitions: 5
 localDefinitions: 1
+pureDefinitions: 3
+groundEffectfulDefinitions: 2
+effectPolymorphicDefinitions: 0
 effectfulDefinitions: 2
 cognitive: 27
 traits: 0
@@ -86,6 +89,26 @@ smells: 10
 ```
 
 (Abridged — each ranking lists its top few, not one.)
+
+### Compared with `flixw stat`
+
+Flix's built-in `./flixw stat` is a concise compiler census. This plugin is a project-analysis
+report: it adds per-definition evidence, rankings, configurable findings, baselines, provenance,
+and machine-readable formats. Their similarly named totals should therefore be compared by
+meaning, not treated as interchangeable output.
+
+The declared-effect partition deliberately follows Flix: `pureDefinitions` have the exact
+declared effect `Pure`; `effectPolymorphicDefinitions` are non-pure declarations containing a
+type variable (including one inside an effect argument); and `groundEffectfulDefinitions` are
+the remaining non-pure declarations. `effectfulDefinitions` is the compatible umbrella total,
+equal to the latter two categories. A bare `\ ef` is consequently effect polymorphic even
+though it has no named constructor for `effectCount` or `effects` to report. `purityPercent` is a
+different, API-oriented measure over public, non-test definitions only.
+
+Other scopes intentionally differ. Native `stat` reports compiler modules and combines enums,
+structs, and restrictable enums as `types`. Metrics reports the namespaces that analyzed
+definitions own, keeps declaration kinds separate, honors configured source exclusions, and
+splits physical lines into code, comment, documentation-comment, and blank counts.
 
 Every finding names what was exceeded and by how much, so the threshold is arguable rather
 than mysterious. Reporting alone never fails your build; CI can opt into a gate explicitly:
