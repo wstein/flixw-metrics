@@ -1,11 +1,7 @@
 name: pages
 
-# Publishes the API docs for both halves of this plugin.
-#
-# One doc set, not two. The module is Java and Scala side by side, and scaladoc reads both --
-# `CompilerModel` and `Adapters` (Java) come out alongside `Flix0753Adapter` (Scala). Running
-# javadoc separately would split the SDK from its only implementation, which is exactly the
-# boundary a reader is trying to follow.
+# Publishes the compiler-neutral plugin and SDK API docs. Compiler-facing adapters are isolated
+# implementation modules and deliberately stay outside this public API artifact.
 
 on:
   push:
@@ -36,7 +32,7 @@ jobs:
 
       # docJar compiles first, so this also proves the tree builds -- and it needs the pinned
       # Flix release, which scripts/fetch-flix.sh downloads and digest-checks. Without it the
-      # Scala half does not compile at all, since it links against that release's AST.
+      # adapter modules do not compile at all, since they link against their release's AST.
       - name: Fetch the pinned Flix release
         run: sh scripts/fetch-flix.sh
 

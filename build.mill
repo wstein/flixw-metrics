@@ -4,6 +4,19 @@ import mill._, scalalib._
 
 private val flixScalaVersion = "2.13.18"
 
+/** The current adapter, compiled in isolation against the oldest compiler in its ABI family. */
+object adapter0753 extends ScalaModule {
+  def scalaVersion = flixScalaVersion
+
+  def scalacOptions = Seq("-deprecation", "-feature", "-Xfatal-warnings")
+
+  def compilerJar = Task.Source(moduleDir / os.up / "plugin" / "lib" / "flix.jar")
+
+  def compileClasspath = Task {
+    super.compileClasspath() ++ Seq(plugin.compile().classes, compilerJar())
+  }
+}
+
 /** An older adapter compiled in isolation against the oldest compiler in its ABI family. */
 object adapter0680 extends ScalaModule {
   def scalaVersion = flixScalaVersion
@@ -70,49 +83,28 @@ object adapter0600 extends ScalaModule {
 }
 
 /**
- * The plugin is one module with Java and Scala sources side by side, and the split is
- * deliberate rather than incidental.
- *
- * The Java half never touches the compiler's AST: it reads the ABI, gates on capabilities,
- * measures the source text and caches results. It has to keep working when the pinned
- * compiler is one this build has never seen, which is exactly when a Scala engine compiled
- * against a different AST would not link.
- *
- * The Scala half is the engine, and it exists because pattern matching over Flix's sealed AST
- * is checked: the compiler names every construct the engine does not classify. Reflection
- * cannot do that, and the cost of it not doing that was a silent undercount of every
- * extensible match.
+ * Compiler-neutral plugin code. Every Scala adapter is compiled in its own sibling module,
+ * so compiler types are unavailable here even at compile time.
  */
 object plugin extends ScalaModule {
 
   /**
-   * Matched to what the compiler jar bundles -- 2.13.18 in the Flix 0.75.3/0.76.0 generation --
-   * rather than to the newest Scala. The engine's classes are loaded alongside the compiler's on one class path,
-   * so the two have to agree; 2.13 is binary compatible within its series, so this pins a
-   * series and not a patch.
+   * Used by the test module. Adapter modules independently use the same version because their
+   * classes are loaded alongside the compiler's bundled Scala library on one class path.
    */
   def scalaVersion = flixScalaVersion
 
   def javacOptions = Seq("-Xlint:all", "-Werror", "--release", "21")
 
-  def scalacOptions = Seq(
-    "-deprecation",
-    "-feature",
-    // The reason this module is in Scala at all. A match over Flix's AST that forgets a
-    // construct is a metric that is quietly wrong, so an inexhaustive match is an error here
-    // and not a warning.
-    "-Xfatal-warnings",
-  )
-
   /**
-   * The compiler jar, compile-time only.
+   * The current compiler jar, exposed only to the current adapter and tests.
    *
    * <p>Never bundled: at run time it is the jar flixw pinned and verified for the project,
    * placed on the class path by the bridge phase. Bundling a copy would mean measuring one
    * compiler while claiming to measure another.
    *
-   * <p>`scripts/fetch-flix.sh` puts it in `lib/` and checks its digest, so a build either uses
-   * the Flix release this engine was written against or fails saying so.
+   * <p>`scripts/fetch-flix.sh` puts it in `lib/` and checks its digest. It is deliberately not
+   * on this module's compile class path.
    */
   def compilerJars = Task.Sources(moduleDir / "lib")
 
@@ -122,25 +114,15 @@ object plugin extends ScalaModule {
       .flatMap(ref => os.list(ref.path).filter(_.last == "flix.jar").map(PathRef(_)))
   }
 
-  /**
-   * Compile-time only, and it has to be said in exactly this way.
-   *
-   * `unmanagedClasspath` was the obvious spelling and is wrong: mill packages it, so the
-   * plugin jar came out at 34MB with a whole Flix release inside it -- a build that measures
-   * one compiler while shipping another. Adding it to `compileClasspath` instead says what is
-   * true, that the engine is *written against* this release and *run against* whichever one
-   * flixw pinned.
-   */
-  def compileClasspath = Task { super.compileClasspath() ++ flixJar() }
-
   /** Package every adapter family, but none of the compiler jars used to compile them. */
   override def localClasspath = Task {
-    super.localClasspath() ++ Seq(adapter0680.compile().classes, adapter0672.compile().classes,
-      adapter0661.compile().classes, adapter0610.compile().classes, adapter0600.compile().classes)
+    super.localClasspath() ++ Seq(adapter0753.compile().classes, adapter0680.compile().classes,
+      adapter0672.compile().classes, adapter0661.compile().classes, adapter0610.compile().classes,
+      adapter0600.compile().classes)
   }
 
   /**
-   * Only this module's own classes.
+   * Project classes only: the compiler-neutral module plus every adapter module.
    *
    * <p>Not an assembly. scala-library is on the class path at run time because the compiler
    * jar bundles it, so shipping a second copy would put two scala-libraries on one flat class
@@ -182,9 +164,9 @@ object plugin extends ScalaModule {
     /** Test-only: parse emitted JSON with the Gson already bundled in the pinned compiler jar. */
     override def compileClasspath = Task {
       super.compileClasspath() ++ plugin.flixJar() ++
-        Seq(adapter0680.compile().classes, adapter0672.compile().classes,
-          adapter0661.compile().classes, adapter0610.compile().classes,
-          adapter0600.compile().classes)
+        Seq(adapter0753.compile().classes, adapter0680.compile().classes,
+          adapter0672.compile().classes, adapter0661.compile().classes,
+          adapter0610.compile().classes, adapter0600.compile().classes)
     }
 
     def check() = Task.Command {

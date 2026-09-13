@@ -20,19 +20,21 @@ would put compiler concepts straight back into the callers it exists to protect.
 |---|---|---|
 | `Main`, `Metrics`, `ResultCache`, `SourceMetrics` | nothing | Java |
 | `sdk.CompilerModel`, `sdk.Adapters` | nothing | Java |
-| `flix0600.Flix0600Adapter` | everything | Scala |
-| `flix0610.Flix0610Adapter` | everything | Scala |
-| `flix0661.Flix0661Adapter` | everything | Scala |
-| `flix0672.Flix0672Adapter` | everything | Scala |
-| `flix0680.Flix0680Adapter` | everything | Scala |
-| `flix0753.Flix0753Adapter` | everything | Scala |
+| `adapter0600`: `flix0600.Flix0600Adapter` | everything | Scala |
+| `adapter0610`: `flix0610.Flix0610Adapter` | everything | Scala |
+| `adapter0661`: `flix0661.Flix0661Adapter` | everything | Scala |
+| `adapter0672`: `flix0672.Flix0672Adapter` | everything | Scala |
+| `adapter0680`: `flix0680.Flix0680Adapter` | everything | Scala |
+| `adapter0753`: `flix0753.Flix0753Adapter` | everything | Scala |
 
-Supporting another Flix generation is an isolated adapter module and a line in `Adapters.KNOWN`.
+Every adapter, including the newest family, is a peer module compiled against only its own compiler
+generation. Supporting another Flix generation is an isolated adapter module and a line in `Adapters.KNOWN`.
 It is explicitly *not* an edit to the report, the smells, the formats, the cache or the CLI. Each
-module compiles against the oldest verified compiler in its family; neither compiler is packaged.
+module compiles against the oldest verified compiler in its family; none of those compilers is packaged.
 
 `SDK_VERSION` is declared and unused. The moment an adapter ships separately from this jar,
-the two need a way to say whether they agree; while every adapter is compiled in this module
+the two need a way to say whether they agree; while every adapter is compiled by this build and
+packaged in the same jar
 they cannot disagree, so nothing checks it. Today's verified scope is **Flix 0.60.0 via
 `Flix0600Adapter`; Flix 0.61.0 and 0.65.0 via `Flix0610Adapter`; Flix 0.66.1 and 0.67.1 via
 `Flix0661Adapter`; Flix 0.67.2 via

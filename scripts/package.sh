@@ -1,9 +1,10 @@
 #!/bin/sh
 # Build plugin.jar with mill.
 #
-# The jar holds this module's classes and nothing else. scala-library is deliberately not
-# bundled: the compiler jar already carries 2.13, and the bridge phase puts both on one flat
-# class path, so a second copy would let ordering decide which one the engine links against.
+# The jar holds the compiler-neutral plugin classes and every adapter module, but no external
+# dependencies. scala-library is deliberately not bundled: the compiler jar already carries
+# 2.13, and the bridge phase puts both on one flat class path, so a second copy would let
+# ordering decide which one the engine links against.
 set -eu
 
 version=${1:?usage: sh scripts/package.sh <version>}
