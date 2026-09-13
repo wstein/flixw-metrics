@@ -101,7 +101,8 @@ public interface CompilerModel {
      * @param flixdocResultCharacters Unicode code points in the compiler-rendered result type
      */
     record DefInfo(String name, String module, String file, int line, int lines, int codeLines,
-                   int parameters, int maxLocalParameters, int localDefs, int nesting, int cognitive,
+                   int parameters, int maxLocalParameters, String maxLocalParametersOwner,
+                   int maxLocalParametersLine, int localDefs, int nesting, int cognitive,
                    int maxLineTokens, int maxLineTokensLine, String maxLineTokensOwner,
                    int datalogRules, int datalogFacts, int returnWidth,
                    boolean isPublic, boolean isTest, boolean hasDoc, List<String> effects,
@@ -127,6 +128,8 @@ public interface CompilerModel {
             private int codeLines;
             private int parameters;
             private int maxLocalParameters;
+            private String maxLocalParametersOwner;
+            private int maxLocalParametersLine;
             private int localDefs;
             private int nesting;
             private int cognitive;
@@ -155,6 +158,8 @@ public interface CompilerModel {
                 this.line = line;
                 this.maxLineTokensLine = line;
                 this.maxLineTokensOwner = name;
+                this.maxLocalParametersOwner = name;
+                this.maxLocalParametersLine = line;
             }
 
             public Builder lines(int value) { lines = value; return this; }
@@ -162,6 +167,12 @@ public interface CompilerModel {
             public Builder parameters(int value) { parameters = value; return this; }
             public Builder maxLocalParameters(int value) {
                 maxLocalParameters = value; return this;
+            }
+            public Builder maxLocalParametersOwner(String value) {
+                maxLocalParametersOwner = value; return this;
+            }
+            public Builder maxLocalParametersLine(int value) {
+                maxLocalParametersLine = value; return this;
             }
             public Builder localDefs(int value) { localDefs = value; return this; }
             public Builder nesting(int value) { nesting = value; return this; }
@@ -202,7 +213,8 @@ public interface CompilerModel {
 
             public DefInfo build() {
                 return new DefInfo(name, module, file, line, lines, codeLines, parameters,
-                    maxLocalParameters, localDefs, nesting, cognitive, maxLineTokens,
+                    maxLocalParameters, maxLocalParametersOwner, maxLocalParametersLine,
+                    localDefs, nesting, cognitive, maxLineTokens,
                     maxLineTokensLine, maxLineTokensOwner, datalogRules, datalogFacts,
                     returnWidth, isPublic, isTest, hasDoc, effects, flixdocParameterCharacters,
                     formalParameterNames, docText, datalogDependencies, datalogDependencyDepth,

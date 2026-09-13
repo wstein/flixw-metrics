@@ -42,11 +42,16 @@ final class Thresholds {
                 out.add(at(d, "definition-too-long", d.lines(), maxLines, "lines", ""));
             double maxParameters = config.limit(RuleDefinitions.TOO_MANY_PARAMETERS);
             if (config.enabled(RuleDefinitions.TOO_MANY_PARAMETERS)
-                    && d.widestParameterList() > maxParameters)
-                out.add(at(d, "too-many-parameters", d.widestParameterList(), maxParameters,
-                    "parameters",
-                    d.maxLocalParameters() > d.parameters()
-                        ? "widest is a local definition, not the signature" : ""));
+                    && d.widestParameterList() > maxParameters) {
+                boolean local = d.maxLocalParameters() > d.parameters();
+                out.add(local
+                    ? new SourceMetrics.Smell("too-many-parameters",
+                        d.maxLocalParametersOwner(), d.file(), d.maxLocalParametersLine(),
+                        d.maxLocalParameters(), maxParameters,
+                        "local definition", "parameters")
+                    : at(d, "too-many-parameters", d.parameters(), maxParameters,
+                        "parameters", ""));
+            }
             boolean documentedApi = d.isPublic() && !d.isTest() && !inTests(d.file());
             double maxFlixdocParameters = config.limit(RuleDefinitions.NOISY_FLIXDOC_PARAMETERS);
             if (config.enabled(RuleDefinitions.NOISY_FLIXDOC_PARAMETERS) && documentedApi

@@ -72,7 +72,7 @@ final class Metrics {
         // A method so javac cannot inline yesterday's value into Baseline. Incremental builds
         // must ask the current report class which contract it emits.
         static int schemaVersion() {
-            return 26;
+            return 27;
         }
 
         /** A finding's physical span and compiler-level owner, ready for editor tooling. */
@@ -173,6 +173,9 @@ final class Metrics {
                  + ", \"codeLines\": " + d.codeLines()
                  + ", \"parameters\": " + d.parameters()
                  + ", \"maxLocalParameters\": " + d.maxLocalParameters()
+                 + ", \"maxLocalParametersOwner\": "
+                 + SourceMetrics.Smell.quote(d.maxLocalParametersOwner())
+                 + ", \"maxLocalParametersLine\": " + d.maxLocalParametersLine()
                  + ", \"localDefinitions\": " + d.localDefs()
                  + ", \"nesting\": " + d.nesting()
                  + ", \"cognitive\": " + d.cognitive()

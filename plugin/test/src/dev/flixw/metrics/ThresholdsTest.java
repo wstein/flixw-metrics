@@ -34,6 +34,14 @@ public final class ThresholdsTest {
         DefInfo wide = def("Foo.threads", 5, 2, 9, 1, 0, false, false, true);
         require(has(Thresholds.apply(List.of(wide), List.of()), "too-many-parameters"),
             "a wide *local* parameter list is reported though the signature is narrow");
+        DefInfo locatedWide = DefInfo.builder("Foo.outer", "Foo", "src/Foo.flix", 3)
+            .lines(20).codeLines(15).parameters(1).maxLocalParameters(9)
+            .maxLocalParametersOwner("Foo.outer.loop").maxLocalParametersLine(11)
+            .hasDoc(true).build();
+        require(Thresholds.apply(List.of(locatedWide), List.of()).stream()
+                .anyMatch(s -> s.rule().equals("too-many-parameters")
+                    && s.subject().equals("Foo.outer.loop") && s.line() == 11),
+            "a wide local finding points to the local declaration, not its outer definition");
 
         DefInfo documented = def("Foo.ok", 5, 1, 0, 1, 0, true, false, true);
         require(Thresholds.apply(List.of(documented), List.of()).isEmpty(),

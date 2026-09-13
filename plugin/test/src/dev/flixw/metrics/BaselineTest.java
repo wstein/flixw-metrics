@@ -63,6 +63,12 @@ public final class BaselineTest {
                     == comparison.retained(),
                 "schema 25 baselines migrate after structured locations are added");
 
+            Files.writeString(baseline, before.render(Metrics.Format.JSON)
+                .replaceFirst("\"schemaVersion\": [0-9]+", "\"schemaVersion\": 26"));
+            require(Baseline.compare(baseline, after, MetricsConfig.defaults()).retained()
+                    == comparison.retained(),
+                "schema 26 baselines migrate after local locations are added");
+
             String changedSchema = before.render(Metrics.Format.JSON)
                 .replaceFirst("\"schemaVersion\": [0-9]+", "\"schemaVersion\": 0");
             Files.writeString(baseline, changedSchema);

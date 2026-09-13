@@ -37,7 +37,7 @@ final class Wire {
     private Wire() { }
 
     /** Bumped when a record's field order changes; a mismatch is a cache miss, never a guess. */
-    static final int VERSION = 8;
+    static final int VERSION = 9;
 
     static String encode(Model m) {
         StringBuilder b = new StringBuilder();
@@ -57,7 +57,8 @@ final class Wire {
                 d.hasDoc(), String.join(",", d.effects()), d.flixdocParameterCharacters(),
                 String.join(",", d.formalParameterNames()), d.docText(),
                 String.join(",", d.datalogDependencies()), d.datalogDependencyDepth(),
-                String.join(",", d.recursiveDatalogPredicates()), d.flixdocResultCharacters());
+                String.join(",", d.recursiveDatalogPredicates()), d.flixdocResultCharacters(),
+                d.maxLocalParametersOwner(), d.maxLocalParametersLine());
         }
         for (ModuleInfo mi : m.modules()) {
             row(b, "m", mi.name(), mi.definitions(), mi.lines(), mi.fanIn(), mi.fanOut(),
@@ -107,7 +108,9 @@ final class Wire {
                         .formalParameterNames(csv(f[23])).docText(un(f[24]))
                         .datalogDependencies(csv(f[25])).datalogDependencyDepth(i(f[26]))
                         .recursiveDatalogPredicates(csv(f[27]))
-                        .flixdocResultCharacters(i(f[28])).build());
+                        .flixdocResultCharacters(i(f[28]))
+                        .maxLocalParametersOwner(un(f[29])).maxLocalParametersLine(i(f[30]))
+                        .build());
                     case "m" -> modules.add(new ModuleInfo(un(f[1]), i(f[2]), i(f[3]), i(f[4]),
                         i(f[5]), csv(f[6]), csv(f[7])));
                     default -> { }

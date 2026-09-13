@@ -202,6 +202,10 @@ final class Flix075Adapter extends CompilerModel {
       .codeLines(codeLines)
       .parameters(declaredParameters(d.spec.fparams.toList))
       .maxLocalParameters(tally.widestLocalParams)
+      .maxLocalParametersOwner(
+        Option(tally.widestLocalName).map(d.sym.toString + "." + _).getOrElse(d.sym.toString))
+      .maxLocalParametersLine(
+        if (tally.widestLocalLine == 0) d.loc.startLine else tally.widestLocalLine)
       .localDefs(tally.localDefs)
       .nesting(deepestChain(tally.branches.toList))
       .cognitive(cognitive(tally))
@@ -332,6 +336,8 @@ final class Flix075Adapter extends CompilerModel {
     val locals = scala.collection.mutable.ListBuffer.empty[(String, SourceLocation)]
     var localDefs = 0
     var widestLocalParams = 0
+    var widestLocalName: String = null
+    var widestLocalLine = 0
     var booleans = 0
     var guards = 0
     var datalogRules = 0
@@ -398,7 +404,12 @@ final class Flix075Adapter extends CompilerModel {
         // exp1 is the local's own body; e.loc also covers the continuation after it, so
         // attributing by e.loc would blame a local for lines written past its own end.
         tally.locals += ((e.bnd.sym.text, e.exp1.loc))
-        tally.widestLocalParams = tally.widestLocalParams.max(declaredParameters(e.fparams.toList))
+        val parameters = declaredParameters(e.fparams.toList)
+        if (parameters > tally.widestLocalParams) {
+          tally.widestLocalParams = parameters
+          tally.widestLocalName = e.bnd.sym.text
+          tally.widestLocalLine = e.loc.startLine
+        }
       // `and`/`or` add a path through the code without adding a branch construct, which is why
       // a plain branch count reads a long boolean chain as trivial.
       // A constraint with no body is a fact: data written as code. A thousand facts is a data

@@ -22,6 +22,9 @@ public final class Flix075AdapterTest {
             DefInfo select = definition(model, "Alpha.selectValue");
             require(select.localDefs() == 1 && select.maxLocalParameters() == 2,
                 "local definitions cross the compiler adapter boundary");
+            require(select.maxLocalParametersOwner().equals("Alpha.selectValue.helper")
+                    && select.maxLocalParametersLine() == 20,
+                "the widest local's symbol and declaration line cross the adapter boundary");
             require(select.cognitive() == 2 && select.codeLines() == 4,
                 "branches, booleans, and definition code lines are measured");
             DefInfo documented = definition(model, "Alpha.documented");

@@ -11,7 +11,8 @@ public final class CompilerModelTest {
 
     public static void main(String[] args) {
         DefInfo def = DefInfo.builder("A.f", "A", "src/A.flix", 7)
-            .lines(30).codeLines(20).parameters(2).maxLocalParameters(3).localDefs(4)
+            .lines(30).codeLines(20).parameters(2).maxLocalParameters(3)
+            .maxLocalParametersOwner("A.f.loop").maxLocalParametersLine(12).localDefs(4)
             .nesting(5).cognitive(6).maxLineTokens(40).maxLineTokensLine(9)
             .maxLineTokensOwner("A.f.loop").datalogRules(8).datalogFacts(10).returnWidth(11)
             .isPublic(true).isTest(false).hasDoc(true).effects(List.of("IO"))
@@ -24,6 +25,9 @@ public final class CompilerModelTest {
             "source span fields retain their named values");
         require(def.parameters() == 2 && def.maxLocalParameters() == 3 && def.localDefs() == 4,
             "parameter and local-definition fields cannot exchange positions");
+        require(def.maxLocalParametersOwner().equals("A.f.loop")
+                && def.maxLocalParametersLine() == 12,
+            "the widest local retains its edit-ready owner and declaration line");
         require(def.maxLineTokens() == 40 && def.maxLineTokensLine() == 9
                 && def.maxLineTokensOwner().equals("A.f.loop"),
             "crammed-line value, location and owner retain their named values");

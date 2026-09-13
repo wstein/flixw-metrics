@@ -77,7 +77,8 @@ public final class ResultCacheTest {
             // the format itself uses to separate fields.
             var def = dev.flixw.metrics.sdk.CompilerModel.DefInfo.builder(
                     "Foo.od\td", "Foo", "src/A.flix", 3)
-                .lines(40).codeLines(30).parameters(2).maxLocalParameters(9).localDefs(1)
+                .lines(40).codeLines(30).parameters(2).maxLocalParameters(9)
+                .maxLocalParametersOwner("Foo.odd.loop").maxLocalParametersLine(5).localDefs(1)
                 .nesting(4).cognitive(12).maxLineTokens(31).maxLineTokensLine(7)
                 .maxLineTokensOwner("Foo.odd.loop").datalogRules(2).datalogFacts(5)
                 .returnWidth(6).isPublic(true).hasDoc(true).effects(List.of("IO", "Net"))
