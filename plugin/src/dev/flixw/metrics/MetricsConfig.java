@@ -114,7 +114,13 @@ final class MetricsConfig {
         List<String> parts = RuleDefinitions.all().stream().map(rule -> enabled(rule)
             ? rule.categorical() ? rule.id() + "=on" : rule.id() + "=" + number(limit(rule))
             : rule.id() + "=off").toList();
-        return String.join(", ", parts) + "; exclusions=" + exclusions.size();
+        long active = suppressions.stream().filter(s -> s.active(today)).count();
+        // Exclusions already earn a visible count here; a suppression removes a finding just
+        // as completely and had none. A reader seeing "0 findings" next to a rule's limit
+        // could not tell "nothing crossed it" from "something did, and it is hidden" without
+        // this -- the native JSON's "activeSuppressions" already carries the same fact.
+        return String.join(", ", parts) + "; exclusions=" + exclusions.size()
+            + "; activeSuppressions=" + active;
     }
 
     String json() {

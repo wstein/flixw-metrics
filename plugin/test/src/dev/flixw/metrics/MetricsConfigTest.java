@@ -60,6 +60,10 @@ public final class MetricsConfigTest {
             String markdown = filtered.render(Metrics.Format.MARKDOWN, null, config);
             require(markdown.contains("definition-too-long=100") && markdown.contains("dense=off"),
                 "human reports disclose their effective policy");
+            require(markdown.contains("activeSuppressions=1"),
+                "the policy line counts active suppressions the same way it counts exclusions,"
+                    + " so a finding hidden by policy is not indistinguishable from one that"
+                    + " never fired");
             String json = filtered.render(Metrics.Format.JSON, null, config);
             require(json.contains("\"configuration\"")
                     && json.contains("\"definition-too-long\": {\"enabled\": true, \"limit\": 100}")
@@ -110,6 +114,8 @@ public final class MetricsConfigTest {
 
             MetricsConfig expired = MetricsConfig.read(root, LocalDate.parse("2026-09-13"));
             require(!expired.isSuppressed(found.get(0)), "an expired suppression stops matching");
+            require(expired.policySummary().contains("activeSuppressions=0"),
+                "an expired suppression is not counted as active in the disclosed policy either");
 
             Files.writeString(root.resolve(".flixw-metrics.properties"),
                 "rules.not-a-rule.enabled=false\n");
