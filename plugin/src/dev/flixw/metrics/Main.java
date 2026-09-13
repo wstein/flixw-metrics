@@ -63,14 +63,16 @@ public final class Main {
             if (options.init()) Initializer.preflight(context.projectRoot());
             List<Path> sources = Metrics.projectFiles(context.projectRoot());
             MetricsConfig config = MetricsConfig.read(context.projectRoot());
-            CompilerModel.Model hit = cached(context, sources);
+            String inputDigest = ResultCache.key(context, sources, version());
+            CompilerModel.Model hit = cached(context, inputDigest);
             if (hit != null) {
                 // Findings, rankings and formatting are recomputed from the cached
                 // measurements, so a changed threshold takes effect on the next run rather
                 // than on the next cache miss.
                 Metrics.Report report = Metrics.of(sources.size(), hit,
                     SourceMetrics.measure(context.projectRoot(), sources, config), config);
-                Baseline.Comparison comparison = emit(context, sources, report, config, options);
+                Baseline.Comparison comparison = emit(context, report, config, options,
+                    inputDigest);
                 if (options.shouldFail(report, comparison)) System.exit(1);
                 return;
             }
@@ -91,6 +93,7 @@ public final class Main {
             Options options = parseOptions(args);
             if (options.init()) Initializer.preflight(context.projectRoot());
             List<Path> sources = Metrics.projectFiles(context.projectRoot());
+            String inputDigest = ResultCache.key(context, sources, version());
             // Resolved here, in the only JVM that has a compiler on its class path. The
             // adapter is what knows Flix's internals; nothing else in this plugin does.
             CompilerModel model = Adapters.resolve();
@@ -100,8 +103,7 @@ public final class Main {
             CompilerModel.Model m = model.measure(context.projectRoot());
             // The measurements, written before anything is derived from them.
             if (context.pluginCache() != null)
-                ResultCache.write(context.pluginCache(),
-                    ResultCache.key(context, sources, version()), Wire.encode(m));
+                ResultCache.write(context.pluginCache(), inputDigest, Wire.encode(m));
             MetricsConfig config = MetricsConfig.read(context.projectRoot());
             SourceMetrics text = SourceMetrics.measure(context.projectRoot(), sources, config);
             Metrics.Report report = Metrics.of(sources.size(), m, text, config);
@@ -109,7 +111,7 @@ public final class Main {
             // phase inherits this process's stdout, so it never sees the report as a value --
             // and parsing it back out of a stream the compiler also writes to would be reading
             // our own output past whatever Flix chose to print alongside it.
-            Baseline.Comparison comparison = emit(context, sources, report, config, options);
+            Baseline.Comparison comparison = emit(context, report, config, options, inputDigest);
             if (options.shouldFail(report, comparison)) System.exit(1);
         } catch (LinkageError e) {
             // The promise is a sentence, never a stack trace, and the capability probe cannot
@@ -129,10 +131,10 @@ public final class Main {
         }
     }
 
-    private static Baseline.Comparison emit(Context context, List<Path> sources,
-                                             Metrics.Report report, MetricsConfig config,
-                                             Options options) throws IOException {
-        Provenance provenance = Provenance.of(context, sources, version());
+    private static Baseline.Comparison emit(Context context, Metrics.Report report,
+                                             MetricsConfig config, Options options,
+                                             String inputDigest) throws IOException {
+        Provenance provenance = Provenance.of(context, version(), inputDigest);
         if (options.init()) {
             System.out.print(Initializer.write(context.projectRoot(),
                 report.render(Metrics.Format.JSON, provenance, config)));
@@ -155,10 +157,9 @@ public final class Main {
      * asymmetry is the whole design rule here: this cache may only make the plugin faster, never
      * make it disagree with the compiler.
      */
-    private static CompilerModel.Model cached(Context context, List<Path> sources) {
+    private static CompilerModel.Model cached(Context context, String inputDigest) {
         if (context.pluginCache() == null) return null;
-        String text = ResultCache.read(context.pluginCache(),
-            ResultCache.key(context, sources, version()));
+        String text = ResultCache.read(context.pluginCache(), inputDigest);
         return text == null ? null : Wire.decode(text);
     }
 

@@ -27,14 +27,13 @@ record Provenance(String commit, boolean dirty, String version, String when,
             + ", \"inputDigest\": " + SourceMetrics.Smell.quote(inputDigest) + "}";
     }
 
-    static Provenance of(Main.Context context, List<Path> sources, String version) {
+    static Provenance of(Main.Context context, String version, String inputDigest) {
         Path root = context.projectRoot();
         String sha = git(root, "rev-parse", "HEAD");
         boolean dirty = !git(root, "status", "--porcelain").isEmpty();
-        String inputs = ResultCache.key(context, sources, version);
         return new Provenance(sha.isEmpty() ? "(not a git checkout)" : sha, dirty, version,
             Instant.now().toString(), context.compilerJar().getFileName().toString(),
-            inputs == null ? "(unavailable)" : inputs);
+            inputDigest == null ? "(unavailable)" : inputDigest);
     }
 
     /**

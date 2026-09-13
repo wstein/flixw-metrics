@@ -21,21 +21,24 @@ public final class ProvenanceTest {
             Files.writeString(compiler, "compiler\n");
             Main.Context context = new Main.Context(project, compiler, Path.of("java"), null);
 
-            Provenance outside = Provenance.of(context, List.of(source), "test");
+            String digest = ResultCache.key(context, List.of(source), "test");
+            Provenance outside = Provenance.of(context, "test", digest);
             require(outside.commit().equals("(not a git checkout)") && !outside.dirty(),
                 "a non-checkout has explicit fallback provenance and is not spuriously dirty");
+            require(outside.inputDigest().equals(digest),
+                "provenance reuses the cache digest supplied by its caller");
 
             run(project, "git", "init", "--quiet");
             run(project, "git", "config", "user.email", "metrics@example.invalid");
             run(project, "git", "config", "user.name", "Metrics Test");
             run(project, "git", "add", "A.flix");
             run(project, "git", "commit", "--quiet", "-m", "fixture");
-            Provenance clean = Provenance.of(context, List.of(source), "test");
+            Provenance clean = Provenance.of(context, "test", digest);
             require(clean.commit().matches("[0-9a-f]{40}") && !clean.dirty(),
                 "a clean checkout records its commit and clean state");
 
             Files.writeString(source, "def a(): Int32 = 2\n");
-            require(Provenance.of(context, List.of(source), "test").dirty(),
+            require(Provenance.of(context, "test", digest).dirty(),
                 "an edited checkout is marked dirty");
 
             long started = System.nanoTime();
