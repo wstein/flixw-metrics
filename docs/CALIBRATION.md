@@ -72,7 +72,10 @@ The runner builds the current analyzer, fetches every repository directly at its
 measures Prelude, the six projects, and the four Datalog examples, then compares stable summaries
 with the manifest. It exits 1 with a per-target diff when measurements change and exits 2 for an
 invalid manifest or unavailable input. Full native JSON reports and `summary.json` remain in the
-output directory for review.
+output directory for review. Every normal project and Datalog target is then measured again from
+the warm cache with its full report as `--baseline` and `--view changes`; those compact reports are
+retained under `changes/`, and any non-empty finding or measurement delta fails the run. Prelude is
+the sole exception because its dedicated standard-library harness is not a normal Flix project.
 
 For an offline repeat, set `CALIBRATION_SOURCE_ROOT` to a directory containing checkouts named
 `flix`, `flix-basicdb`, `flix-parsec`, `flix-semver2`, `flix-json`, `flix-game-engine`, and

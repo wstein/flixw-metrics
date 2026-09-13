@@ -30,7 +30,8 @@ if [ -n "$(find "$output" -mindepth 1 -print -quit)" ]; then
   echo "calibrate-corpus: output directory is not empty: $output" >&2
   exit 2
 fi
-mkdir -p "$output/reports"
+output=$(CDPATH= cd -- "$output" && pwd -P)
+mkdir -p "$output/reports" "$output/changes"
 cp "$manifest" "$output/corpus.json"
 
 work=$(mktemp -d)
@@ -74,6 +75,8 @@ run_project() {
   id=$1
   project=$2
   cache=$work/cache/$id
+  report=$output/reports/$id.json
+  changes=$output/changes/$id.json
   mkdir -p "$cache"
   echo "calibrate-corpus: measuring $id" >&2
   FLIXW_ABI_VERSION=1 \
@@ -82,7 +85,17 @@ run_project() {
   FLIXW_JAVA_HOME=$java_home \
   FLIXW_PLUGIN_CACHE=$cache \
     "$java_home/bin/java" -jar "$root/dist/plugin.jar" report --format json \
-      > "$output/reports/$id.json"
+      --output "$report"
+  # Exercise both the warm-cache path and the compact comparison view. Identical pinned inputs
+  # must not manufacture finding or raw-measurement changes.
+  FLIXW_ABI_VERSION=1 \
+  FLIXW_PROJECT_ROOT=$project \
+  FLIXW_COMPILER_JAR=$root/plugin/lib/flix.jar \
+  FLIXW_JAVA_HOME=$java_home \
+  FLIXW_PLUGIN_CACHE=$cache \
+    "$java_home/bin/java" -jar "$root/dist/plugin.jar" report --format json \
+      --view changes --baseline "$report" --output "$changes"
+  sh "$root/scripts/check-changes-view.sh" "$changes"
 }
 
 sh "$root/scripts/package.sh" 0.0.0-calibration >/dev/null

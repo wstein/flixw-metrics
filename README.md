@@ -366,7 +366,9 @@ something.
 The corpus command is the slower, networked dogfood check, so it is scheduled weekly rather than
 run on every pull request. It clones only the full commits recorded in
 [`calibration/corpus.json`](calibration/corpus.json), rejects any metric drift, and leaves complete
-JSON reports in the requested output directory. See the
+JSON reports in the requested output directory. Each compiler-backed target is immediately measured
+again through the warm-cache `--view changes` path; the run fails unless that compact comparison is
+empty. Prelude uses its dedicated standard-library harness and is the sole exception. See the
 [calibration report](docs/CALIBRATION.md#reproducing-the-pinned-corpus) for offline reuse and the
 intentional-update procedure.
 

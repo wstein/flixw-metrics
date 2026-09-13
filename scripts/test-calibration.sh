@@ -26,4 +26,16 @@ if sh "$root/scripts/check-calibration.sh" "$work/corpus.json" "$work/reports" \
   exit 1
 fi
 grep -q 'drift in alpha' "$work/error"
+
+printf '%s\n' '{"baseline":{"newCount":0,"worsenedCount":0,"resolvedCount":0,"measurementDeltas":[]},"smells":[]}' \
+  > "$work/changes.json"
+sh "$root/scripts/check-changes-view.sh" "$work/changes.json"
+printf '%s\n' '{"baseline":{"newCount":1,"worsenedCount":0,"resolvedCount":0,"measurementDeltas":[]},"smells":[{}]}' \
+  > "$work/changes.json"
+if sh "$root/scripts/check-changes-view.sh" "$work/changes.json" \
+    > /dev/null 2> "$work/changes-error"; then
+  echo "test-calibration: non-empty changes view unexpectedly passed" >&2
+  exit 1
+fi
+grep -q 'expected an empty compact changes report' "$work/changes-error"
 echo "test-calibration: ok"
