@@ -10,9 +10,9 @@ your code with the exact compiler your project already pinned.
 ## Install
 
 ```console
-./flixw plugin install metrics 0.1.10 \
-  https://github.com/wstein/flixw-metrics/releases/download/v0.1.10/plugin.jar \
-  --sha256 31fcd1586569bbf92048154849bec0a24ff2be5cb93916ed4231080884193d02
+./flixw plugin install metrics 0.2.0 \
+  https://github.com/wstein/flixw-metrics/releases/download/v0.2.0/plugin.jar \
+  --sha256 327ab60155853068385bf4bd0a3bfe06efd9e338d9d15b1c572e44d84c9e28b2
 ```
 
 That digest is published here, not taken from the download, which is the point of passing
