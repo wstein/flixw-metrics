@@ -233,6 +233,8 @@ final class Flix0753Adapter extends CompilerModel {
       .isTest(d.spec.ann.isTest)
       .hasDoc(hasDoc(d))
       .effects(effectDetails.map(_.name()).distinct.sorted.asJava)
+      .declaredPure(isDeclaredPure(d.spec.eff))
+      .effectPolymorphic(isEffectPolymorphic(d.spec.eff))
       .effectDetails(effectDetails.asJava)
       .flixdocParameterCharacters(flixdocParameterCharacters(d.spec.fparams.toList))
       .formalParameterNames(sourceFormalParams(d.spec.fparams.toList).map(_.bnd.sym.text).asJava)
@@ -243,6 +245,14 @@ final class Flix0753Adapter extends CompilerModel {
       .flixdocResultCharacters(renderedCharacters(d.spec.retTpe))
       .build()
   }
+
+  private def isDeclaredPure(eff: Type): Boolean = eff match {
+    case Type.Cst(TypeConstructor.Pure, _) => true
+    case _ => false
+  }
+
+  private def isEffectPolymorphic(eff: Type): Boolean =
+    !isDeclaredPure(eff) && eff.typeVars.nonEmpty
 
   /**
    * How many parts the value a function returns has.

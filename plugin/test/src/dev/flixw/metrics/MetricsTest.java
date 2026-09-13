@@ -39,6 +39,23 @@ public final class MetricsTest {
         require(text.contains("docCoveragePercent: N/A") && text.contains("purityPercent: N/A"),
             "undefined percentages are N/A for people");
 
+        DefInfo ground = DefInfo.builder("Api.ground", "Api", "src/Api.flix", 2)
+            .effects(List.of("IO")).build();
+        DefInfo polymorphic = DefInfo.builder("Api.poly", "Api", "src/Api.flix", 3)
+            .declaredPure(false).effectPolymorphic(true).build();
+        Metrics.Report partitioned = Metrics.of(1,
+            model(List.of(api, ground, polymorphic)), emptyText());
+        require(partitioned.pureDefinitions() == 1
+                && partitioned.groundEffectfulDefinitions() == 1
+                && partitioned.effectPolymorphicDefinitions() == 1
+                && partitioned.effectfulDefinitions() == 2,
+            "pure, ground, and polymorphic effects form an explicit definition partition");
+        require(!polymorphic.isPure() && polymorphic.effects().isEmpty(),
+            "a bare effect variable is non-pure without inventing a concrete capability name");
+        require(partitioned.render(Metrics.Format.JSON)
+                .contains("\"effectPolymorphic\": true"),
+            "native JSON identifies effect-polymorphic definitions");
+
         Metrics.Report ordered = Metrics.of(2, model(List.of(
             def("Z.last", "src/Z.flix", false, true, true),
             def("A.first", "src/A.flix", false, true, true))), emptyText());

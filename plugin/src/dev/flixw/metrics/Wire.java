@@ -42,7 +42,7 @@ final class Wire {
     private Wire() { }
 
     /** Bumped when a record's field order changes; a mismatch is a cache miss, never a guess. */
-    static final int VERSION = 12;
+    static final int VERSION = 13;
 
     static String encode(Model m) {
         StringBuilder b = new StringBuilder();
@@ -65,7 +65,7 @@ final class Wire {
                 String.join(",", d.recursiveDatalogPredicates()), d.flixdocResultCharacters(),
                 d.maxLocalParametersOwner(), d.maxLocalParametersLine(), d.handlers(),
                 d.handledOperations(), d.maxHandlerOperations(), d.resumptions(),
-                effectDetails(d.effectDetails()));
+                effectDetails(d.effectDetails()), d.declaredPure(), d.effectPolymorphic());
         }
         for (EffectInfo effect : m.effectDeclarations()) {
             List<Object> fields = new ArrayList<>();
@@ -133,6 +133,7 @@ final class Wire {
                         .handlers(i(f[31])).handledOperations(i(f[32]))
                         .maxHandlerOperations(i(f[33])).resumptions(i(f[34]))
                         .effectDetails(effectDetails(un(f[35])))
+                        .declaredPure(b(f[36])).effectPolymorphic(b(f[37]))
                         .build());
                     case "e" -> {
                         if (f.length < 5 || (f.length - 5) % 2 != 0) return null;

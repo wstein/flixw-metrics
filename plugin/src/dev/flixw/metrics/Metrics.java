@@ -52,7 +52,9 @@ final class Metrics {
      * runs without knowing what the others mean.
      */
     record Report(int files, int modules, int definitions, int localDefinitions,
-                  int effectfulDefinitions, int cognitive, int traits, int instances, int enums,
+                  int pureDefinitions, int groundEffectfulDefinitions,
+                  int effectPolymorphicDefinitions, int effectfulDefinitions,
+                  int cognitive, int traits, int instances, int enums,
                   int structs, int effects, int typeAliases, int lines, int codeLines,
                   int commentLines, int docCommentLines, int blankLines, int commentPercent,
                   int longestLine, int linesOverLimit, int datalogRules, int datalogFacts,
@@ -73,7 +75,7 @@ final class Metrics {
         // A method so javac cannot inline yesterday's value into Baseline. Incremental builds
         // must ask the current report class which contract it emits.
         static int schemaVersion() {
-            return 32;
+            return 33;
         }
 
         /** A finding's physical span and compiler-level owner, ready for editor tooling. */
@@ -142,8 +144,9 @@ final class Metrics {
 
         private Report withFindings(PresentationFilter filter) {
             List<SourceMetrics.Smell> selected = smells.stream().filter(filter::matches).toList();
-            return new Report(files, modules, definitions, localDefinitions,
-                effectfulDefinitions, cognitive, traits, instances, enums, structs, effects,
+            return new Report(files, modules, definitions, localDefinitions, pureDefinitions,
+                groundEffectfulDefinitions, effectPolymorphicDefinitions, effectfulDefinitions,
+                cognitive, traits, instances, enums, structs, effects,
                 typeAliases, lines, codeLines, commentLines, docCommentLines, blankLines,
                 commentPercent, longestLine, linesOverLimit, datalogRules, datalogFacts,
                 widestReturn, widestEffectSurface, widestDatalogDependencyBreadth,
@@ -232,6 +235,8 @@ final class Metrics {
                  + ", \"isPublic\": " + d.isPublic()
                  + ", \"isTest\": " + d.isTest()
                  + ", \"hasDoc\": " + d.hasDoc()
+                 + ", \"declaredPure\": " + d.declaredPure()
+                 + ", \"effectPolymorphic\": " + d.effectPolymorphic()
                  + ", \"effectCount\": " + d.effectCount()
                  + ", \"effects\": " + e.append(']')
                  + ", \"effectDetails\": " + effectDetails.append(']')
@@ -451,6 +456,9 @@ final class Metrics {
                 {"files", "" + files}, {"analyzedFiles", "" + (files - excludedSources.size())},
                 {"excludedFiles", "" + excludedSources.size()}, {"modules", "" + modules},
                 {"definitions", "" + definitions}, {"localDefinitions", "" + localDefinitions},
+                {"pureDefinitions", "" + pureDefinitions},
+                {"groundEffectfulDefinitions", "" + groundEffectfulDefinitions},
+                {"effectPolymorphicDefinitions", "" + effectPolymorphicDefinitions},
                 {"effectfulDefinitions", "" + effectfulDefinitions}, {"cognitive", "" + cognitive},
                 {"traits", "" + traits}, {"instances", "" + instances}, {"enums", "" + enums},
                 {"structs", "" + structs}, {"effects", "" + effects},
@@ -510,7 +518,11 @@ final class Metrics {
             .toList();
         CompilerModel.LineInfo lines = includedLines(m, config);
         int localDefs = defs.stream().mapToInt(CompilerModel.DefInfo::localDefs).sum();
-        int effectful = (int) defs.stream().filter(d -> !d.isPure()).count();
+        int pure = (int) defs.stream().filter(CompilerModel.DefInfo::isPure).count();
+        int polymorphic = (int) defs.stream().filter(d -> !d.isPure()
+            && d.effectPolymorphic()).count();
+        int groundEffectful = defs.size() - pure - polymorphic;
+        int effectful = groundEffectful + polymorphic;
         int cognitive = defs.stream().mapToInt(CompilerModel.DefInfo::cognitive).sum();
         int datalogRules = defs.stream().mapToInt(CompilerModel.DefInfo::datalogRules).sum();
         int datalogFacts = defs.stream().mapToInt(CompilerModel.DefInfo::datalogFacts).sum();
@@ -537,7 +549,8 @@ final class Metrics {
         smells.sort(java.util.Comparator.comparing(SourceMetrics.Smell::file)
             .thenComparingInt(SourceMetrics.Smell::line)
             .thenComparing(SourceMetrics.Smell::rule));
-        return new Report(files, modules.size(), defs.size(), localDefs, effectful, cognitive,
+        return new Report(files, modules.size(), defs.size(), localDefs, pure, groundEffectful,
+            polymorphic, effectful, cognitive,
             m.traits(), m.instances(), m.enums(), m.structs(), m.effects(), m.typeAliases(),
             lines.total(), lines.code(), lines.comment(), lines.docComment(),
             lines.blank(), percent(lines.comment() + lines.docComment(), lines.total()),

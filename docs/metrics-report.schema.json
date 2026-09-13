@@ -7,7 +7,7 @@
   "required": ["schemaVersion", "configuration", "ruleCatalog", "excludedSources", "summary"],
   "properties": {
     "$schema": {"const": "https://raw.githubusercontent.com/wstein/flixw-metrics/main/docs/metrics-report.schema.json"},
-    "schemaVersion": {"const": 32},
+    "schemaVersion": {"const": 33},
     "presentationFilter": {
       "type": "object",
       "required": ["rule", "minimumSeverity", "file"],
@@ -56,12 +56,14 @@
     },
     "definition": {
       "type": "object",
-      "required": ["handlers", "handledOperations", "maxHandlerOperations", "resumptions", "effectDetails"],
+      "required": ["handlers", "handledOperations", "maxHandlerOperations", "resumptions", "declaredPure", "effectPolymorphic", "effectDetails"],
       "properties": {
         "handlers": {"type": "integer", "minimum": 0},
         "handledOperations": {"type": "integer", "minimum": 0},
         "maxHandlerOperations": {"type": "integer", "minimum": 0},
         "resumptions": {"type": "integer", "minimum": 0},
+        "declaredPure": {"type": "boolean"},
+        "effectPolymorphic": {"type": "boolean"},
         "effectDetails": {"type": "array", "items": {"$ref": "#/$defs/effectDetail"}}
       }
     },

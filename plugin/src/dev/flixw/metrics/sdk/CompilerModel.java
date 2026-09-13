@@ -89,7 +89,10 @@ public interface CompilerModel {
      *     record's top-level field count. A record of ten fields is a parameter list in the other
      *     direction: wide for the same reason, read for the same reason, and invisible to every
      *     other measure here
-     * @param effects the declared effects, empty when pure
+     * @param effects named constructors in the declared effect; empty for {@code Pure} and for a
+     *     bare effect variable
+     * @param declaredPure whether the declared effect is exactly {@code Pure}
+     * @param effectPolymorphic whether the non-pure declared effect contains a type variable
      * @param flixdocParameterCharacters Unicode code points in FlixDoc's rendered formal-parameter
      *     span, or zero
      *     for a nullary definition
@@ -114,6 +117,7 @@ public interface CompilerModel {
                    int maxLineTokens, int maxLineTokensLine, String maxLineTokensOwner,
                    int datalogRules, int datalogFacts, int returnWidth,
                    boolean isPublic, boolean isTest, boolean hasDoc, List<String> effects,
+                   boolean declaredPure, boolean effectPolymorphic,
                    int flixdocParameterCharacters, List<String> formalParameterNames,
                    String docText, List<String> datalogDependencies, int datalogDependencyDepth,
                    List<String> recursiveDatalogPredicates, int flixdocResultCharacters,
@@ -162,6 +166,8 @@ public interface CompilerModel {
             private boolean isTest;
             private boolean hasDoc;
             private List<String> effects = List.of();
+            private boolean declaredPure = true;
+            private boolean effectPolymorphic;
             private int flixdocParameterCharacters;
             private List<String> formalParameterNames = List.of();
             private String docText = "";
@@ -214,7 +220,15 @@ public interface CompilerModel {
             public Builder isPublic(boolean value) { isPublic = value; return this; }
             public Builder isTest(boolean value) { isTest = value; return this; }
             public Builder hasDoc(boolean value) { hasDoc = value; return this; }
-            public Builder effects(List<String> value) { effects = List.copyOf(value); return this; }
+            public Builder effects(List<String> value) {
+                effects = List.copyOf(value);
+                declaredPure = effects.isEmpty();
+                return this;
+            }
+            public Builder declaredPure(boolean value) { declaredPure = value; return this; }
+            public Builder effectPolymorphic(boolean value) {
+                effectPolymorphic = value; return this;
+            }
             public Builder flixdocParameterCharacters(int value) {
                 flixdocParameterCharacters = value; return this;
             }
@@ -251,7 +265,8 @@ public interface CompilerModel {
                     maxLocalParameters, maxLocalParametersOwner, maxLocalParametersLine,
                     localDefs, nesting, cognitive, maxLineTokens,
                     maxLineTokensLine, maxLineTokensOwner, datalogRules, datalogFacts,
-                    returnWidth, isPublic, isTest, hasDoc, effects, flixdocParameterCharacters,
+                    returnWidth, isPublic, isTest, hasDoc, effects, declaredPure,
+                    effectPolymorphic, flixdocParameterCharacters,
                     formalParameterNames, docText, datalogDependencies, datalogDependencyDepth,
                     recursiveDatalogPredicates, flixdocResultCharacters, handlers,
                     handledOperations, maxHandlerOperations, resumptions, effectDetails);
@@ -264,7 +279,7 @@ public interface CompilerModel {
         }
 
         public boolean isPure() {
-            return effects.isEmpty();
+            return declaredPure;
         }
 
         /** Width of the normalized declared effect set; pure definitions have width zero. */

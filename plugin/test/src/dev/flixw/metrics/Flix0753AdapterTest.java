@@ -98,15 +98,28 @@ public final class Flix0753AdapterTest {
                     def perform(f: Unit -> Unit \\ e): Unit
                 }
 
+                def forward(f: Unit -> Unit \\ ef): Unit \\ ef = f()
+
                 def polymorphicEffect(): Unit \\ Outer[Inner[Int32]] =
                     Outer.perform(_ -> Inner.touch(1))
 
                 def otherPolymorphicEffect(): Unit \\ Outer[Inner[String]] =
                     Outer.perform(_ -> Inner.touch("value"))
+
+                def genericEffect[a: Type](x: a): Unit \\ Outer[Inner[a]] =
+                    Outer.perform(_ -> Inner.touch(x))
                 """);
             Model polymorphic = new Flix0753Adapter().measure(project);
             DefInfo firstEffect = definition(polymorphic, "polymorphicEffect");
             DefInfo secondEffect = definition(polymorphic, "otherPolymorphicEffect");
+            DefInfo forward = definition(polymorphic, "forward");
+            DefInfo genericDeclaredEffect = definition(polymorphic, "genericEffect");
+            require(!forward.isPure() && forward.effectPolymorphic()
+                    && forward.effects().isEmpty(),
+                "a bare effect variable is non-pure without becoming a named capability");
+            require(!firstEffect.effectPolymorphic() && !secondEffect.effectPolymorphic()
+                    && genericDeclaredEffect.effectPolymorphic(),
+                "type variables, including those inside effect arguments, define polymorphism");
             require(firstEffect.effects().equals(java.util.List.of("Outer"))
                     && secondEffect.effects().equals(java.util.List.of("Outer")),
                 "a polymorphic effect is atomic and does not expose effects in its arguments");
