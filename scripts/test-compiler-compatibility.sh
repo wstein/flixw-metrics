@@ -1,5 +1,5 @@
 #!/bin/sh
-# Lock the oldest supported Flix ABI to 0.75.3, with the immediately preceding release as proof.
+# Lock the oldest supported Flix ABI to 0.68.0, with the immediately preceding release as proof.
 set -eu
 
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd -P)
@@ -38,6 +38,8 @@ fetch() {
   mv "$jar.part" "$jar"
 }
 
+fetch 0.67.0 7e345b4c2868244298d8d5b0d33c71f72e6084bfeac5130b6a7771543405dbe5
+fetch 0.68.0 af568a2d4046207f908f8ec37786409b3dccdec944c2df5f571444599fb6b7c8
 fetch 0.75.2 a2697d875725a0dde6e793b8d54cb220e86167a6d49ec5f0ccb0832966c8c15a
 fetch 0.75.3 bf123cdb6494d6e0cbff6399bf185314d332bbe97bfd776e4abc03a5d39dd954
 
@@ -59,12 +61,24 @@ capabilities() {
     "$java_home/bin/java" -jar "$root/dist/plugin.jar" capabilities
 }
 
-capabilities "$work/flix-0.75.2.jar" > "$work/0.75.2.json"
+capabilities "$work/flix-0.67.0.jar" > "$work/0.67.0.json"
 jq -e '
   (.hasEngineApi == false) and
-  any(.missing[]; contains("TypedAst$Spec.fparams"))
-' "$work/0.75.2.json" >/dev/null || {
-  echo "test-compiler-compatibility: Flix 0.75.2 did not fail the expected ABI boundary" >&2
+  any(.missing[]; contains("SourceLocation.startLine"))
+' "$work/0.67.0.json" >/dev/null || {
+  echo "test-compiler-compatibility: Flix 0.67.0 did not fail the expected ABI boundary" >&2
+  exit 1
+}
+
+capabilities "$work/flix-0.68.0.jar" > "$work/0.68.0.json"
+jq -e '.hasEngineApi and (.missing | length == 0)' "$work/0.68.0.json" >/dev/null || {
+  echo "test-compiler-compatibility: Flix 0.68.0 did not satisfy the adapter ABI" >&2
+  exit 1
+}
+
+capabilities "$work/flix-0.75.2.jar" > "$work/0.75.2.json"
+jq -e '.hasEngineApi and (.missing | length == 0)' "$work/0.75.2.json" >/dev/null || {
+  echo "test-compiler-compatibility: Flix 0.75.2 did not satisfy the adapter ABI" >&2
   exit 1
 }
 
@@ -79,8 +93,15 @@ mill=$root/mill
 (cd "$root" && "$mill" --no-server plugin.test.compile >/dev/null)
 classpath=$(cd "$root" && "$mill" --no-server show plugin.test.runClasspath 2>/dev/null \
   | jq -r '.[] | split(":")[-1]' | paste -sd: -)
-"$java_home/bin/java" -cp "$classpath:$work/flix-0.75.3.jar" \
-  dev.flixw.metrics.PluginIntegrationTest \
-  "$root/plugin/test/fixtures/semantic" "$root/dist/plugin.jar" "$work/flix-0.75.3.jar"
+integration() {
+  compiler=$1
+  "$java_home/bin/java" -cp "$classpath:$compiler" \
+    dev.flixw.metrics.PluginIntegrationTest \
+    "$root/plugin/test/fixtures/semantic" "$root/dist/plugin.jar" "$compiler"
+}
 
-echo "test-compiler-compatibility: 0.75.2 rejected; 0.75.3 integration passed"
+integration "$work/flix-0.68.0.jar"
+integration "$work/flix-0.75.2.jar"
+integration "$work/flix-0.75.3.jar"
+
+echo "test-compiler-compatibility: 0.67.0 rejected; 0.68.0, 0.75.2, and 0.75.3 integration passed"

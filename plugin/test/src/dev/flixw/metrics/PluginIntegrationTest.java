@@ -197,6 +197,9 @@ public final class PluginIntegrationTest {
             require(jar.stream().noneMatch(entry -> entry.getName().startsWith("scala/")
                     || entry.getName().startsWith("ca/uwaterloo/flix/")),
                 "the plugin does not bundle compiler or Scala classes");
+            require(jar.getEntry("dev/flixw/metrics/flix0680/Flix0680Adapter.class") != null
+                    && jar.getEntry("dev/flixw/metrics/flix0753/Flix0753Adapter.class") != null,
+                "the plugin packages every compiler adapter family");
             var attributes = jar.getManifest().getMainAttributes();
             require("dev.flixw.metrics.Main".equals(attributes.getValue("Main-Class"))
                     && "metrics".equals(attributes.getValue("Flixw-Plugin-Command")),

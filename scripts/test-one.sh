@@ -21,7 +21,12 @@ classpath=$(cd "$root" && "$mill" --no-server show plugin.test.runClasspath 2>/d
 
 case $class in
   dev.flixw.metrics.CompilerCapabilitiesTest)
-    exec java -cp "$classpath" "$class" "$root/plugin/lib/flix.jar"
+    exec java -cp "$classpath" "$class" "$root/plugin/lib/flix.jar" \
+      "$root/plugin/lib/flix-0.68.0.jar"
+    ;;
+  dev.flixw.metrics.Flix0680AdapterTest)
+    exec java -cp "$classpath:$root/plugin/lib/flix-0.68.0.jar" "$class" \
+      "$root/plugin/test/fixtures/semantic"
     ;;
   dev.flixw.metrics.Flix0753AdapterTest)
     exec java -cp "$classpath:$root/plugin/lib/flix.jar" "$class" \

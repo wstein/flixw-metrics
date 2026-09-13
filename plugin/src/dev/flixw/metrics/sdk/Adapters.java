@@ -5,11 +5,10 @@ import java.util.List;
 /**
  * Finds the adapter that links against the compiler on this class path.
  *
- * <p>Selection is by <em>linkage</em>, not by version string. Instantiating an adapter forces
- * the JVM to resolve the compiler types it binds to, so an adapter written for an AST this
- * compiler does not have fails here, in a controlled place, instead of part-way through a
- * measurement. A fork reporting an unfamiliar version may still link; a compiler reporting a
- * familiar one may not. The JVM knows, and it is cheaper to ask it than to maintain a table of
+ * <p>Selection is by <em>linkage</em>, not by version string. The bytecode-derived ABI contract is
+ * checked before an adapter is instantiated, because the JVM is allowed to resolve method
+ * references lazily. A fork reporting an unfamiliar version may still link; a compiler reporting
+ * a familiar one may not. The JVM knows, and it is cheaper to ask it than to maintain a table of
  * which versions are secretly compatible.
  *
  * <p>Loaded by name so that nothing outside this method mentions an adapter class. The phase
@@ -27,12 +26,15 @@ public final class Adapters {
      * cache, which is the property the SDK exists to buy.
      */
     private static final List<String> KNOWN =
-        List.of("dev.flixw.metrics.flix0753.Flix0753Adapter");
+        List.of("dev.flixw.metrics.flix0753.Flix0753Adapter",
+            "dev.flixw.metrics.flix0680.Flix0680Adapter");
 
     /** The first adapter that links, or null when none does. */
     public static CompilerModel resolve() {
         for (String name : KNOWN) {
             try {
+                if (!AdapterAbi.missing(AdapterAbi.contract(name),
+                    ClassLoader.getSystemClassLoader()).isEmpty()) continue;
                 Class<?> type = Class.forName(name);
                 Object instance = type.getDeclaredConstructor().newInstance();
                 if (instance instanceof CompilerModel model) return model;

@@ -2,6 +2,21 @@ package build
 
 import mill._, scalalib._
 
+private val flixScalaVersion = "2.13.18"
+
+/** An older adapter compiled in isolation against the oldest compiler in its ABI family. */
+object adapter0680 extends ScalaModule {
+  def scalaVersion = flixScalaVersion
+
+  def scalacOptions = Seq("-deprecation", "-feature", "-Xfatal-warnings")
+
+  def compilerJar = Task.Source(moduleDir / os.up / "plugin" / "lib" / "flix-0.68.0.jar")
+
+  def compileClasspath = Task {
+    super.compileClasspath() ++ Seq(plugin.compile().classes, compilerJar())
+  }
+}
+
 /**
  * The plugin is one module with Java and Scala sources side by side, and the split is
  * deliberate rather than incidental.
@@ -24,7 +39,7 @@ object plugin extends ScalaModule {
    * so the two have to agree; 2.13 is binary compatible within its series, so this pins a
    * series and not a patch.
    */
-  def scalaVersion = "2.13.18"
+  def scalaVersion = flixScalaVersion
 
   def javacOptions = Seq("-Xlint:all", "-Werror", "--release", "21")
 
@@ -52,7 +67,7 @@ object plugin extends ScalaModule {
   def flixJar = Task {
     compilerJars()
       .filter(ref => os.exists(ref.path))
-      .flatMap(ref => os.list(ref.path).filter(_.ext == "jar").map(PathRef(_)))
+      .flatMap(ref => os.list(ref.path).filter(_.last == "flix.jar").map(PathRef(_)))
   }
 
   /**
@@ -65,6 +80,11 @@ object plugin extends ScalaModule {
    * flixw pinned.
    */
   def compileClasspath = Task { super.compileClasspath() ++ flixJar() }
+
+  /** Package every adapter family, but none of the compiler jars used to compile them. */
+  override def localClasspath = Task {
+    super.localClasspath() ++ Seq(adapter0680.compile().classes)
+  }
 
   /**
    * Only this module's own classes.
@@ -107,12 +127,15 @@ object plugin extends ScalaModule {
     def testFramework = "none"
 
     /** Test-only: parse emitted JSON with the Gson already bundled in the pinned compiler jar. */
-    override def compileClasspath = Task { super.compileClasspath() ++ plugin.flixJar() }
+    override def compileClasspath = Task {
+      super.compileClasspath() ++ plugin.flixJar() ++ Seq(adapter0680.compile().classes)
+    }
 
     def check() = Task.Command {
       val cp = (runClasspath() ++ Seq(compile().classes)).map(_.path).mkString(":")
       val sourceRoot = moduleDir / "src"
       val special = Set("dev.flixw.metrics.CompilerCapabilitiesTest",
+                        "dev.flixw.metrics.Flix0680AdapterTest",
                         "dev.flixw.metrics.Flix0753AdapterTest",
                         "dev.flixw.metrics.PluginIntegrationTest")
       val mains = os.walk(sourceRoot)
@@ -125,8 +148,13 @@ object plugin extends ScalaModule {
       }
       val fixture = moduleDir / "fixtures" / "semantic"
       val compiler = plugin.flixJar().head.path
+      val olderCompiler = adapter0680.compilerJar().path
       val integrationCp = cp + java.io.File.pathSeparator + compiler
-      os.proc("java", "-cp", cp, "dev.flixw.metrics.CompilerCapabilitiesTest", compiler)
+      val olderIntegrationCp = cp + java.io.File.pathSeparator + olderCompiler
+      os.proc("java", "-cp", cp, "dev.flixw.metrics.CompilerCapabilitiesTest", compiler,
+              olderCompiler)
+        .call(stdout = os.Inherit, stderr = os.Inherit)
+      os.proc("java", "-cp", olderIntegrationCp, "dev.flixw.metrics.Flix0680AdapterTest", fixture)
         .call(stdout = os.Inherit, stderr = os.Inherit)
       os.proc("java", "-cp", integrationCp, "dev.flixw.metrics.Flix0753AdapterTest", fixture)
         .call(stdout = os.Inherit, stderr = os.Inherit)

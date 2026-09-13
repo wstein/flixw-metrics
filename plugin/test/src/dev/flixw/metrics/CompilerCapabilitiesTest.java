@@ -1,5 +1,6 @@
 package dev.flixw.metrics;
 
+import dev.flixw.metrics.sdk.AdapterAbi;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
@@ -22,10 +23,14 @@ public final class CompilerCapabilitiesTest {
             require(!noApi.hasFlixApi() && !noApi.hasEngineApi() && !noApi.hasNativeMetrics(),
                 "empty jar has no capabilities");
             require(!noApi.missing().isEmpty(), "an empty jar reports what it is missing");
-            Set<String> linked = AdapterAbi.references().stream()
+            Set<String> linked = AdapterAbi.contracts().stream()
+                .flatMap(contract -> contract.references().stream())
                 .map(AdapterAbi.Reference::display).collect(Collectors.toSet());
-            require(noApi.missing().containsAll(linked),
-                "the capability gate covers every Flix reference linked by the adapter");
+            require(AdapterAbi.contracts().stream().anyMatch(contract -> noApi.missing().containsAll(
+                contract.references().stream().map(AdapterAbi.Reference::display).toList())),
+                "the capability gate reports every reference in its closest adapter contract");
+            require(AdapterAbi.contracts().size() == 2,
+                "the capability gate derives a separate contract for each adapter");
             require(linked.stream().anyMatch(r -> r.contains("formatType$default$2:()")),
                 "the bytecode contract includes Scala default-argument accessors");
             require(linked.stream().anyMatch(r -> r.contains("MODULE$:") && r.contains("FormatType$")),
@@ -91,10 +96,20 @@ public final class CompilerCapabilitiesTest {
             require(found.missing().stream().anyMatch(m -> m.contains("FormalParam")),
                 "the gate requires the formal parameter node used for names and FlixDoc width");
 
-            if (args.length == 1) {
+            if (args.length >= 1) {
                 CompilerCapabilities stock = inspect(Path.of(args[0]));
                 require(stock.hasEngineApi() && stock.missing().isEmpty(),
                     "the pinned compiler satisfies every bytecode-derived adapter requirement");
+            }
+            if (args.length >= 2) {
+                Path older = Path.of(args[1]);
+                CompilerCapabilities stock = inspect(older);
+                require(stock.hasEngineApi() && stock.missing().isEmpty(),
+                    "the older compiler satisfies one bytecode-derived adapter requirement");
+                require(!missing(older, AdapterAbi.contracts().get(0)).isEmpty(),
+                    "the older compiler does not satisfy the newer adapter contract");
+                require(missing(older, AdapterAbi.contracts().get(1)).isEmpty(),
+                    "the older compiler satisfies its dedicated adapter contract");
             }
         } finally {
             delete(work);
@@ -106,6 +121,13 @@ public final class CompilerCapabilitiesTest {
         try (java.net.URLClassLoader loader = new java.net.URLClassLoader(
                 new java.net.URL[] {jar.toUri().toURL()}, ClassLoader.getPlatformClassLoader())) {
             return CompilerCapabilities.inspect(loader, jar);
+        }
+    }
+
+    private static List<String> missing(Path jar, AdapterAbi.Contract contract) throws IOException {
+        try (java.net.URLClassLoader loader = new java.net.URLClassLoader(
+                new java.net.URL[] {jar.toUri().toURL()}, ClassLoader.getPlatformClassLoader())) {
+            return AdapterAbi.missing(contract, loader);
         }
     }
 

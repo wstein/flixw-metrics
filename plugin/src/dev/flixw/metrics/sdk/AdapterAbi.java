@@ -1,9 +1,12 @@
-package dev.flixw.metrics;
+package dev.flixw.metrics.sdk;
 
 import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -12,48 +15,114 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-/** The exact Flix ABI referenced by the compiled, version-specific adapter. */
-final class AdapterAbi {
-    private static final String ADAPTER = "dev/flixw/metrics/flix0753/Flix0753Adapter";
+/** The exact Flix ABI referenced by each compiled, version-specific adapter. */
+public final class AdapterAbi {
     private static final String FLIX = "ca/uwaterloo/flix/";
-    private static final List<Reference> REFERENCES = readAdapterTree();
+    private static final List<Contract> CONTRACTS = Adapters.known().stream()
+        .map(name -> new Contract(name, readAdapterTree(name.replace('.', '/')))).toList();
 
     private AdapterAbi() { }
 
-    enum Kind { CLASS, FIELD, METHOD }
+    public enum Kind { CLASS, FIELD, METHOD }
 
-    record Reference(Kind kind, String owner, String name, String descriptor) {
-        String display() {
+    public record Reference(Kind kind, String owner, String name, String descriptor) {
+        public String display() {
             String type = owner.replace('/', '.');
             return kind == Kind.CLASS ? "class " + type : type + "." + name + ":" + descriptor;
         }
     }
 
-    static List<Reference> references() {
-        return REFERENCES;
+    public record Contract(String adapterClass, List<Reference> references) { }
+
+    public static List<Contract> contracts() {
+        return CONTRACTS;
+    }
+
+    public static Contract contract(String adapterClass) {
+        return CONTRACTS.stream().filter(value -> value.adapterClass().equals(adapterClass))
+            .findFirst().orElseThrow(() -> new IllegalArgumentException("unknown adapter " + adapterClass));
+    }
+
+    /** Returns the ABI references that cannot be resolved without initializing compiler code. */
+    public static List<String> missing(Contract contract, ClassLoader compiler) {
+        List<String> missing = new ArrayList<>();
+        for (Reference reference : contract.references()) requireReference(compiler, missing, reference);
+        return List.copyOf(missing);
     }
 
     /**
      * Scala may move a closure into a generated nested class. Follow those class references too,
      * so changing that compiler detail cannot move a Flix call outside the capability contract.
      */
-    private static List<Reference> readAdapterTree() {
+    private static List<Reference> readAdapterTree(String adapter) {
         ArrayDeque<String> pending = new ArrayDeque<>();
         Set<String> visited = new HashSet<>();
         Set<Reference> found = new LinkedHashSet<>();
-        pending.add(ADAPTER);
+        pending.add(adapter);
         while (!pending.isEmpty()) {
             String name = pending.removeFirst();
             if (!visited.add(name)) continue;
             Parsed parsed = read(name);
             for (String type : parsed.classes()) {
-                if (type.startsWith(ADAPTER + "$")) pending.add(type);
+                if (type.startsWith(adapter + "$")) pending.add(type);
                 if (type.startsWith(FLIX)) found.add(new Reference(Kind.CLASS, type, "", ""));
             }
             for (Reference reference : parsed.members())
                 if (reference.owner().startsWith(FLIX)) found.add(reference);
         }
         return found.stream().sorted(Comparator.comparing(Reference::display)).toList();
+    }
+
+    private static void requireReference(ClassLoader loader, List<String> missing,
+                                         Reference reference) {
+        try {
+            Class<?> owner = Class.forName(reference.owner().replace('/', '.'), false, loader);
+            if (reference.kind() == Kind.CLASS) return;
+            if (reference.kind() == Kind.FIELD) {
+                for (Field field : owner.getFields())
+                    if (field.getName().equals(reference.name())
+                        && descriptor(field.getType()).equals(reference.descriptor())) return;
+            } else if (reference.name().equals("<init>")) {
+                for (Constructor<?> constructor : owner.getConstructors())
+                    if (descriptor(constructor).equals(reference.descriptor())) return;
+            } else {
+                for (Method method : owner.getMethods())
+                    if (method.getName().equals(reference.name())
+                        && descriptor(method).equals(reference.descriptor())) return;
+            }
+            missing.add(reference.display());
+        } catch (ClassNotFoundException | LinkageError e) {
+            missing.add(reference.display());
+        }
+    }
+
+    private static String descriptor(Method method) {
+        return descriptor(method.getParameterTypes(), method.getReturnType());
+    }
+
+    private static String descriptor(Constructor<?> constructor) {
+        return descriptor(constructor.getParameterTypes(), void.class);
+    }
+
+    private static String descriptor(Class<?>[] parameters, Class<?> result) {
+        StringBuilder value = new StringBuilder("(");
+        for (Class<?> parameter : parameters) value.append(descriptor(parameter));
+        return value.append(')').append(descriptor(result)).toString();
+    }
+
+    private static String descriptor(Class<?> type) {
+        if (type.isArray()) return type.getName().replace('.', '/');
+        if (!type.isPrimitive()) return "L" + type.getName().replace('.', '/') + ";";
+        if (type == void.class) return "V";
+        if (type == boolean.class) return "Z";
+        if (type == byte.class) return "B";
+        if (type == char.class) return "C";
+        if (type == short.class) return "S";
+        if (type == int.class) return "I";
+        if (type == long.class) return "J";
+        if (type == float.class) return "F";
+        if (type == double.class) return "D";
+        throw new AssertionError("unknown primitive " + type);
     }
 
     private static Parsed read(String internalName) {
