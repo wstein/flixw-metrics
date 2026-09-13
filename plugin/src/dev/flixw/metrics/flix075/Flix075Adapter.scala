@@ -8,7 +8,7 @@ import ca.uwaterloo.flix.api.{Bootstrap, Flix}
 import ca.uwaterloo.flix.language.ast.shared.{Input, Source}
 import ca.uwaterloo.flix.language.fmt.FormatType
 import ca.uwaterloo.flix.language.phase.Lexer
-import ca.uwaterloo.flix.language.ast.{SourceLocation, Symbol, Type, TypeConstructor, TypedAst}
+import ca.uwaterloo.flix.language.ast.{Kind, SourceLocation, Symbol, Type, TypeConstructor, TypedAst}
 import ca.uwaterloo.flix.util.{Formatter, Options}
 
 import java.nio.file.Path
@@ -274,7 +274,21 @@ final class Flix075Adapter extends CompilerModel {
    */
   private def effectsOf(eff: Type): List[String] = eff match {
     case Type.Cst(ca.uwaterloo.flix.language.ast.TypeConstructor.Pure, _) => Nil
-    case _ => eff.effects.toList.map(_.name).sorted
+    case _ =>
+      def visit(tpe: Type): List[String] = tpe match {
+        case Type.Cst(TypeConstructor.Effect(sym, _), _) => sym.name :: Nil
+        // A saturated polymorphic effect is one capability. Its type arguments may themselves
+        // mention effects, but those are parameters of this effect rather than members of the
+        // surrounding effect formula.
+        case app: Type.Apply if app.kind == Kind.Eff => app.baseType match {
+          case Type.Cst(TypeConstructor.Effect(sym, _), _) => sym.name :: Nil
+          case _ => visit(app.tpe1) ::: visit(app.tpe2)
+        }
+        case app: Type.Apply => visit(app.tpe1) ::: visit(app.tpe2)
+        case Type.Alias(_, _, tpe, _) => visit(tpe)
+        case _ => Nil
+      }
+      visit(eff).distinct.sorted
   }
 
   private def declaredParameters(fparams: List[TypedAst.FormalParam]): Int = fparams match {

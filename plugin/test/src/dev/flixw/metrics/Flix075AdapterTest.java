@@ -64,6 +64,23 @@ public final class Flix075AdapterTest {
                 "compiler-source calibration does not leak other library definitions");
             require(prelude.effects() == 3 && prelude.enums() == 6 && prelude.typeAliases() == 2,
                 "Prelude declarations cross the compiler adapter boundary");
+
+            Files.writeString(project.resolve("src/PolymorphicEffects.flix"), """
+                eff Inner[a] {
+                    def touch(x: a): Unit
+                }
+
+                eff Outer[e: Eff] {
+                    def perform(f: Unit -> Unit \\ e): Unit
+                }
+
+                def polymorphicEffect(): Unit \\ Outer[Inner[Int32]] =
+                    Outer.perform(_ -> Inner.touch(1))
+                """);
+            Model polymorphic = new Flix075Adapter().measure(project);
+            require(definition(polymorphic, "polymorphicEffect").effects()
+                    .equals(java.util.List.of("Outer")),
+                "a polymorphic effect is atomic and does not expose effects in its arguments");
             System.out.println("Flix075AdapterTest: ok");
         } finally {
             delete(project);
