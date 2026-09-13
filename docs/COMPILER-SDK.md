@@ -121,6 +121,8 @@ child loader parented to the platform loader.
 | `effectfulDefinitions`, `purityPercent` | the *declared* effect on each signature |
 | `cognitive` | branches weighted by nesting, plus boolean operators and match guards |
 | `returnWidth` | a tuple's arity, or a record's top-level field count |
+| `flixdocParameterCharacters` | Unicode characters in FlixDoc's generated outer formal-parameter span |
+| `parameterDocEntries`, `redundantParameterDocEntries` | strict Markdown entries for real formal names, and the subset containing only signature boilerplate |
 | `datalogRules`, `datalogFacts` | constraints with and without a body |
 | `tests`, `docCoveragePercent` | `@Test` annotations and doc comments on the production public surface |
 | `lines`, `codeLines`, `commentLines`, `docCommentLines`, `blankLines` | the compiler's own lexer |
@@ -144,6 +146,22 @@ registry and is used by threshold evaluation. Each native JSON ranking carries s
 `eligible` and `ineligibilityReason` fields, and human reports mark ineligible entries in place;
 eligibility does not mean that the threshold was crossed. SARIF discloses the floor in its rule
 metadata.
+
+### FlixDoc parameter noise comes from the typed signature and its documentation
+
+FlixDoc renders each public definition's outer formals as `(name: Type, ...)`, independently of
+how the source declaration is wrapped. The adapter uses the compiler's own type formatter, removes
+the synthetic Unit parameter of a nullary definition, and records the Unicode-character length of
+that exact span. It also carries outer formal names and raw Markdown documentation through the
+measurement cache. Policy remains outside the adapter: `Thresholds` applies the configurable
+140-character boundary, while `DocumentationMetrics` recognizes only Markdown list entries whose
+labels exactly match real formals.
+
+The prose rule intentionally does not infer meaning from ordinary sentences. An entry is redundant
+only when its remaining words are the parameter name and a small boilerplate vocabulary; at least
+two such entries are required. This keeps named lists, meaningful parameter contracts, and common
+Prelude prose out of the rule. Native JSON exposes the rendered length and both entry counts, but
+not the complete doc text; the latter is cached only so policy can be recomputed on a warm run.
 
 Module coupling is deliberately narrower than general dependency coupling. An edge from A to B
 means a project definition in A contains a resolved direct call to a definition in B. Type,

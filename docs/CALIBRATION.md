@@ -91,18 +91,31 @@ not a way to make unexpected counts pass.
 | --- | ---: | --- |
 | Prelude | 5 | crammed-line 4; line-too-long 1 |
 | flix-basicdb | 87 | definition-too-long 6; line-too-long 47; undocumented-public 34 |
-| flix-parsec | 245 | crammed-line 21; deeply-nested 1; line-too-long 50; too-many-parameters 1; undocumented-public 170; wide-coupling 2 |
+| flix-parsec | 246 | crammed-line 21; deeply-nested 1; line-too-long 50; noisy-flixdoc-parameters 1; too-many-parameters 1; undocumented-public 170; wide-coupling 2 |
 | flix-semver2 | 7 | dense 1; undocumented-public 6 |
 | flix-json | 60 | crammed-line 8; dense 2; line-too-long 49; undocumented-public 1 |
-| flix-game-engine | 1,172 | crammed-line 109; deeply-nested 15; definition-too-long 23; dense 72; line-too-long 725; too-many-parameters 89; undocumented-public 122; wide-coupling 16; wide-return 1 |
+| flix-game-engine | 1,200 | crammed-line 109; deeply-nested 15; definition-too-long 23; dense 72; line-too-long 725; noisy-flixdoc-parameters 28; too-many-parameters 89; undocumented-public 122; wide-coupling 16; wide-return 1 |
 | qual-effect-system | 27 | deeply-nested 1; definition-too-long 1; line-too-long 4; undocumented-public 21 |
 | Flix Datalog examples | 50 | crammed-line 17; line-too-long 33 |
-| **Total** | **1,653** | 2,952 definitions and 40,979 lines |
+| **Total** | **1,682** | 2,952 definitions and 40,979 lines |
 
 The expanded volume remains dominated by note-level policy: 909 lines over 100 UTF-16 code units,
 354 missing public doc comments, and 159 crammed lines. The game engine intentionally embeds shader
 source and other large data and contains a 4,109-unit line, demonstrating why line findings need
 scoped suppression for generated or embedded content rather than a universal higher limit.
+
+Across 1,484 public non-nullary signatures, the generated FlixDoc formal-parameter span has a
+median of 33 Unicode characters, p95 of 105, p99 of 155, and maximum of 287. A provisional limit
+of 100 produced 88 notes; 140 retains 29 stronger outliers—28 in the game engine and one in
+flix-parsec. Seven of the over-100 signatures have only one formal parameter, including rendered
+spans of 146–194 characters, so this measure observes type/API load that parameter count cannot.
+
+The strict redundant-parameter prose recognizer produced no findings in the pinned corpus. That is
+useful negative evidence, not threshold evidence: Flix documentation has no structured `@param`
+field and the sampled projects do not conventionally mirror formals as Markdown lists. A semantic
+prose classifier would invent false confidence, so the shipped note recognizes only exact formal
+labels with boilerplate-only descriptions and requires at least two entries. The packaged semantic
+fixture supplies the positive end-to-end case.
 
 The original corpus's 13 structural observations remain credible. The larger game engine adds
 enough variety to exercise the upper tail rather than only its threshold:
@@ -201,11 +214,13 @@ Ratings are confidence that the action improves signal, from 1 (speculative) to 
 | **5/5** | Add a baseline-aware new-finding gate. **Done.** | Teams can adopt the warning gate without first paying all existing debt; schema and effective-policy checks prevent invalid comparisons. |
 | **4/5** | Add a first-run initializer for policy and baseline adoption. **Done.** | One compiler-backed command creates a documented default policy, captures the compatible native baseline, prints the warning gate, and refuses to overwrite reviewed files. |
 | **4/5** | Disclose the `dense` minimum-size condition in reports. **Done.** | Tiny definitions remain useful ranking context but are ineligible for findings below four code lines; human and machine formats now explain that distinction. |
+| **4/5** | Measure generated FlixDoc formal-parameter load. **Done.** | The 140-character boundary selects 29 of 1,484 public signatures and catches long rendered types even when parameter count is small. |
 | **4/5** | Use project configuration for established line-length and documentation conventions. | A universal increase would erase useful notes for compact projects; the existing per-rule limits and suppressions preserve local policy. |
 | **4/5** | Automate the pinned calibration corpus as a scheduled workflow. **Done.** | The weekly read-only job verifies full source SHAs and exact per-target results without adding network-heavy calibration to every pull request. |
 | **4/5** | Add first-class exclusions for generated or embedded-data sources. **Done.** | Exclusions keep sources in the compiler while removing their line totals and located quality signals; every report discloses matched paths and reasons. |
 | **3/5** | Establish performance budgets from repeated CI measurements. **Done.** | The scheduled job records five cold and five warm samples, enforcing conservative median and cache-speedup ceilings while retaining raw CI evidence for later tuning. |
 | **3/5** | Mark individual ranking entries that cannot become findings. **Done.** | Native JSON and both human reports now identify structurally ineligible entries with a concrete reason, including tiny dense definitions and tests exempt from the length rule. |
+| **3/5** | Detect mechanical formal-parameter prose mirrors. **Done, conservatively.** | Free Markdown cannot support a general semantic claim; exact list labels, a boilerplate-only vocabulary, and a two-entry floor provide a useful low-noise note without judging ordinary prose. |
 
 Re-run this calibration when the compiler adapter changes, when a default threshold changes, or
 when the corpus gains a materially different Flix style. Compare distributions and reviewed
