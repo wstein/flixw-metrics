@@ -147,6 +147,7 @@ child loader parented to the platform loader.
 | module `fanIn`, `fanOut`, `instability` | resolved cross-module direct definition calls |
 | `localDefinitions` | `LocalDef` nodes — definitions the outer signature hides |
 | `effectfulDefinitions`, `purityPercent`, per-definition `effectCount` and `effects` | the compiler-normalized *declared* effect set on each signature; a saturated polymorphic effect is atomic |
+| per-definition `handlers`, `handledOperations`, `maxHandlerOperations`, `resumptions` | typed handler literals, their clauses, the widest handler, and direct continuation-parameter calls |
 | `cognitive` | branches weighted by nesting, plus boolean operators and match guards |
 | `returnWidth` | a tuple's arity, or a record's top-level field count |
 | `flixdocParameterCharacters` | Unicode characters in FlixDoc's generated outer formal-parameter span |
@@ -178,6 +179,27 @@ registry and is used by threshold evaluation. Each native JSON ranking carries s
 `eligible` and `ineligibilityReason` fields, and human reports mark ineligible entries in place;
 eligibility does not mean that the threshold was crossed. SARIF discloses the floor in its rule
 metadata.
+
+### Handler shape is separate from cognitive complexity
+
+An effect handler literal increments `handlers`; its typed rule list contributes to
+`handledOperations`, and the largest such list becomes `maxHandlerOperations`. A resumption is a
+direct closure application whose callee is the final formal parameter of that handler rule. The
+symbol comparison comes from the typed AST, so an unrelated variable with the same source name is
+not counted. Conversely, assigning the continuation to another variable and calling that alias is
+outside the deliberately narrow definition and is not inferred.
+
+Handler rules retain their existing contribution to `cognitive`. Collecting the four handler
+measurements does not add branches or alter nesting weights. They are emitted as per-definition
+native JSON facts only: there is no project summary, ranking, finding, or threshold.
+
+This additive measurement changes machine compatibility intentionally. `CompilerModel.DefInfo`
+adds four integer components (the named builder defaults each to zero), the internal wire format
+is version 10 so version-9 measurement caches become misses, and native JSON schema 30 requires the
+four non-negative fields. A schema-29 baseline is rejected rather than compared as if the
+measurements existed. Text, Markdown, SARIF, CLI, and capability-JSON shapes are unchanged; the
+bytecode-derived capability contract automatically includes the extra typed-AST members used by
+each adapter.
 
 ### FlixDoc parameter noise comes from the typed signature and its documentation
 

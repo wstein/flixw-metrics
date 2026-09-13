@@ -234,15 +234,16 @@ false-positive review, timings, and rated follow-up suggestions.
 Three things get measured, and where each comes from is deliberate:
 
 - **From the compiler's typed AST** — definitions, modules, local definitions, declared
-  effects, branch complexity, nesting depth, return shape, formal parameter names and types,
-  documentation, Datalog rules and facts, and module coupling. Counting `def` by scanning text
-  gets comments, strings and nested definitions wrong, which is the reason this plugin exists.
+  effects, effect-handler structure, branch complexity, nesting depth, return shape, formal
+  parameter names and types, documentation, Datalog rules and facts, and module coupling. Counting
+  `def` by scanning text gets comments, strings and nested definitions wrong, which is the reason
+  this plugin exists.
 - **From the compiler's lexer** — code, comment, doc-comment and blank lines, and tokens per
   line. A line with code and a trailing comment is code; a line inside a block comment is
   not.
 - **From thresholds over both** — the findings.
 
-Seven measures are worth knowing about because they catch what totals hide:
+Eight measures are worth knowing about because they catch what totals hide:
 
 **Cognitive complexity is nesting-weighted.** Five nested conditions cost more than five
 consecutive ones. Divided by lexer-confirmed code lines, it separates *long* from *hard*: a
@@ -276,6 +277,15 @@ the compiler-normalized declared effect set; pure definitions are zero. The
 `widest-effect-surface` ranking retains the effect names in native JSON so a broad orchestration
 boundary is inspectable rather than reduced to a number. It is a measurement, not a finding:
 combining several effects is often exactly an application's job.
+
+**Effect-handler metrics describe implementation shape without declaring debt.** Native JSON
+records four per-definition values: `handlers` counts handler literals, `handledOperations` sums
+their operation clauses, `maxHandlerOperations` retains the widest single handler, and
+`resumptions` counts direct calls to each clause's continuation parameter. The continuation is
+the final compiler-typed formal; invoking an alias is deliberately not guessed to be a resumption.
+These values do not change cognitive complexity and currently produce no ranking or finding. The
+[calibration corpus](docs/CALIBRATION.md#effect-handler-distribution) is too concentrated in seven
+definitions to justify a universal threshold.
 
 **Datalog dependency breadth measures relations read by derived rules.**
 `datalogDependencyBreadth` is the number of distinct relational predicate names appearing in the
