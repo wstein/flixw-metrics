@@ -45,6 +45,9 @@ public final class FormatsTest {
         // Two totals share a name with a list -- `definitions` and `modules`. A flat object
         // emitted both, and JSON parsers keep the last, so the count was silently replaced.
         String json = report.render(Metrics.Format.JSON);
+        require(json.contains("\"$schema\": \"https://raw.githubusercontent.com/"
+                + "wstein/flixw-metrics/main/docs/metrics-report.schema.json\""),
+            "native JSON points consumers to its machine-readable contract");
         require(count(json, "\"definitions\":") == 2 && json.contains("\"summary\": {"),
             "totals are nested, so a total cannot collide with a list of the same name");
         require(json.contains("\"id\": \"" + firstId + "\""),

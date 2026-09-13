@@ -258,6 +258,7 @@ final class Metrics {
         private String json(Provenance p, MetricsConfig config, Baseline.Comparison comparison,
                             View view) {
             StringBuilder b = new StringBuilder("{\n");
+            b.append("  \"$schema\": \"https://raw.githubusercontent.com/wstein/flixw-metrics/main/docs/metrics-report.schema.json\",\n");
             b.append("  \"schemaVersion\": ").append(schemaVersion()).append(",\n");
             if (p != null)
                 b.append("  \"provenance\": ").append(p.json()).append(",\n");

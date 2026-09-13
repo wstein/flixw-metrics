@@ -1,0 +1,119 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/wstein/flixw-metrics/main/docs/metrics-report.schema.json",
+  "title": "flixw metrics report",
+  "description": "Native JSON emitted by flixw metrics report --format json.",
+  "type": "object",
+  "required": ["schemaVersion", "configuration", "ruleCatalog", "excludedSources", "summary"],
+  "properties": {
+    "$schema": {"const": "https://raw.githubusercontent.com/wstein/flixw-metrics/main/docs/metrics-report.schema.json"},
+    "schemaVersion": {"const": 26},
+    "provenance": {"type": "object"},
+    "configuration": {"type": "object"},
+    "baseline": {"type": "object"},
+    "ruleCatalog": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/rule"}
+    },
+    "excludedSources": {"type": "array", "items": {"type": "object"}},
+    "summary": {"type": "object"},
+    "definitions": {"type": "array", "items": {"type": "object"}},
+    "modules": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/module"}
+    },
+    "rankings": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/ranking"}
+    },
+    "smells": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/finding"}
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "rule": {
+      "type": "object",
+      "required": ["id", "title", "category", "severity", "description", "remediation", "unit", "categorical", "defaultLimit", "configuredLimit", "minimumCodeLines", "enabled"],
+      "properties": {
+        "id": {"type": "string"},
+        "title": {"type": "string"},
+        "category": {"type": "string"},
+        "severity": {"enum": ["note", "warning", "error"]},
+        "description": {"type": "string"},
+        "remediation": {"type": "string"},
+        "unit": {"type": "string"},
+        "categorical": {"type": "boolean"},
+        "defaultLimit": {"type": ["number", "null"]},
+        "configuredLimit": {"type": ["number", "null"]},
+        "minimumCodeLines": {"type": "integer"},
+        "enabled": {"type": "boolean"}
+      }
+    },
+    "location": {
+      "type": "object",
+      "required": ["path", "startLine", "endLine", "logicalName", "kind"],
+      "properties": {
+        "path": {"type": "string"},
+        "startLine": {"type": ["integer", "null"], "minimum": 1},
+        "endLine": {"type": ["integer", "null"], "minimum": 1},
+        "logicalName": {"type": "string"},
+        "kind": {"enum": ["function", "module"]}
+      }
+    },
+    "finding": {
+      "type": "object",
+      "required": ["id", "rule", "severity", "subject", "file", "line", "actual", "limit", "unit", "overBy", "note", "detail", "location"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "rule": {"type": "string"},
+        "severity": {"enum": ["note", "warning", "error"]},
+        "subject": {"type": "string"},
+        "file": {"type": "string"},
+        "line": {"type": "integer", "minimum": 0},
+        "actual": {"type": "number"},
+        "limit": {"type": "number"},
+        "unit": {"type": "string"},
+        "overBy": {"type": "number"},
+        "note": {"type": "string"},
+        "detail": {"type": "string"},
+        "baselineState": {"enum": ["new", "updated", "unchanged"]},
+        "location": {"$ref": "#/$defs/location"}
+      }
+    },
+    "ranking": {
+      "type": "object",
+      "required": ["measure", "subject", "file", "line", "value", "actual", "unit", "ordinal", "ruleId", "limit", "crossedThreshold", "eligible", "ineligibilityReason"],
+      "properties": {
+        "measure": {"type": "string"},
+        "subject": {"type": "string"},
+        "file": {"type": "string"},
+        "line": {"type": "integer", "minimum": 0},
+        "value": {"type": "string"},
+        "actual": {"type": "number"},
+        "unit": {"type": "string"},
+        "ordinal": {"type": "integer", "minimum": 1},
+        "ruleId": {"type": ["string", "null"]},
+        "limit": {"type": ["number", "null"]},
+        "crossedThreshold": {"type": ["boolean", "null"]},
+        "eligible": {"type": "boolean"},
+        "ineligibilityReason": {"type": "string"}
+      }
+    },
+    "module": {
+      "type": "object",
+      "required": ["name", "definitions", "lines", "fanIn", "fanOut", "dependencies", "dependents", "instability"],
+      "properties": {
+        "name": {"type": "string"},
+        "definitions": {"type": "integer", "minimum": 0},
+        "lines": {"type": "integer", "minimum": 0},
+        "fanIn": {"type": "integer", "minimum": 0},
+        "fanOut": {"type": "integer", "minimum": 0},
+        "dependencies": {"type": "array", "items": {"type": "string"}},
+        "dependents": {"type": "array", "items": {"type": "string"}},
+        "instability": {"type": "number", "minimum": 0, "maximum": 1}
+      }
+    }
+  }
+}
