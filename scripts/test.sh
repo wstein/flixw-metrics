@@ -25,6 +25,7 @@ if unzip -Z1 "$root/dist/plugin.jar" | grep -Eq '^(scala/|ca/uwaterloo/flix/|man
   echo 'test: packaged jar contains a forbidden dependency or scratch manifest' >&2
   exit 1
 fi
+sh "$root/scripts/test-compiler-compatibility.sh"
 mill=$root/mill
 [ -x "$mill" ] || mill=mill
 (cd "$root" && "$mill" --no-server plugin.test.check)
