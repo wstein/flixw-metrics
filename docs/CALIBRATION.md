@@ -112,6 +112,28 @@ discussion below is preserved from the original threshold calibration and includ
 incompatible projects where it names them; those observations remain historical threshold evidence,
 not claims that Flix 0.76.0 can compile those revisions.
 
+### Effect-handler distribution
+
+The handler-metrics change was rerun over all nine active Flix 0.76.0 targets with fresh caches.
+The established summaries and all 1,349 findings matched their pinned expectations exactly, which
+confirms that the new observations do not alter cognitive complexity or policy behavior.
+
+| Target | Handler definitions | Handlers | Operation clauses | Direct resumptions | Widest handler |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| flix-json | 1 | 1 | 1 | 0 | 1 |
+| flix-game-engine | 5 | 9 | 67 | 73 | 20 |
+| qual-effect-system | 1 | 1 | 1 | 1 | 1 |
+| Prelude, flix-semver2, and four Datalog examples | 0 | 0 | 0 | 0 | 0 |
+| **Total** | **7** | **11** | **69** | **74** | **20** |
+
+The dimensions are not interchangeable. `LwjglLayer.withLwjgl` contains four handlers and 31
+clauses, with one 20-clause handler and 37 resumptions; `RemoteDebug.remoteStep` has two handlers,
+27 clauses, a 20-clause maximum, and 27 resumptions. At the other end,
+`Json.Parse.stringContentsHelper` handles one operation without directly resuming it. Keeping all
+four values therefore preserves observable distinctions that one aggregate would erase. Seven
+positive definitions—five from one project—are useful extraction evidence but not enough to set a
+portable threshold or introduce rankings and findings.
+
 The expanded volume remains dominated by note-level policy: 909 lines over 100 UTF-16 code units,
 354 missing public doc comments, and 159 crammed lines. The game engine intentionally embeds shader
 source and other large data and contains a 4,109-unit line, demonstrating why line findings need
@@ -250,6 +272,7 @@ Ratings are confidence that the action improves signal, from 1 (speculative) to 
 | **4/5** | Disclose the `dense` minimum-size condition in reports. **Done.** | Tiny definitions remain useful ranking context but are ineligible for findings below four code lines; human and machine formats now explain that distinction. |
 | **4/5** | Measure generated FlixDoc formal-parameter load. **Done.** | The 140-character boundary selects 29 of 1,484 public signatures and catches long rendered types even when parameter count is small. |
 | **4/5** | Rank declared effect-surface width. **Done.** | Only 13 of 2,952 definitions declare four or more effects; sorted effect names distinguish intentional orchestration boundaries from an unexplained count without asserting a smell. |
+| **4/5** | Keep effect-handler shape as separate, threshold-free facts. **Done.** | Seven corpus definitions exercise 11 handlers, 69 clauses, widths from 1 to 20, zero and repeated resumptions, and nested handlers; that validates extraction but is too concentrated to justify policy. |
 | **4/5** | Rank Datalog dependency breadth. **Done.** | Seven corpus definitions read relational predicates; their distinct breadth reaches nine, and the retained predicate names make repeated atoms, recursion, and broad logic programs auditable. |
 | **4/5** | Measure Datalog dependency depth and recursion. **Done.** | Collapsing cycles produces finite depths from two through nine; retained cycle members identify four self-recursive programs and one mutual recursive two-predicate component without declaring recursion a smell. |
 | **3/5** | Rank compiler-rendered FlixDoc result width. **Done.** | Public result types span 1–96 characters with p95 28; the ranking locates the upper tail without manufacturing a threshold unsupported by the corpus. |
