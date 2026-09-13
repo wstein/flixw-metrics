@@ -154,6 +154,8 @@ Four output formats:
 ```console
 ./flixw metrics report --format md
 ./flixw metrics report --format sarif --output metrics.sarif
+./flixw metrics report --format json --view findings --output findings.json
+./flixw metrics report --format json --view changes --baseline metrics-baseline.json
 ```
 
 Only the report goes to stdout — the compiler's own dependency-resolution chatter goes to
@@ -161,6 +163,10 @@ stderr — so redirecting `--format json` gives you a file that parses. Prefer `
 for automation: it writes beside the destination and atomically replaces it only after the
 complete report has rendered. Relative output paths resolve from the Flix project root, and the
 destination directory must already exist.
+
+Agent consumers can reduce context usage with JSON-only `--view summary`, `--view findings`, or
+`--view changes`; the default `full` view remains schema-compatible. The changes view requires a
+baseline. Views affect presentation only, never measurement, caching, or quality-gate semantics.
 
 Markdown, JSON, and SARIF reports identify the source commit, dirty working-tree state,
 analyzer version, compiler artifact, complete measurement-input digest, and measurement time.

@@ -154,7 +154,7 @@ public final class Main {
         }
         Baseline.Comparison comparison = options.compare(context.projectRoot(), report, config);
         writeOutput(context.projectRoot(), options.output(),
-            report.render(options.format(), provenance, config, comparison));
+            report.render(options.format(), provenance, config, comparison, options.view()));
         return comparison;
     }
 
@@ -259,7 +259,7 @@ public final class Main {
     }
 
     record Options(Metrics.Format format, String failOn, Path baseline, String failOnNew,
-                   Path output, boolean init, boolean allowDirty) {
+                   Path output, Metrics.View view, boolean init, boolean allowDirty) {
         boolean shouldFail(Metrics.Report report, Baseline.Comparison comparison) {
             boolean existing = false;
             if (failOn != null) {
@@ -285,7 +285,7 @@ public final class Main {
         if (!rest.isEmpty() && "init".equals(rest.get(0))) {
             if (rest.size() > 2 || rest.size() == 2 && !"--allow-dirty".equals(rest.get(1)))
                 throw new Usage("unknown init option " + rest.get(1));
-            return new Options(Metrics.Format.JSON, null, null, null, null, true,
+            return new Options(Metrics.Format.JSON, null, null, null, null, Metrics.View.FULL, true,
                 rest.size() == 2);
         }
         if (!rest.isEmpty() && "report".equals(rest.get(0))) rest.remove(0);
@@ -294,12 +294,14 @@ public final class Main {
         Path baseline = null;
         String failOnNew = null;
         Path output = null;
+        Metrics.View view = Metrics.View.FULL;
         java.util.Set<String> seen = new java.util.HashSet<>();
         for (int i = 0; i < rest.size(); i += 2) {
             String option = rest.get(i);
             if (!option.startsWith("--"))
                 throw new Usage("unknown command or option " + option);
-            if (!List.of("--format", "--fail-on", "--baseline", "--fail-on-new", "--output")
+            if (!List.of("--format", "--fail-on", "--baseline", "--fail-on-new", "--output",
+                    "--view")
                     .contains(option))
                 throw new Usage("unknown option " + option);
             if (i + 1 >= rest.size()) throw new Usage(option + " requires a value");
@@ -315,6 +317,7 @@ public final class Main {
                 }
                 case "--baseline" -> baseline = Path.of(rest.get(i + 1));
                 case "--output" -> output = Path.of(rest.get(i + 1));
+                case "--view" -> view = Metrics.View.parse(rest.get(i + 1));
                 case "--fail-on-new" -> {
                     String level = rest.get(i + 1);
                     if (!List.of("note", "warning", "error").contains(level))
@@ -327,7 +330,11 @@ public final class Main {
         }
         if (failOnNew != null && baseline == null)
             throw new Usage("--fail-on-new requires --baseline");
-        return new Options(format, failOn, baseline, failOnNew, output, false, false);
+        if (view != Metrics.View.FULL && format != Metrics.Format.JSON)
+            throw new Usage("--view requires --format json");
+        if (view == Metrics.View.CHANGES && baseline == null)
+            throw new Usage("--view changes requires --baseline");
+        return new Options(format, failOn, baseline, failOnNew, output, view, false, false);
     }
 
     static String help(String[] args) {
@@ -337,7 +344,8 @@ public final class Main {
             case "report" -> "usage: ./flixw metrics report"
                 + " [--format text|json|md|sarif]"
                 + " [--fail-on note|warning|error] [--baseline report.json]"
-                + " [--fail-on-new note|warning|error] [--output path]\n\n"
+                + " [--fail-on-new note|warning|error] [--view full|summary|findings|changes]"
+                + " [--output path]\n\n"
                 + "Measures the project and writes a report to stdout or atomically to --output.";
             case "init" -> "usage: ./flixw metrics init [--allow-dirty]\n\n"
                 + "Creates a starter policy and clean-tree metrics baseline without overwriting"
@@ -351,7 +359,8 @@ public final class Main {
     private static String usage() {
         return "usage: ./flixw metrics [report] [--format text|json|md|sarif]"
             + " [--fail-on note|warning|error] [--baseline report.json]"
-            + " [--fail-on-new note|warning|error] [--output path]\n"
+            + " [--fail-on-new note|warning|error] [--view full|summary|findings|changes]"
+            + " [--output path]\n"
             + "       ./flixw metrics init [--allow-dirty]\n"
             + "       ./flixw metrics capabilities\n\n"
             + "Reads typed compiler data through a supported compiler adapter.\n"

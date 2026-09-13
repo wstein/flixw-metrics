@@ -23,7 +23,7 @@ public final class MainOptionsTest {
         Main.Options defaults = Main.parseOptions(new String[] {});
         require(defaults.format() == Metrics.Format.TEXT && defaults.failOn() == null
                 && defaults.baseline() == null && defaults.failOnNew() == null
-                && defaults.output() == null
+                && defaults.output() == null && defaults.view() == Metrics.View.FULL
                 && !defaults.init(),
             "the default remains report-only text");
         Main.Options init = Main.parseOptions(new String[] {"init"});
@@ -75,14 +75,24 @@ public final class MainOptionsTest {
                     FormatsTest.reportWithSmells(List.of()), newWarning),
             "a new warning crosses a warning-only baseline gate");
         expectUsage(new String[] {"--fail-on-new", "warning"}, "requires --baseline");
+        require(Main.parseOptions(new String[] {"report", "--format", "json", "--view",
+                "findings"}).view() == Metrics.View.FINDINGS,
+            "agents can request a compact findings projection");
+        require(Main.parseOptions(new String[] {"report", "--format", "json", "--baseline",
+                "baseline.json", "--view", "changes"}).view() == Metrics.View.CHANGES,
+            "the changes projection composes with a baseline");
+        expectUsage(new String[] {"--view", "summary"}, "--view requires --format json");
+        expectUsage(new String[] {"--format", "json", "--view", "changes"},
+            "--view changes requires --baseline");
         expectUsage(new String[] {"report", "--unknown"}, "unknown option --unknown");
         expectUsage(new String[] {"report", "--format"}, "--format requires a value");
         expectUsage(new String[] {"unknown"}, "unknown command or option unknown");
         for (String option : List.of("--format", "--fail-on", "--baseline", "--fail-on-new",
-                "--output")) {
+                "--output", "--view")) {
             String value = option.equals("--format") ? "json"
                 : option.equals("--baseline") ? "baseline.json"
-                : option.equals("--output") ? "metrics.json" : "warning";
+                : option.equals("--output") ? "metrics.json"
+                : option.equals("--view") ? "full" : "warning";
             expectUsage(new String[] {option, value, option, value},
                 "repeated option " + option);
         }
