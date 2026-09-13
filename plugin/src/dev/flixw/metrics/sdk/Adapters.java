@@ -27,7 +27,7 @@ public final class Adapters {
      * cache, which is the property the SDK exists to buy.
      */
     private static final List<String> KNOWN =
-        List.of("dev.flixw.metrics.flix075.Flix075Adapter");
+        List.of("dev.flixw.metrics.flix0753.Flix0753Adapter");
 
     /** The first adapter that links, or null when none does. */
     public static CompilerModel resolve() {

@@ -3,7 +3,7 @@ name: pages
 # Publishes the API docs for both halves of this plugin.
 #
 # One doc set, not two. The module is Java and Scala side by side, and scaladoc reads both --
-# `CompilerModel` and `Adapters` (Java) come out alongside `Flix075Adapter` (Scala). Running
+# `CompilerModel` and `Adapters` (Java) come out alongside `Flix0753Adapter` (Scala). Running
 # javadoc separately would split the SDK from its only implementation, which is exactly the
 # boundary a reader is trying to follow.
 

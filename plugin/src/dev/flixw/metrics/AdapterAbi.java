@@ -14,7 +14,7 @@ import java.util.Set;
 
 /** The exact Flix ABI referenced by the compiled, version-specific adapter. */
 final class AdapterAbi {
-    private static final String ADAPTER = "dev/flixw/metrics/flix075/Flix075Adapter";
+    private static final String ADAPTER = "dev/flixw/metrics/flix0753/Flix0753Adapter";
     private static final String FLIX = "ca/uwaterloo/flix/";
     private static final List<Reference> REFERENCES = readAdapterTree();
 

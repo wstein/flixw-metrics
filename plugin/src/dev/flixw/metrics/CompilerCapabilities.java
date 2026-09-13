@@ -18,12 +18,12 @@ record CompilerCapabilities(boolean hasFlixApi, boolean hasEngineApi, boolean ha
      * <p>Since the engine moved to Scala the gate matters more, not less. A reflective engine
      * limped along and produced something; a linked one throws {@code NoSuchMethodError} from
      * inside the JVM's verifier, with a message written for whoever wrote the JVM. Everything
-     * in the bytecode-derived contract is a type or member {@code Flix075Adapter} binds to at
+     * in the bytecode-derived contract is a type or member {@code Flix0753Adapter} binds to at
      * compile time, so a compiler that fails it is one the engine could not have run against --
      * and it is told so in a sentence instead.
      *
      * <p>This class stays Java for exactly that reason. It has to load and answer on a machine
-     * where {@code Flix075Adapter} would not link at all.
+     * where {@code Flix0753Adapter} would not link at all.
      */
     static CompilerCapabilities inspect(ClassLoader compiler, Path compilerJar) {
         if (!Files.isRegularFile(compilerJar))

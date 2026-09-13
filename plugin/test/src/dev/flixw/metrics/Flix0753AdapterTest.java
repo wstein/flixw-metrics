@@ -1,6 +1,6 @@
 package dev.flixw.metrics;
 
-import dev.flixw.metrics.flix075.Flix075Adapter;
+import dev.flixw.metrics.flix0753.Flix0753Adapter;
 import dev.flixw.metrics.sdk.CompilerModel.DefInfo;
 import dev.flixw.metrics.sdk.CompilerModel.Model;
 
@@ -9,13 +9,13 @@ import java.nio.file.Path;
 import java.util.Comparator;
 
 /** Exercises semantic measurement against the pinned real compiler. */
-public final class Flix075AdapterTest {
-    private Flix075AdapterTest() { }
+public final class Flix0753AdapterTest {
+    private Flix0753AdapterTest() { }
 
     public static void main(String[] args) throws Exception {
         Path project = copyFixture(Path.of(args[0]));
         try {
-            Model model = new Flix075Adapter().measure(project);
+            Model model = new Flix0753Adapter().measure(project);
             require(model.defs().size() == 6, "fixture definitions are measured");
             require(model.lines().code() == 21 && model.lines().docComment() == 4,
                 "the real lexer classifies fixture lines");
@@ -58,7 +58,7 @@ public final class Flix075AdapterTest {
                     && beta.dependents().isEmpty(),
                 "resolved module edge names cross the adapter boundary");
 
-            Model prelude = new Flix075Adapter().measureCompilerSource(project, "Prelude.flix");
+            Model prelude = new Flix0753Adapter().measureCompilerSource(project, "Prelude.flix");
             require(!prelude.defs().isEmpty(), "an exact compiler source can be calibrated");
             require(prelude.defs().stream().allMatch(d -> d.file().endsWith("Prelude.flix")),
                 "compiler-source calibration does not leak other library definitions");
@@ -77,7 +77,7 @@ public final class Flix075AdapterTest {
                 def polymorphicEffect(): Unit \\ Outer[Inner[Int32]] =
                     Outer.perform(_ -> Inner.touch(1))
                 """);
-            Model polymorphic = new Flix075Adapter().measure(project);
+            Model polymorphic = new Flix0753Adapter().measure(project);
             require(definition(polymorphic, "polymorphicEffect").effects()
                     .equals(java.util.List.of("Outer")),
                 "a polymorphic effect is atomic and does not expose effects in its arguments");
@@ -94,12 +94,12 @@ public final class Flix075AdapterTest {
                         case _: IOException => ()
                     }
                 """);
-            Model javaInterop = new Flix075Adapter().measure(project);
+            Model javaInterop = new Flix0753Adapter().measure(project);
             DefInfo interop = definition(javaInterop, "javaInterop");
             require(interop.effects().equals(java.util.List.of("IO"))
                     && interop.cognitive() == 3,
                 "descriptor-backed Java nodes preserve effects and nested branch measurement");
-            System.out.println("Flix075AdapterTest: ok");
+            System.out.println("Flix0753AdapterTest: ok");
         } finally {
             delete(project);
         }

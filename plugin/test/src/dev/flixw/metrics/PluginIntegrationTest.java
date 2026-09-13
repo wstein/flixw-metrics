@@ -14,8 +14,8 @@ public final class PluginIntegrationTest {
     private PluginIntegrationTest() { }
 
     public static void main(String[] args) throws Exception {
-        Path project = Flix075AdapterTest.copyFixture(Path.of(args[0]));
-        Path initProject = Flix075AdapterTest.copyFixture(Path.of(args[0]));
+        Path project = Flix0753AdapterTest.copyFixture(Path.of(args[0]));
+        Path initProject = Flix0753AdapterTest.copyFixture(Path.of(args[0]));
         Path cache = Files.createTempDirectory("flixw-metrics-integration-cache-");
         Path initCache = Files.createTempDirectory("flixw-metrics-init-cache-");
         try {
@@ -185,10 +185,10 @@ public final class PluginIntegrationTest {
                 "warm cached measurements render parseable, attributable SARIF");
             System.out.println("PluginIntegrationTest: ok");
         } finally {
-            Flix075AdapterTest.delete(project);
-            Flix075AdapterTest.delete(initProject);
-            Flix075AdapterTest.delete(cache);
-            Flix075AdapterTest.delete(initCache);
+            Flix0753AdapterTest.delete(project);
+            Flix0753AdapterTest.delete(initProject);
+            Flix0753AdapterTest.delete(cache);
+            Flix0753AdapterTest.delete(initCache);
         }
     }
 

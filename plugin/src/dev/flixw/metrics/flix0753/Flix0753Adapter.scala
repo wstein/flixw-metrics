@@ -1,4 +1,4 @@
-package dev.flixw.metrics.flix075
+package dev.flixw.metrics.flix0753
 
 import dev.flixw.metrics.sdk.CompilerModel
 import dev.flixw.metrics.DatalogGraph
@@ -19,7 +19,7 @@ import scala.jdk.CollectionConverters._
  *
  * ==Why this file is Scala==
  *
- * `Flix075` names the linkage family introduced by Flix 0.75, not its newest supported release;
+ * `Flix0753` names the linkage family introduced by Flix 0.75.3, not its newest supported release;
  * the same typed surface is verified against 0.76. Typed Scala patterns make misspelled or removed
  * nodes a build failure, while semantic fixtures cover the deliberately open classifier and its
  * generic descent. The reflective predecessor classified nodes by simple class name and ignored
@@ -34,7 +34,7 @@ import scala.jdk.CollectionConverters._
  * [[dev.flixw.metrics.sdk.Adapters]] turns into a sentence rather than a `NoSuchMethodError`.
  * For a measurement tool, refusing to run beats a number that is quietly wrong.
  */
-final class Flix075Adapter extends CompilerModel {
+final class Flix0753Adapter extends CompilerModel {
 
   @throws(classOf[ModelFailure])
   override def measure(projectRoot: Path): Model =
