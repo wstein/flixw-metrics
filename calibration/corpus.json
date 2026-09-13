@@ -1,20 +1,44 @@
 {
   "compilerSource": {
     "repository": "https://github.com/flix/flix.git",
-    "commit": "1c26436689127913f7b447869712df0f04507996",
+    "commit": "f2d4678c20bff1242f4cad5e23144db91027b762",
     "prelude": "main/src/library/Prelude.flix"
   },
-  "projects": [
+  "incompatibleProjects": [
     {
       "id": "flix-basicdb",
       "repository": "https://github.com/stephentetley/flix-basicdb.git",
-      "commit": "c83d571538ac4a16eed1ba8e1c445805897493e9"
+      "commit": "c83d571538ac4a16eed1ba8e1c445805897493e9",
+      "reason": "Its flix-time 0.23.0 dependency does not type-check with Flix 0.76.0's descriptor-based Java resolver.",
+      "lastExpected": {
+        "compiler": "0.75.3",
+        "files": 10,
+        "definitions": 44,
+        "lines": 1612,
+        "datalogRules": 0,
+        "datalogFacts": 0,
+        "findings": 87,
+        "rules": {"definition-too-long": 6, "line-too-long": 47, "undocumented-public": 34}
+      }
     },
     {
       "id": "flix-parsec",
       "repository": "https://github.com/stephentetley/flix-parsec.git",
-      "commit": "d549c99ab6034c859ae1b27b338f559e5c61d911"
-    },
+      "commit": "d549c99ab6034c859ae1b27b338f559e5c61d911",
+      "reason": "Its pre-public-module source no longer passes Flix 0.76.0 module accessibility checks.",
+      "lastExpected": {
+        "compiler": "0.75.3",
+        "files": 20,
+        "definitions": 258,
+        "lines": 2330,
+        "datalogRules": 0,
+        "datalogFacts": 0,
+        "findings": 246,
+        "rules": {"crammed-line": 21, "deeply-nested": 1, "line-too-long": 50, "noisy-flixdoc-parameters": 1, "too-many-parameters": 1, "undocumented-public": 170, "wide-coupling": 2}
+      }
+    }
+  ],
+  "projects": [
     {
       "id": "flix-semver2",
       "repository": "https://github.com/KengoTODA/flix-semver2.git",
@@ -51,24 +75,6 @@
       "datalogFacts": 0,
       "findings": 5,
       "rules": {"crammed-line": 4, "line-too-long": 1}
-    },
-    "flix-basicdb": {
-      "files": 10,
-      "definitions": 44,
-      "lines": 1612,
-      "datalogRules": 0,
-      "datalogFacts": 0,
-      "findings": 87,
-      "rules": {"definition-too-long": 6, "line-too-long": 47, "undocumented-public": 34}
-    },
-    "flix-parsec": {
-      "files": 20,
-      "definitions": 258,
-      "lines": 2330,
-      "datalogRules": 0,
-      "datalogFacts": 0,
-      "findings": 246,
-      "rules": {"crammed-line": 21, "deeply-nested": 1, "line-too-long": 50, "noisy-flixdoc-parameters": 1, "too-many-parameters": 1, "undocumented-public": 170, "wide-coupling": 2}
     },
     "flix-semver2": {
       "files": 2,

@@ -16,9 +16,10 @@ done
 
 # IDs become file names and commits are fetched directly. Validate both before either is used.
 jq -e '
-  ([.projects[].id, (.datalogExamples[] | "datalog-" + .), "prelude"]
+  ([.projects[].id, .incompatibleProjects[].id,
+      (.datalogExamples[] | "datalog-" + .), "prelude"]
     | all(test("^[a-z0-9][a-z0-9-]*$"))) and
-  ([.compilerSource.commit, .projects[].commit]
+  ([.compilerSource.commit, .projects[].commit, .incompatibleProjects[].commit]
     | all(test("^[0-9a-f]{40}$")))
 ' "$manifest" >/dev/null || {
   echo "calibrate-corpus: manifest contains an unsafe id or non-full commit" >&2
