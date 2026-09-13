@@ -83,18 +83,19 @@ final class Flix075Adapter extends CompilerModel {
     val edges: Set[(String, String)] =
       defs.flatMap(references).toSet.filter(e => e._1 != e._2)
     val sources = root.sources.keys.filter(include).toList
-    val tokens = tokensPerLine(sources)
+    val lexed = sources.map(lexSource)
+    val tokens = lexed.map(source => source.source.name -> source.tokensPerLine).toMap
     val infos = defs.map(measureDef(_, projectRoot, tokens))
 
     new Model(
-      infos.asJava, modules(infos, edges).asJava, lineInfo(sources),
+      infos.asJava, modules(infos, edges).asJava, lineInfo(lexed),
       selected(root.traits.values, include)(_.loc).size,
       selected(root.instances.values, include)(_.loc).size,
       selected(root.enums.values, include)(_.loc).size,
       selected(root.structs.values, include)(_.loc).size,
       selected(root.effects.values, include)(_.loc).size,
       selected(root.typeAliases.values, include)(_.loc).size,
-      sources.map(src => new SourceInfo(sourceName(src, projectRoot), lineInfo(List(src)))).asJava)
+      lexed.map(src => new SourceInfo(sourceName(src.source, projectRoot), src.lines)).asJava)
   }
 
   // ---- lines ----------------------------------------------------------------------------
@@ -111,53 +112,52 @@ final class Flix075Adapter extends CompilerModel {
    * otherwise -- so a line of code with a trailing comment is code, which is what a reader has to
    * treat it as.
    */
-  /** Tokens per line, per file, from the same lex that classifies lines. */
-  private def tokensPerLine(sources: List[Source]): Map[String, Map[Int, Int]] =
-    sources.map { src =>
-      val counts = scala.collection.mutable.Map.empty[Int, Int]
-      val (tokens, _) = Lexer.lex(src)
-      tokens.foreach { t =>
-        if (t.kind != ca.uwaterloo.flix.language.ast.TokenKind.Eof && !t.kind.isComment) {
+  private case class LexedSource(source: Source, tokensPerLine: Map[Int, Int], lines: LineInfo)
+
+  /** One lex supplies token density, aggregate lines, and the per-source cache model. */
+  private def lexSource(src: Source): LexedSource = {
+    val tokenCounts = scala.collection.mutable.Map.empty[Int, Int]
+    val codeLines = scala.collection.mutable.Set.empty[Int]
+    val commentLines = scala.collection.mutable.Set.empty[Int]
+    val docLines = scala.collection.mutable.Set.empty[Int]
+    val (tokens, _) = Lexer.lex(src)
+    tokens.foreach { t =>
+      if (t.kind != ca.uwaterloo.flix.language.ast.TokenKind.Eof) {
+        if (!t.kind.isComment) {
           // Counted against the line it starts on. A token spanning lines is one token to read,
           // and charging every line it touches would make a long string literal look like the
           // densest code in the file.
-          counts.update(t.start.lineOneIndexed, counts.getOrElse(t.start.lineOneIndexed, 0) + 1)
+          tokenCounts.update(t.start.lineOneIndexed,
+            tokenCounts.getOrElse(t.start.lineOneIndexed, 0) + 1)
         }
-      }
-      src.name -> counts.toMap
-    }.toMap
-
-  private def lineInfo(sources: List[Source]): LineInfo = {
-    var total = 0; var code = 0; var comment = 0; var doc = 0; var blank = 0
-    sources.foreach { src =>
-      val text = new String(src.data)
-      val split = if (text.isEmpty) Array.empty[String] else text.split("\n", -1)
-      // A trailing newline leaves a final empty element that is not a line of the file.
-      val count = if (split.nonEmpty && split.last.isEmpty) split.length - 1 else split.length
-      val codeLines = scala.collection.mutable.Set.empty[Int]
-      val commentLines = scala.collection.mutable.Set.empty[Int]
-      val docLines = scala.collection.mutable.Set.empty[Int]
-      val (tokens, _) = Lexer.lex(src)
-      tokens.foreach { t =>
-        if (t.kind != ca.uwaterloo.flix.language.ast.TokenKind.Eof) {
-          val target =
-            if (!t.kind.isComment) codeLines
-            else if (t.text.startsWith("///")) docLines
-            else commentLines
-          for (line <- t.start.lineOneIndexed to t.end.lineOneIndexed) target += line
-        }
-      }
-      total += count
-      for (line <- 1 to count) {
-        if (split(line - 1).trim.isEmpty) blank += 1
-        else if (codeLines.contains(line)) code += 1
-        else if (docLines.contains(line)) doc += 1
-        else if (commentLines.contains(line)) comment += 1
-        else blank += 1
+        val target =
+          if (!t.kind.isComment) codeLines
+          else if (t.text.startsWith("///")) docLines
+          else commentLines
+        for (line <- t.start.lineOneIndexed to t.end.lineOneIndexed) target += line
       }
     }
-    new LineInfo(total, code, comment, doc, blank)
+
+    val text = new String(src.data)
+    val split = if (text.isEmpty) Array.empty[String] else text.split("\n", -1)
+    // A trailing newline leaves a final empty element that is not a line of the file.
+    val count = if (split.nonEmpty && split.last.isEmpty) split.length - 1 else split.length
+    var total = 0; var code = 0; var comment = 0; var doc = 0; var blank = 0
+    total += count
+    for (line <- 1 to count) {
+      if (split(line - 1).trim.isEmpty) blank += 1
+      else if (codeLines.contains(line)) code += 1
+      else if (docLines.contains(line)) doc += 1
+      else if (commentLines.contains(line)) comment += 1
+      else blank += 1
+    }
+    LexedSource(src, tokenCounts.toMap, new LineInfo(total, code, comment, doc, blank))
   }
+
+  private def lineInfo(sources: List[LexedSource]): LineInfo =
+    new LineInfo(sources.map(_.lines.total).sum, sources.map(_.lines.code).sum,
+      sources.map(_.lines.comment).sum, sources.map(_.lines.docComment).sum,
+      sources.map(_.lines.blank).sum)
 
   private def projectSource(src: Source, projectRoot: Path): Boolean = src.input match {
     case Input.RealFile(path, _) => path.toAbsolutePath.normalize.startsWith(projectRoot)
