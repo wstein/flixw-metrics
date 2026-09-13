@@ -203,6 +203,7 @@ public final class PluginIntegrationTest {
                     && jar.getEntry("dev/flixw/metrics/flix0672/Flix0672Adapter.class") != null
                     && jar.getEntry("dev/flixw/metrics/flix0661/Flix0661Adapter.class") != null
                     && jar.getEntry("dev/flixw/metrics/flix0610/Flix0610Adapter.class") != null
+                    && jar.getEntry("dev/flixw/metrics/flix0600/Flix0600Adapter.class") != null
                     && jar.getEntry("dev/flixw/metrics/flix0753/Flix0753Adapter.class") != null,
                 "the plugin packages every compiler adapter family");
             var attributes = jar.getManifest().getMainAttributes();

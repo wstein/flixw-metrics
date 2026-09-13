@@ -42,6 +42,8 @@ fetch 0.66.0 e3910bb06f3c60e2439ba4cc9bbf0fc51ca67c6ad06eceb8e0e28804741b67a3
 fetch 0.66.1 71b46d37d9c2e24b4eabd67ed2491a33adbb1a039e7bc49ef1f7556870e6344d
 fetch 0.61.0 e024cd8a72d52d3553cf7fb6b18cb81e1315ad524d9bfab89e317d63dda04ab9
 fetch 0.65.0 5cab00e9b5d30f48cd905f4971562e722621e1bc2d135077c67e86ff02c7cb13
+fetch 0.59.0 461d62d302faf937748fe789e2a098612cfc7661b53a9ed9d1c1810638c9ebc4
+fetch 0.60.0 9920b107c9b4eb42bf17c6f556141b4cc8edbfffdf792de9a1bc5284505cd3c5
 fetch 0.67.1 2f888a5c1ca2b343915add0ca697d36167fd16ae82e61b37bc0be29d09a1d8c4
 fetch 0.67.2 3162ba033d77e481c8cd731441e1f279bd8f44e5f278b2b21632149c30f8ed3f
 fetch 0.68.0 af568a2d4046207f908f8ec37786409b3dccdec944c2df5f571444599fb6b7c8
@@ -72,6 +74,21 @@ jq -e '
   any(.missing[]; contains("dev.flix.runtime.Global"))
 ' "$work/0.66.0.json" >/dev/null || {
   echo "test-compiler-compatibility: Flix 0.66.0 did not fail its Java runtime boundary" >&2
+  exit 1
+}
+
+capabilities "$work/flix-0.59.0.jar" > "$work/0.59.0.json"
+jq -e '
+  (.hasEngineApi == false) and
+  any(.missing[]; contains("Symbol$EffSym"))
+' "$work/0.59.0.json" >/dev/null || {
+  echo "test-compiler-compatibility: Flix 0.59.0 did not fail the expected AST boundary" >&2
+  exit 1
+}
+
+capabilities "$work/flix-0.60.0.jar" > "$work/0.60.0.json"
+jq -e '.hasEngineApi and (.missing | length == 0)' "$work/0.60.0.json" >/dev/null || {
+  echo "test-compiler-compatibility: Flix 0.60.0 did not satisfy the adapter ABI" >&2
   exit 1
 }
 
@@ -133,6 +150,7 @@ integration() {
     "$fixture" "$root/dist/plugin.jar" "$compiler" "$effect_surface"
 }
 
+integration "$work/flix-0.60.0.jar" 0 "$root/plugin/test/fixtures/semantic-validation"
 integration "$work/flix-0.61.0.jar" 0 "$root/plugin/test/fixtures/semantic-validation"
 integration "$work/flix-0.65.0.jar" 0 "$root/plugin/test/fixtures/semantic-validation"
 integration "$work/flix-0.66.1.jar" 2
@@ -142,4 +160,4 @@ integration "$work/flix-0.68.0.jar"
 integration "$work/flix-0.75.2.jar"
 integration "$work/flix-0.75.3.jar"
 
-echo "test-compiler-compatibility: 0.66.0 rejected at its Java runtime; 0.61.0, 0.65.0, 0.66.1, 0.67.1, 0.67.2, 0.68.0, 0.75.2, and 0.75.3 integration passed"
+echo "test-compiler-compatibility: 0.59.0 rejected at its AST and 0.66.0 at its Java runtime; 0.60.0 through the recorded checkpoints passed integration"

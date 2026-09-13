@@ -30,7 +30,8 @@ public final class Adapters {
             "dev.flixw.metrics.flix0680.Flix0680Adapter",
             "dev.flixw.metrics.flix0672.Flix0672Adapter",
             "dev.flixw.metrics.flix0661.Flix0661Adapter",
-            "dev.flixw.metrics.flix0610.Flix0610Adapter");
+            "dev.flixw.metrics.flix0610.Flix0610Adapter",
+            "dev.flixw.metrics.flix0600.Flix0600Adapter");
 
     /** The first adapter that links, or null when none does. */
     public static CompilerModel resolve() {

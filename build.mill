@@ -56,6 +56,19 @@ object adapter0610 extends ScalaModule {
   }
 }
 
+/** The pre-extensible-match adapter, compiled in isolation against Flix 0.60.0. */
+object adapter0600 extends ScalaModule {
+  def scalaVersion = flixScalaVersion
+
+  def scalacOptions = Seq("-deprecation", "-feature", "-Xfatal-warnings")
+
+  def compilerJar = Task.Source(moduleDir / os.up / "plugin" / "lib" / "flix-0.60.0.jar")
+
+  def compileClasspath = Task {
+    super.compileClasspath() ++ Seq(plugin.compile().classes, compilerJar())
+  }
+}
+
 /**
  * The plugin is one module with Java and Scala sources side by side, and the split is
  * deliberate rather than incidental.
@@ -123,7 +136,7 @@ object plugin extends ScalaModule {
   /** Package every adapter family, but none of the compiler jars used to compile them. */
   override def localClasspath = Task {
     super.localClasspath() ++ Seq(adapter0680.compile().classes, adapter0672.compile().classes,
-      adapter0661.compile().classes, adapter0610.compile().classes)
+      adapter0661.compile().classes, adapter0610.compile().classes, adapter0600.compile().classes)
   }
 
   /**
@@ -170,13 +183,15 @@ object plugin extends ScalaModule {
     override def compileClasspath = Task {
       super.compileClasspath() ++ plugin.flixJar() ++
         Seq(adapter0680.compile().classes, adapter0672.compile().classes,
-          adapter0661.compile().classes, adapter0610.compile().classes)
+          adapter0661.compile().classes, adapter0610.compile().classes,
+          adapter0600.compile().classes)
     }
 
     def check() = Task.Command {
       val cp = (runClasspath() ++ Seq(compile().classes)).map(_.path).mkString(":")
       val sourceRoot = moduleDir / "src"
       val special = Set("dev.flixw.metrics.CompilerCapabilitiesTest",
+                        "dev.flixw.metrics.Flix0600AdapterTest",
                         "dev.flixw.metrics.Flix0610AdapterTest",
                         "dev.flixw.metrics.Flix0661AdapterTest",
                         "dev.flixw.metrics.Flix0672AdapterTest",
@@ -197,15 +212,21 @@ object plugin extends ScalaModule {
       val oldestCompiler = adapter0672.compilerJar().path
       val earliestCompiler = adapter0661.compilerJar().path
       val validationCompiler = adapter0610.compilerJar().path
+      val preExtMatchCompiler = adapter0600.compilerJar().path
       val integrationCp = cp + java.io.File.pathSeparator + compiler
       val olderIntegrationCp = cp + java.io.File.pathSeparator + olderCompiler
       val oldestIntegrationCp = cp + java.io.File.pathSeparator + oldestCompiler
       val earliestIntegrationCp = cp + java.io.File.pathSeparator + earliestCompiler
       val validationIntegrationCp = cp + java.io.File.pathSeparator + validationCompiler
+      val preExtMatchIntegrationCp = cp + java.io.File.pathSeparator + preExtMatchCompiler
       os.proc("java", "-cp", cp, "dev.flixw.metrics.CompilerCapabilitiesTest", compiler,
-              olderCompiler, oldestCompiler, earliestCompiler, validationCompiler)
+              olderCompiler, oldestCompiler, earliestCompiler, validationCompiler,
+              preExtMatchCompiler)
         .call(stdout = os.Inherit, stderr = os.Inherit)
       val validationFixture = moduleDir / "fixtures" / "semantic-validation"
+      os.proc("java", "-cp", preExtMatchIntegrationCp, "dev.flixw.metrics.Flix0600AdapterTest",
+              validationFixture)
+        .call(stdout = os.Inherit, stderr = os.Inherit)
       os.proc("java", "-cp", validationIntegrationCp, "dev.flixw.metrics.Flix0610AdapterTest",
               validationFixture)
         .call(stdout = os.Inherit, stderr = os.Inherit)
