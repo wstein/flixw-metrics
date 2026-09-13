@@ -9,6 +9,8 @@ public final class BaselineTest {
     private BaselineTest() { }
 
     public static void main(String[] args) throws Exception {
+        stableFindingIdentity();
+
         SourceMetrics.Smell kept = smell("dense", "A.kept", 3, 1.1, 1);
         SourceMetrics.Smell worsenedBefore = smell("deeply-nested", "A.changed", 7, 5, 4);
         SourceMetrics.Smell movedBefore = smell("line-too-long", "src/A.flix:11", 11, 120, 100);
@@ -68,6 +70,34 @@ public final class BaselineTest {
             Files.deleteIfExists(baseline);
         }
         System.out.println("BaselineTest: ok");
+    }
+
+    private static void stableFindingIdentity() throws Exception {
+        SourceMetrics.Smell definitionBefore = smell("dense", "A.f", 10, 2, 1);
+        SourceMetrics.Smell definitionAfter = smell("dense", "A.f", 30, 2, 1);
+        require(definitionBefore.id().equals(definitionAfter.id()),
+            "a symbol-owned finding survives unrelated lines inserted above it");
+
+        Path root = Files.createTempDirectory("flixw-metrics-fingerprint-");
+        Path source = root.resolve("src/A.flix");
+        try {
+            Files.createDirectories(source.getParent());
+            String longLine = "x".repeat(SourceMetrics.LINE_LIMIT + 1);
+            Files.writeString(source, longLine + "\nshort\n" + longLine + "\n");
+            List<SourceMetrics.Smell> before = SourceMetrics.measure(root, List.of(source)).smells();
+            require(before.size() == 2 && !before.get(0).id().equals(before.get(1).id()),
+                "identical offending lines receive collision-safe identities");
+
+            Files.writeString(source, "inserted\n" + longLine + "\nshort\n" + longLine + "\n");
+            List<SourceMetrics.Smell> after = SourceMetrics.measure(root, List.of(source)).smells();
+            require(before.get(0).id().equals(after.get(0).id())
+                    && before.get(1).id().equals(after.get(1).id()),
+                "line-only findings use content and occurrence rather than physical line number");
+        } finally {
+            Files.deleteIfExists(source);
+            Files.deleteIfExists(source.getParent());
+            Files.deleteIfExists(root);
+        }
     }
 
     private static SourceMetrics.Smell smell(String rule, String subject, int line,

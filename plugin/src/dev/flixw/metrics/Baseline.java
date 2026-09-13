@@ -165,10 +165,17 @@ final class Baseline {
 
         List<Object> values = array(required(root, "smells", path), path, "smells");
         Map<String, Snapshot> previous = new LinkedHashMap<>();
+        Map<String, String> semanticAliases = new LinkedHashMap<>();
         for (int i = 0; i < values.size(); i++) {
             Snapshot finding = snapshot(object(values.get(i), path, "smells[" + i + "]"), path);
             if (previous.putIfAbsent(finding.id(), finding) != null)
                 throw invalid(path, "duplicate finding id " + finding.id());
+            if (!finding.subject().equals(finding.where())) {
+                String semantic = new SourceMetrics.Smell(finding.rule(), finding.subject(),
+                    finding.file(), finding.line(), finding.actual(), finding.limit(), "",
+                    finding.unit()).id();
+                semanticAliases.putIfAbsent(semantic, finding.id());
+            }
         }
 
         List<SourceMetrics.Smell> added = new ArrayList<>();
@@ -176,6 +183,14 @@ final class Baseline {
         int retained = 0;
         for (SourceMetrics.Smell finding : current.smells()) {
             Snapshot before = previous.remove(finding.id());
+            if (before == null) {
+                String oldId = semanticAliases.get(finding.id());
+                if (oldId != null) before = previous.remove(oldId);
+            }
+            // Baselines emitted before semantic fingerprints included the physical line.
+            // Accept that identity once so upgrading the analyzer does not turn every existing
+            // finding into a simultaneous resolution and addition.
+            if (before == null) before = previous.remove(finding.legacyId());
             if (before == null) {
                 added.add(finding);
             } else if (Double.compare(reportedOverBy(finding), before.overBy()) > 0) {

@@ -7,8 +7,10 @@ import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 /**
  * The measurements that come from the text, not from the compiler.
@@ -58,6 +60,7 @@ record SourceMetrics(int lines, int longestLine, int linesOverLimit, List<Smell>
                 continue;
             }
             List<String> text = Files.readAllLines(source, StandardCharsets.UTF_8);
+            Map<String, Integer> offendingOccurrences = new HashMap<>();
             lines += text.size();
             for (int i = 0; i < text.size(); i++) {
                 // Tabs are counted as one column. Guessing a tab width would make the number
@@ -67,9 +70,11 @@ record SourceMetrics(int lines, int longestLine, int linesOverLimit, List<Smell>
                 double lineLimit = config.limit(RuleDefinitions.LINE_TOO_LONG);
                 if (config.enabled(RuleDefinitions.LINE_TOO_LONG) && length > lineLimit) {
                     over++;
+                    int occurrence = offendingOccurrences.merge(text.get(i), 1, Integer::sum);
                     smells.add(new Smell("line-too-long",
                         relative + ":" + (i + 1), relative, i + 1,
-                        length, lineLimit, "", RuleDefinitions.LINE_TOO_LONG.unit()));
+                        length, lineLimit, "", RuleDefinitions.LINE_TOO_LONG.unit(),
+                        "content\0" + text.get(i) + "\0" + occurrence));
                 }
             }
         }
@@ -93,7 +98,12 @@ record SourceMetrics(int lines, int longestLine, int linesOverLimit, List<Smell>
      *     most findings, and never load-bearing -- a consumer can ignore it entirely
      */
     record Smell(String rule, String subject, String file, int line, double actual, double limit,
-                 String note, String unit) {
+                 String note, String unit, String identityAnchor) {
+
+        Smell(String rule, String subject, String file, int line, double actual, double limit,
+              String note, String unit) {
+            this(rule, subject, file, line, actual, limit, note, unit, "");
+        }
 
         /**
          * How far over the limit, as a multiple.
@@ -115,9 +125,21 @@ record SourceMetrics(int lines, int longestLine, int linesOverLimit, List<Smell>
 
         /** Stable observation identity for baselines and SARIF result matching. */
         String id() {
+            String normalizedFile = file.replace('\\', '/');
+            String identity = identityAnchor.isEmpty()
+                ? rule + '\0' + subject + '\0' + normalizedFile
+                : rule + '\0' + normalizedFile + '\0' + identityAnchor;
+            return hash(identity);
+        }
+
+        /** The location-sensitive identity emitted before semantic fingerprints were introduced. */
+        String legacyId() {
+            return hash(rule + '\0' + subject + '\0' + file.replace('\\', '/') + '\0' + line);
+        }
+
+        private static String hash(String identity) {
             try {
                 MessageDigest digest = MessageDigest.getInstance("SHA-256");
-                String identity = rule + '\0' + subject + '\0' + file.replace('\\', '/') + '\0' + line;
                 byte[] bytes = digest.digest(identity.getBytes(StandardCharsets.UTF_8));
                 StringBuilder out = new StringBuilder(bytes.length * 2);
                 for (byte value : bytes)
@@ -149,8 +171,15 @@ record SourceMetrics(int lines, int longestLine, int linesOverLimit, List<Smell>
         }
 
         String json() {
+            return json(null);
+        }
+
+        /** Native-report form, optionally annotated with its relationship to a baseline. */
+        String json(String baselineState) {
+            RuleDefinitions.Rule definition = RuleDefinitions.byId(rule);
             return "{\"id\": " + quote(id())
                  + ", \"rule\": " + quote(rule)
+                 + ", \"severity\": " + quote(definition.level())
                  + ", \"subject\": " + quote(subject)
                  + ", \"file\": " + quote(file)
                  + ", \"line\": " + line
@@ -159,7 +188,9 @@ record SourceMetrics(int lines, int longestLine, int linesOverLimit, List<Smell>
                  + ", \"unit\": " + quote(unit)
                  + ", \"overBy\": " + String.format(Locale.ROOT, "%.2f", overBy())
                  + ", \"note\": " + quote(note)
-                 + ", \"detail\": " + quote(detail()) + "}";
+                 + ", \"detail\": " + quote(detail())
+                 + (baselineState == null ? "" : ", \"baselineState\": "
+                     + quote(baselineState)) + "}";
         }
 
         String text() {
