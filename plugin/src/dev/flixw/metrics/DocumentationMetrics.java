@@ -11,6 +11,9 @@ import java.util.regex.Pattern;
 final class DocumentationMetrics {
     private DocumentationMetrics() { }
 
+    // Intentionally one physical line: Markdown continuation lines need indentation-aware block
+    // parsing, and attaching them with a regex would create confident false positives. Until a
+    // block parser exists, wrapped descriptions are treated as unknown rather than redundant.
     private static final Pattern ITEM = Pattern.compile(
         "^\\s*[-*]\\s+`?([\\p{L}_][\\p{L}\\p{N}_']*)`?\\s*(?::|--|—)\\s*(.+?)\\s*$");
     private static final Pattern WORD = Pattern.compile("[\\p{L}\\p{N}_']+");
