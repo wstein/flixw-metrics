@@ -34,6 +34,8 @@ public final class Flix0600AdapterTest {
             require(model.modules().stream().filter(m -> m.name().equals("Beta"))
                     .findFirst().orElseThrow().dependencies().equals(java.util.List.of("Alpha")),
                 "resolved module dependencies cross the older compiler adapter boundary");
+            Flix0753AdapterTest.writeHandlerFixture(project);
+            Flix0753AdapterTest.assertHandlerMetrics(new Flix0600Adapter().measure(project));
             System.out.println("Flix0600AdapterTest: ok");
         } finally {
             Flix0753AdapterTest.delete(project);
