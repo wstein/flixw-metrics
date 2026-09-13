@@ -1,6 +1,7 @@
 package dev.flixw.metrics.flix075
 
 import dev.flixw.metrics.sdk.CompilerModel
+import dev.flixw.metrics.DatalogGraph
 import dev.flixw.metrics.sdk.CompilerModel.{DefInfo, LineInfo, Model, ModelFailure, ModuleInfo, SourceInfo}
 
 import ca.uwaterloo.flix.api.{Bootstrap, Flix}
@@ -217,9 +218,9 @@ final class Flix075Adapter extends CompilerModel {
       .flixdocParameterCharacters(flixdocParameterCharacters(d.spec.fparams.toList))
       .formalParameterNames(sourceFormalParams(d.spec.fparams.toList).map(_.bnd.sym.text).asJava)
       .docText(d.spec.doc.text)
-      .datalogDependencies(datalog.dependencies.asJava)
+      .datalogDependencies(datalog.dependencies)
       .datalogDependencyDepth(datalog.depth)
-      .recursiveDatalogPredicates(datalog.recursive.asJava)
+      .recursiveDatalogPredicates(datalog.recursive)
       .flixdocResultCharacters(renderedCharacters(d.spec.retTpe))
       .build()
   }
@@ -338,10 +339,6 @@ final class Flix075Adapter extends CompilerModel {
     val datalogEdges = scala.collection.mutable.Set.empty[(String, String)]
   }
 
-  /** Predicate graph facts retained after recursive components have been identified. */
-  private final class DatalogAnalysis(val dependencies: List[String], val depth: Int,
-                                      val recursive: List[String])
-
   /**
    * Measures a predicate dependency graph without letting recursion make depth infinite.
    *
@@ -350,38 +347,9 @@ final class Flix075Adapter extends CompilerModel {
    * longest path, including the terminal input predicate; a graph with no relational edge is
    * zero, so a facts-only database does not appear in the ranking.
    */
-  private def analyzeDatalog(edges: Set[(String, String)]): DatalogAnalysis = {
-    if (edges.isEmpty) return new DatalogAnalysis(Nil, 0, Nil)
-
-    val nodes = edges.flatMap { case (head, body) => Set(head, body) }.toList.sorted
-    val adjacent = nodes.map { node =>
-      node -> edges.collect { case (`node`, body) => body }
-    }.toMap
-
-    def reaches(from: String, target: String, seen: Set[String]): Boolean =
-      if (from == target) true
-      else if (seen.contains(from)) false
-      else adjacent.getOrElse(from, Set.empty).exists(reaches(_, target, seen + from))
-
-    val recursive = nodes.filter { node =>
-      adjacent.getOrElse(node, Set.empty).exists(reaches(_, node, Set.empty))
-    }
-    val representative = nodes.map { node =>
-      val component = nodes.filter(other =>
-        reaches(node, other, Set.empty) && reaches(other, node, Set.empty))
-      node -> component.min
-    }.toMap
-    val dag = edges.map { case (head, body) => representative(head) -> representative(body) }
-      .filter { case (head, body) => head != body }
-    val components = representative.values.toSet
-    val memo = scala.collection.mutable.Map.empty[String, Int]
-    def componentDepth(node: String): Int = memo.getOrElseUpdate(node, {
-      val below = dag.collect { case (`node`, body) => body }
-      1 + below.map(componentDepth).maxOption.getOrElse(0)
-    })
-
-    new DatalogAnalysis(edges.map(_._2).toList.sorted.distinct,
-      components.map(componentDepth).max, recursive)
+  private def analyzeDatalog(edges: Set[(String, String)]): DatalogGraph.Analysis = {
+    val javaEdges = edges.map { case (head, body) => new DatalogGraph.Edge(head, body) }.asJava
+    DatalogGraph.analyze(javaEdges)
   }
 
   /**
