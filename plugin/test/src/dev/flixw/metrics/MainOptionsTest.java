@@ -24,7 +24,7 @@ public final class MainOptionsTest {
         require(defaults.format() == Metrics.Format.TEXT && defaults.failOn() == null
                 && defaults.baseline() == null && defaults.failOnNew() == null
                 && defaults.output() == null && defaults.view() == Metrics.View.FULL
-                && !defaults.init() && !defaults.diagnostics(),
+                && !defaults.init() && !defaults.diagnostics() && !defaults.filter().active(),
             "the default remains report-only text");
         Main.Options init = Main.parseOptions(new String[] {"init"});
         require(init.init() && init.format() == Metrics.Format.JSON && !init.allowDirty(),
@@ -41,12 +41,18 @@ public final class MainOptionsTest {
         Main.Options configured = Main.parseOptions(new String[] {
             "report", "--fail-on", "warning", "--format", "sarif",
             "--baseline", "metrics-baseline.json", "--fail-on-new", "error",
-            "--output", "reports/metrics.sarif"
+            "--output", "reports/metrics.sarif", "--rule", "deeply-nested",
+            "--severity", "warning", "--file", "src/**/*.flix"
         });
         require(configured.format() == Metrics.Format.SARIF && "warning".equals(configured.failOn())
                 && Path.of("metrics-baseline.json").equals(configured.baseline())
                 && Path.of("reports/metrics.sarif").equals(configured.output())
-                && "error".equals(configured.failOnNew()),
+                && "error".equals(configured.failOnNew())
+                && configured.filter().matches(new SourceMetrics.Smell("deeply-nested",
+                    "A.f", "src/core/A.flix", 1, 5, 4, "", "levels"))
+                && !configured.filter().matches(new SourceMetrics.Smell("line-too-long",
+                    "src/core/A.flix:1", "src/core/A.flix", 1, 120, 100, "",
+                    "UTF-16 code units")),
             "format, absolute gate and baseline gate compose in any order");
         Path outputRoot = Files.createTempDirectory("flixw-metrics-output-");
         try {
@@ -71,6 +77,10 @@ public final class MainOptionsTest {
             "a warning does not cross an error gate");
         require(!defaults.shouldFail(warning, null),
             "findings never fail without an explicit gate");
+        Main.Options filteredGate = Main.parseOptions(new String[] {"--fail-on", "warning",
+            "--rule", "line-too-long"});
+        require(filteredGate.shouldFail(warning, null),
+            "presentation filters never hide findings from the quality gate");
         Baseline.Comparison newWarning = new Baseline.Comparison(Path.of("baseline.json"),
             warning.smells(), List.of(), List.of(), 0);
         require(!configured.shouldFail(FormatsTest.reportWithSmells(List.of()), newWarning),
@@ -94,13 +104,18 @@ public final class MainOptionsTest {
         expectUsage(new String[] {"--view", "summary"}, "--view requires --format json");
         expectUsage(new String[] {"--format", "json", "--view", "changes"},
             "--view changes requires --baseline");
+        expectUsage(new String[] {"--format", "json", "--view", "summary",
+                "--rule", "dense"},
+            "finding filters cannot be used with --view summary");
+        expectUsage(new String[] {"--rule", "not-a-rule"}, "unknown rule not-a-rule");
+        expectUsage(new String[] {"--severity", "fatal"}, "unknown severity fatal");
         expectUsage(new String[] {"report", "--unknown"}, "unknown option --unknown");
         expectUsage(new String[] {"report", "--format"}, "--format requires a value");
         expectUsage(new String[] {"unknown"}, "unknown command or option unknown");
         expectUsage(new String[] {"--diagnostics", "--diagnostics"},
             "repeated option --diagnostics");
         for (String option : List.of("--format", "--fail-on", "--baseline", "--fail-on-new",
-                "--output", "--view")) {
+                "--output", "--view", "--rule", "--severity", "--file")) {
             String value = option.equals("--format") ? "json"
                 : option.equals("--baseline") ? "baseline.json"
                 : option.equals("--output") ? "metrics.json"

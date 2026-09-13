@@ -72,7 +72,7 @@ final class Metrics {
         // A method so javac cannot inline yesterday's value into Baseline. Incremental builds
         // must ask the current report class which contract it emits.
         static int schemaVersion() {
-            return 28;
+            return 29;
         }
 
         /** A finding's physical span and compiler-level owner, ready for editor tooling. */
@@ -120,16 +120,35 @@ final class Metrics {
 
         String render(Format format, Provenance p, MetricsConfig config,
                       Baseline.Comparison comparison, View view) {
+            return render(format, p, config, comparison, view, PresentationFilter.none());
+        }
+
+        String render(Format format, Provenance p, MetricsConfig config,
+                      Baseline.Comparison comparison, View view,
+                      PresentationFilter filter) {
             if (view != View.FULL && format != Format.JSON)
                 throw new IllegalArgumentException("compact views require JSON format");
             if (view == View.CHANGES && comparison == null)
                 throw new IllegalArgumentException("changes view requires a baseline");
+            Report presented = filter.active() ? withFindings(filter) : this;
             return switch (format) {
-                case JSON -> json(p, config, comparison, view);
-                case MARKDOWN -> Formats.markdown(this, p, config, comparison);
-                case SARIF -> Formats.sarif(this, p, config, comparison);
-                case TEXT -> text(comparison);
+                case JSON -> presented.json(p, config, comparison, view, filter);
+                case MARKDOWN -> Formats.markdown(presented, p, config, comparison);
+                case SARIF -> Formats.sarif(presented, p, config, comparison);
+                case TEXT -> presented.text(comparison);
             };
+        }
+
+        private Report withFindings(PresentationFilter filter) {
+            List<SourceMetrics.Smell> selected = smells.stream().filter(filter::matches).toList();
+            return new Report(files, modules, definitions, localDefinitions,
+                effectfulDefinitions, cognitive, traits, instances, enums, structs, effects,
+                typeAliases, lines, codeLines, commentLines, docCommentLines, blankLines,
+                commentPercent, longestLine, linesOverLimit, datalogRules, datalogFacts,
+                widestReturn, widestEffectSurface, widestDatalogDependencyBreadth,
+                deepestDatalogDependency, mostRecursiveDatalogPredicates,
+                longestFlixdocResultCharacters, tests, docCoveragePercent, purityPercent,
+                excludedSources, selected, ranks, defs, modulesList);
         }
 
         /**
@@ -280,10 +299,12 @@ final class Metrics {
         }
 
         private String json(Provenance p, MetricsConfig config, Baseline.Comparison comparison,
-                            View view) {
+                            View view, PresentationFilter filter) {
             StringBuilder b = new StringBuilder("{\n");
             b.append("  \"$schema\": \"https://raw.githubusercontent.com/wstein/flixw-metrics/main/docs/metrics-report.schema.json\",\n");
             b.append("  \"schemaVersion\": ").append(schemaVersion()).append(",\n");
+            if (filter.active())
+                b.append("  \"presentationFilter\": ").append(filter.json()).append(",\n");
             if (p != null)
                 b.append("  \"provenance\": ").append(p.json()).append(",\n");
             b.append("  \"configuration\": ").append(config.json()).append(",\n");

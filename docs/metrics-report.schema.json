@@ -7,7 +7,17 @@
   "required": ["schemaVersion", "configuration", "ruleCatalog", "excludedSources", "summary"],
   "properties": {
     "$schema": {"const": "https://raw.githubusercontent.com/wstein/flixw-metrics/main/docs/metrics-report.schema.json"},
-    "schemaVersion": {"const": 28},
+    "schemaVersion": {"const": 29},
+    "presentationFilter": {
+      "type": "object",
+      "required": ["rule", "minimumSeverity", "file"],
+      "properties": {
+        "rule": {"type": ["string", "null"]},
+        "minimumSeverity": {"type": ["string", "null"], "enum": ["note", "warning", "error", null]},
+        "file": {"type": ["string", "null"]}
+      },
+      "additionalProperties": false
+    },
     "provenance": {"type": "object"},
     "configuration": {"type": "object"},
     "baseline": {"type": "object"},

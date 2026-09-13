@@ -136,6 +136,23 @@ public final class PluginIntegrationTest {
             require(withoutTime(coldJson).equals(withoutTime(warmJson)),
                 "a warm report equals the cold report apart from its fresh timestamp");
 
+            String filtered = run(project, cache, plugin, compiler,
+                project.resolve("no-such-java-home").toString(), "json",
+                "--view", "findings", "--rule", "redundant-parameter-doc",
+                "--severity", "note", "--file", "src/**");
+            JsonObject filteredJson = JsonParser.parseString(filtered).getAsJsonObject();
+            require(filteredJson.has("presentationFilter")
+                    && filteredJson.getAsJsonArray("smells").size() == 1
+                    && filteredJson.getAsJsonArray("smells").get(0).getAsJsonObject()
+                        .get("rule").getAsString().equals("redundant-parameter-doc"),
+                "packaged CLI composes rule, minimum-severity and file presentation filters");
+            String gatedDespiteFilter = runExpecting(project, cache, plugin, compiler,
+                project.resolve("no-such-java-home").toString(), "json", 1,
+                "--view", "findings", "--rule", "line-too-long", "--fail-on", "note");
+            require(JsonParser.parseString(gatedDespiteFilter).getAsJsonObject()
+                    .getAsJsonArray("smells").size() == 0,
+                "a filter can hide output while the complete report still drives the gate");
+
             Path baseline = project.resolve("metrics-baseline.json");
             Files.writeString(baseline, cold);
             String comparedWarm = run(project, cache, plugin, compiler,

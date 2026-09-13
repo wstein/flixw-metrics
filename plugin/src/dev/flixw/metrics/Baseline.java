@@ -203,6 +203,8 @@ final class Baseline {
             throw new Invalid(path + ": " + e.getMessage());
         }
         Map<String, Object> root = object(parsed, path, "report");
+        if (root.containsKey("presentationFilter"))
+            throw invalid(path, "filtered report cannot be used as a baseline");
         int schema = integer(root.get("schemaVersion"), path, "schemaVersion");
         if (schema < 24 || schema > Metrics.Report.schemaVersion())
             throw invalid(path, "incompatible schema version " + schema

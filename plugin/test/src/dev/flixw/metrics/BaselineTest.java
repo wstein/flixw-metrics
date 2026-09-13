@@ -47,6 +47,12 @@ public final class BaselineTest {
             require(!comparison.crosses("error"),
                 "new or worsened warnings do not cross an error-only gate");
 
+            Files.writeString(baseline, before.render(Metrics.Format.JSON, null,
+                MetricsConfig.defaults(), null, Metrics.View.FINDINGS,
+                PresentationFilter.of("dense", null, null)));
+            expectInvalid(() -> Baseline.compare(baseline, after, MetricsConfig.defaults()),
+                "filtered report cannot be used as a baseline");
+
             String previousSchema = before.render(Metrics.Format.JSON)
                 .replaceFirst("\"schemaVersion\": [0-9]+", "\"schemaVersion\": 24")
                 .replace("\"id\": \"" + kept.id() + "\"",

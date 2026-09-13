@@ -104,6 +104,24 @@ public final class FormatsTest {
         require(priorityJson.indexOf("\"rule\": \"deeply-nested\"")
                 < priorityJson.indexOf("\"rule\": \"line-too-long\""),
             "compact findings put the highest-severity work first");
+        PresentationFilter onlyNested = PresentationFilter.of(
+            "deeply-nested", "warning", "src/**");
+        String filteredJson = priority.render(Metrics.Format.JSON, null,
+            MetricsConfig.defaults(), null, Metrics.View.FINDINGS, onlyNested);
+        String filteredFindings = filteredJson.substring(filteredJson.indexOf("\"smells\": ["));
+        require(filteredFindings.contains("\"rule\": \"deeply-nested\"")
+                && !filteredFindings.contains("\"rule\": \"line-too-long\""),
+            "native JSON filters current findings by rule, minimum severity and file glob");
+        require(filteredJson.contains("\"presentationFilter\": {\"rule\":"
+                + " \"deeply-nested\", \"minimumSeverity\": \"warning\","
+                + " \"file\": \"src/**\"}"),
+            "saved JSON identifies that it is a context-reduced presentation");
+        require(priority.smells().size() == 2,
+            "render filtering does not mutate the measured report");
+        require(!priority.render(Metrics.Format.SARIF, null, MetricsConfig.defaults(), null,
+                Metrics.View.FULL, PresentationFilter.of(null, null, "test/**"))
+                .contains("\"ruleId\": "),
+            "SARIF applies the same presentation-only file filter");
 
         // The ranking heading names what the table is, not what to do about it -- a project
         // with findings still reads the extremes as plain fact, with no "nothing to act on"

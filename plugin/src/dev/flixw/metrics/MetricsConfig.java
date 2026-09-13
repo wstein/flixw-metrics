@@ -306,7 +306,8 @@ final class MetricsConfig {
         }
     }
 
-    private static Pattern glob(String value) {
+    /** Portable glob semantics shared by persisted exclusions and CLI presentation filters. */
+    static Pattern glob(String value) {
         String portable = value.replace('\\', '/');
         StringBuilder regex = new StringBuilder("^");
         for (int i = 0; i < portable.length(); i++) {

@@ -156,6 +156,8 @@ Four output formats:
 ./flixw metrics report --format sarif --output metrics.sarif
 ./flixw metrics report --format json --view findings --output findings.json
 ./flixw metrics report --format json --view changes --baseline metrics-baseline.json
+./flixw metrics report --format json --view findings \
+  --severity warning --rule deeply-nested --file 'src/**'
 ```
 
 Only the report goes to stdout — the compiler's own dependency-resolution chatter goes to
@@ -167,6 +169,10 @@ destination directory must already exist.
 Agent consumers can reduce context usage with JSON-only `--view summary`, `--view findings`, or
 `--view changes`; the default `full` view remains schema-compatible. The changes view requires a
 baseline. Views affect presentation only, never measurement, caching, or quality-gate semantics.
+`--rule ID`, `--severity LEVEL`, and `--file GLOB` further filter rendered current findings in any
+format. Severity means “at least this level”; file globs use `/`, `*` within one path segment, and
+`**` across segments. Filters never change `--fail-on` or `--fail-on-new`, and filtered JSON names
+its `presentationFilter` and is deliberately rejected as a future baseline.
 Add `--diagnostics` when profiling an invocation; one line on stderr reports `cache=hit|miss|disabled`,
 elapsed milliseconds, and the number of stable-input retries without contaminating report output.
 

@@ -158,7 +158,8 @@ public final class Main {
         }
         Baseline.Comparison comparison = options.compare(context.projectRoot(), report, config);
         writeOutput(context.projectRoot(), options.output(),
-            report.render(options.format(), provenance, config, comparison, options.view()));
+            report.render(options.format(), provenance, config, comparison, options.view(),
+                options.filter()));
         return comparison;
     }
 
@@ -280,7 +281,7 @@ public final class Main {
 
     record Options(Metrics.Format format, String failOn, Path baseline, String failOnNew,
                    Path output, Metrics.View view, boolean init, boolean allowDirty,
-                   boolean diagnostics) {
+                   boolean diagnostics, PresentationFilter filter) {
         boolean shouldFail(Metrics.Report report, Baseline.Comparison comparison) {
             boolean existing = false;
             if (failOn != null) {
@@ -309,7 +310,7 @@ public final class Main {
             boolean diagnostics = takeFlag(rest, "--diagnostics");
             if (!rest.isEmpty()) throw new Usage("unknown init option " + rest.get(0));
             return new Options(Metrics.Format.JSON, null, null, null, null, Metrics.View.FULL, true,
-                allowDirty, diagnostics);
+                allowDirty, diagnostics, PresentationFilter.none());
         }
         if (!rest.isEmpty() && "report".equals(rest.get(0))) rest.remove(0);
         boolean diagnostics = takeFlag(rest, "--diagnostics");
@@ -319,13 +320,16 @@ public final class Main {
         String failOnNew = null;
         Path output = null;
         Metrics.View view = Metrics.View.FULL;
+        String rule = null;
+        String severity = null;
+        String file = null;
         java.util.Set<String> seen = new java.util.HashSet<>();
         for (int i = 0; i < rest.size(); i += 2) {
             String option = rest.get(i);
             if (!option.startsWith("--"))
                 throw new Usage("unknown command or option " + option);
             if (!List.of("--format", "--fail-on", "--baseline", "--fail-on-new", "--output",
-                    "--view")
+                    "--view", "--rule", "--severity", "--file")
                     .contains(option))
                 throw new Usage("unknown option " + option);
             if (i + 1 >= rest.size()) throw new Usage(option + " requires a value");
@@ -342,6 +346,9 @@ public final class Main {
                 case "--baseline" -> baseline = Path.of(rest.get(i + 1));
                 case "--output" -> output = Path.of(rest.get(i + 1));
                 case "--view" -> view = Metrics.View.parse(rest.get(i + 1));
+                case "--rule" -> rule = rest.get(i + 1);
+                case "--severity" -> severity = rest.get(i + 1);
+                case "--file" -> file = rest.get(i + 1);
                 case "--fail-on-new" -> {
                     String level = rest.get(i + 1);
                     if (!List.of("note", "warning", "error").contains(level))
@@ -358,8 +365,11 @@ public final class Main {
             throw new Usage("--view requires --format json");
         if (view == Metrics.View.CHANGES && baseline == null)
             throw new Usage("--view changes requires --baseline");
+        PresentationFilter filter = PresentationFilter.of(rule, severity, file);
+        if (view == Metrics.View.SUMMARY && filter.active())
+            throw new Usage("finding filters cannot be used with --view summary");
         return new Options(format, failOn, baseline, failOnNew, output, view, false, false,
-            diagnostics);
+            diagnostics, filter);
     }
 
     private static boolean takeFlag(List<String> args, String flag) {
@@ -378,8 +388,11 @@ public final class Main {
                 + " [--format text|json|md|sarif]"
                 + " [--fail-on note|warning|error] [--baseline report.json]"
                 + " [--fail-on-new note|warning|error] [--view full|summary|findings|changes]"
+                + " [--rule id] [--severity note|warning|error] [--file glob]"
                 + " [--output path] [--diagnostics]\n\n"
-                + "Measures the project and writes a report to stdout or atomically to --output.";
+                + "Measures the project and writes a report to stdout or atomically to --output.\n"
+                + "Finding filters affect presentation only; --severity means at least that level."
+                + " --file uses portable * and ** globs.";
             case "init" -> "usage: ./flixw metrics init [--allow-dirty] [--diagnostics]\n\n"
                 + "Creates a starter policy and clean-tree metrics baseline without overwriting"
                 + " files.";
@@ -393,6 +406,7 @@ public final class Main {
         return "usage: ./flixw metrics [report] [--format text|json|md|sarif]"
             + " [--fail-on note|warning|error] [--baseline report.json]"
             + " [--fail-on-new note|warning|error] [--view full|summary|findings|changes]"
+            + " [--rule id] [--severity note|warning|error] [--file glob]"
             + " [--output path] [--diagnostics]\n"
             + "       ./flixw metrics init [--allow-dirty] [--diagnostics]\n"
             + "       ./flixw metrics capabilities\n\n"
