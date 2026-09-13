@@ -43,6 +43,12 @@ public final class MainOptionsTest {
                     FormatsTest.reportWithSmells(List.of()), newWarning),
             "a new warning crosses a warning-only baseline gate");
         expectUsage(new String[] {"--fail-on-new", "warning"}, "requires --baseline");
+        for (String option : List.of("--format", "--fail-on", "--baseline", "--fail-on-new")) {
+            String value = option.equals("--format") ? "json"
+                : option.equals("--baseline") ? "baseline.json" : "warning";
+            expectUsage(new String[] {option, value, option, value},
+                "repeated option " + option);
+        }
         Main.Context context = new Main.Context(Path.of("project"), Path.of("flix.jar"),
             Path.of("java-home/bin/java"), null);
         require(Main.bridgeCommand(context, new String[] {"report"}).contains("-Xss64m"),

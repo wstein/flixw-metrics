@@ -251,9 +251,12 @@ public final class Main {
         String failOn = null;
         Path baseline = null;
         String failOnNew = null;
+        java.util.Set<String> seen = new java.util.HashSet<>();
         for (int i = 0; i < rest.size(); i += 2) {
             if (i + 1 >= rest.size()) throw usageError();
-            switch (rest.get(i)) {
+            String option = rest.get(i);
+            if (!seen.add(option)) throw new Usage("repeated option " + option);
+            switch (option) {
                 case "--format" -> format = Metrics.Format.parse(rest.get(i + 1));
                 case "--fail-on" -> {
                     String level = rest.get(i + 1);
