@@ -18,6 +18,11 @@ jobs:
           java-version: "21"
       - run: sh scripts/test.sh
       - run: sh scripts/package.sh "${GITHUB_REF_NAME#v}"
-      - run: gh release create "$GITHUB_REF_NAME" dist/plugin.jar dist/SHA256SUMS
+      - name: Publish release and versioned notes
+        run: |
+          notes="docs/releases/$GITHUB_REF_NAME.md"
+          test -f "$notes"
+          gh release create "$GITHUB_REF_NAME" dist/plugin.jar dist/SHA256SUMS \
+            --title "$GITHUB_REF_NAME" --notes-file "$notes"
         env:
           GH_TOKEN: ${{ github.token }}
