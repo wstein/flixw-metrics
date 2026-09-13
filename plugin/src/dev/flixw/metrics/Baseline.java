@@ -263,24 +263,26 @@ final class Baseline {
 
     /** Small strict JSON reader, kept dependency-free for the outer JVM's isolated class path. */
     private static final class Json {
+        private static final int MAX_NESTING = 128;
         private final String input;
         private int at;
 
         Json(String input) { this.input = input; }
 
         Object parse() {
-            Object value = value();
+            Object value = value(0);
             space();
             if (at != input.length()) throw error("unexpected trailing content");
             return value;
         }
 
-        private Object value() {
+        private Object value(int depth) {
             space();
             if (at >= input.length()) throw error("unexpected end of JSON");
+            if (depth > MAX_NESTING) throw error("JSON nesting exceeds " + MAX_NESTING);
             return switch (input.charAt(at)) {
-                case '{' -> object();
-                case '[' -> array();
+                case '{' -> object(depth);
+                case '[' -> array(depth);
                 case '"' -> string();
                 case 't' -> literal("true", Boolean.TRUE);
                 case 'f' -> literal("false", Boolean.FALSE);
@@ -289,7 +291,7 @@ final class Baseline {
             };
         }
 
-        private Map<String, Object> object() {
+        private Map<String, Object> object(int depth) {
             at++;
             Map<String, Object> result = new LinkedHashMap<>();
             space();
@@ -302,20 +304,20 @@ final class Baseline {
                 space();
                 expect(':');
                 if (result.containsKey(key)) throw error("duplicate object key " + key);
-                result.put(key, value());
+                result.put(key, value(depth + 1));
                 space();
                 if (take('}')) return result;
                 expect(',');
             }
         }
 
-        private List<Object> array() {
+        private List<Object> array(int depth) {
             at++;
             List<Object> result = new ArrayList<>();
             space();
             if (take(']')) return result;
             while (true) {
-                result.add(value());
+                result.add(value(depth + 1));
                 space();
                 if (take(']')) return result;
                 expect(',');

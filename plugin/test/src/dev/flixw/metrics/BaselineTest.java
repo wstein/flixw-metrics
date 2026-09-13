@@ -49,6 +49,10 @@ public final class BaselineTest {
             expectInvalid(() -> Baseline.compare(baseline, after, MetricsConfig.defaults()),
                 "schema version");
 
+            Files.writeString(baseline, "[".repeat(10_000) + "0" + "]".repeat(10_000));
+            expectInvalid(() -> Baseline.compare(baseline, after, MetricsConfig.defaults()),
+                "nesting exceeds");
+
             Path configured = Files.createTempDirectory("flixw-metrics-policy-");
             try {
                 Files.writeString(configured.resolve(MetricsConfig.FILE),
