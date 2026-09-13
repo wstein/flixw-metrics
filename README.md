@@ -243,7 +243,7 @@ Three things get measured, and where each comes from is deliberate:
   not.
 - **From thresholds over both** — the findings.
 
-Nine measures are worth knowing about because they catch what totals hide:
+Ten measures are worth knowing about because they catch what totals hide:
 
 **Cognitive complexity is nesting-weighted.** Five nested conditions cost more than five
 consecutive ones. Divided by lexer-confirmed code lines, it separates *long* from *hard*: a
@@ -293,6 +293,13 @@ type-parameter count, and source-ordered operations as `{name, arity}` records. 
 derived `operationCount` and `maxOperationArity` values. Nullary operations have arity zero; the
 adapter uses typed formal parameters rather than parsing declarations. The project-wide `effects`
 total remains the declaration count. These facts currently produce no ranking or finding.
+
+**Instantiated effect detail is separate from capability width.** Each definition's native JSON
+includes `effectDetails` entries with a constructor name, `argumentCount`, and compiler-rendered
+`arguments`. Thus `State[Int32]` and `State[String]` remain one `State` capability apiece while a
+consumer can distinguish their instantiations. An effect mentioned inside an argument is not added
+to the surrounding capability set. Compiler families without polymorphic effects emit the same
+constructor names with empty argument lists. This context has no ranking, finding, or threshold.
 
 **Datalog dependency breadth measures relations read by derived rules.**
 `datalogDependencyBreadth` is the number of distinct relational predicate names appearing in the
