@@ -26,7 +26,8 @@ public final class Adapters {
      * cache, which is the property the SDK exists to buy.
      */
     private static final List<String> KNOWN =
-        List.of("dev.flixw.metrics.adapter.Flix0753Adapter",
+        List.of("dev.flixw.metrics.adapter.Flix0761Adapter",
+            "dev.flixw.metrics.adapter.Flix0753Adapter",
             "dev.flixw.metrics.adapter.Flix0680Adapter",
             "dev.flixw.metrics.adapter.Flix0672Adapter",
             "dev.flixw.metrics.adapter.Flix0661Adapter",

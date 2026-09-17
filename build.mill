@@ -6,13 +6,27 @@ private val flixScalaVersion = "2.13.18"
 
 /** Compiler-facing modules, grouped physically and logically under one adapter boundary. */
 object adapter extends Module {
-  /** The current adapter, compiled in isolation against the oldest compiler in its ABI family. */
-  object flix0753 extends ScalaModule {
+  /** The current adapter, compiled in isolation against Flix 0.76.1. */
+  object flix0761 extends ScalaModule {
     def scalaVersion = flixScalaVersion
 
     def scalacOptions = Seq("-deprecation", "-feature", "-Xfatal-warnings")
 
     def compilerJar = Task.Source(moduleDir / os.up / os.up / "plugin" / "lib" / "flix.jar")
+
+    def compileClasspath = Task {
+      super.compileClasspath() ++ Seq(plugin.compile().classes, compilerJar())
+    }
+  }
+
+  /** The outgoing adapter, compiled in isolation against the oldest compiler in its ABI family. */
+  object flix0753 extends ScalaModule {
+    def scalaVersion = flixScalaVersion
+
+    def scalacOptions = Seq("-deprecation", "-feature", "-Xfatal-warnings")
+
+    def compilerJar = Task.Source(
+      moduleDir / os.up / os.up / "plugin" / "lib" / "flix-0.75.3.jar")
 
     def compileClasspath = Task {
       super.compileClasspath() ++ Seq(plugin.compile().classes, compilerJar())
@@ -124,7 +138,8 @@ object plugin extends ScalaModule {
 
   /** Package every adapter family, but none of the compiler jars used to compile them. */
   override def localClasspath = Task {
-    super.localClasspath() ++ Seq(adapter.flix0753.compile().classes,
+    super.localClasspath() ++ Seq(adapter.flix0761.compile().classes,
+      adapter.flix0753.compile().classes,
       adapter.flix0680.compile().classes, adapter.flix0672.compile().classes,
       adapter.flix0661.compile().classes, adapter.flix0610.compile().classes,
       adapter.flix0600.compile().classes)
@@ -173,7 +188,8 @@ object plugin extends ScalaModule {
     /** Test-only: parse emitted JSON with the Gson already bundled in the pinned compiler jar. */
     override def compileClasspath = Task {
       super.compileClasspath() ++ plugin.flixJar() ++
-        Seq(adapter.flix0753.compile().classes, adapter.flix0680.compile().classes,
+        Seq(adapter.flix0761.compile().classes, adapter.flix0753.compile().classes,
+          adapter.flix0680.compile().classes,
           adapter.flix0672.compile().classes, adapter.flix0661.compile().classes,
           adapter.flix0610.compile().classes, adapter.flix0600.compile().classes)
     }
@@ -188,6 +204,7 @@ object plugin extends ScalaModule {
                         "dev.flixw.metrics.Flix0672AdapterTest",
                         "dev.flixw.metrics.Flix0680AdapterTest",
                         "dev.flixw.metrics.Flix0753AdapterTest",
+                        "dev.flixw.metrics.Flix0761AdapterTest",
                         "dev.flixw.metrics.PluginIntegrationTest")
       val mains = os.walk(sourceRoot)
         .filter(path => path.ext == "java" && path.last.endsWith("Test.java"))
@@ -199,20 +216,23 @@ object plugin extends ScalaModule {
       }
       val fixture = moduleDir / "fixtures" / "semantic"
       val compiler = plugin.flixJar().head.path
+      val outgoingCompiler = moduleDir / os.up / "lib" / "flix-0.76.0.jar"
+      val outgoingFamilyCompiler = adapter.flix0753.compilerJar().path
       val olderCompiler = adapter.flix0680.compilerJar().path
       val oldestCompiler = adapter.flix0672.compilerJar().path
       val earliestCompiler = adapter.flix0661.compilerJar().path
       val validationCompiler = adapter.flix0610.compilerJar().path
       val preExtMatchCompiler = adapter.flix0600.compilerJar().path
       val integrationCp = cp + java.io.File.pathSeparator + compiler
+      val outgoingIntegrationCp = cp + java.io.File.pathSeparator + outgoingCompiler
       val olderIntegrationCp = cp + java.io.File.pathSeparator + olderCompiler
       val oldestIntegrationCp = cp + java.io.File.pathSeparator + oldestCompiler
       val earliestIntegrationCp = cp + java.io.File.pathSeparator + earliestCompiler
       val validationIntegrationCp = cp + java.io.File.pathSeparator + validationCompiler
       val preExtMatchIntegrationCp = cp + java.io.File.pathSeparator + preExtMatchCompiler
       os.proc("java", "-cp", cp, "dev.flixw.metrics.CompilerCapabilitiesTest", compiler,
-              olderCompiler, oldestCompiler, earliestCompiler, validationCompiler,
-              preExtMatchCompiler)
+              outgoingFamilyCompiler, olderCompiler, oldestCompiler, earliestCompiler,
+              validationCompiler, preExtMatchCompiler)
         .call(stdout = os.Inherit, stderr = os.Inherit)
       val validationFixture = moduleDir / "fixtures" / "semantic-validation"
       os.proc("java", "-cp", preExtMatchIntegrationCp, "dev.flixw.metrics.Flix0600AdapterTest",
@@ -227,7 +247,9 @@ object plugin extends ScalaModule {
         .call(stdout = os.Inherit, stderr = os.Inherit)
       os.proc("java", "-cp", olderIntegrationCp, "dev.flixw.metrics.Flix0680AdapterTest", fixture)
         .call(stdout = os.Inherit, stderr = os.Inherit)
-      os.proc("java", "-cp", integrationCp, "dev.flixw.metrics.Flix0753AdapterTest", fixture)
+      os.proc("java", "-cp", outgoingIntegrationCp, "dev.flixw.metrics.Flix0753AdapterTest", fixture)
+        .call(stdout = os.Inherit, stderr = os.Inherit)
+      os.proc("java", "-cp", integrationCp, "dev.flixw.metrics.Flix0761AdapterTest", fixture)
         .call(stdout = os.Inherit, stderr = os.Inherit)
       os.proc("java", "-cp", integrationCp, "dev.flixw.metrics.PluginIntegrationTest", fixture,
               plugin.jar().path, compiler)
