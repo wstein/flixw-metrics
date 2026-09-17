@@ -43,7 +43,7 @@ public interface CompilerModel {
      * the declared version.
      *
      * <p>The verified scope is <b>Flix 0.60.0, 0.61.0, 0.65.0, 0.66.1, 0.67.1, 0.67.2,
-     * 0.68.0, 0.75.2, 0.75.3, and 0.76.0</b> across six in-tree adapter families. Versioning
+     * 0.68.0, 0.75.2, 0.75.3, 0.76.0, and 0.76.1</b> across seven in-tree adapter families. Versioning
      * the SDK before there is a second party to version against would be ceremony; leaving no
      * version at all would make the first one a breaking change.
      */

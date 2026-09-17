@@ -21,9 +21,9 @@ import scala.jdk.CollectionConverters._
  * ==Why this file is Scala==
  *
  * `Flix0761` names the linkage family introduced by Flix 0.76.1. Typed Scala patterns make
- * misspelled or removed
- * nodes a build failure, while semantic fixtures cover the deliberately open classifier and its
- * generic descent. The reflective predecessor classified nodes by simple class name and ignored
+ * misspelled or removed nodes a build failure, while semantic fixtures cover the deliberately
+ * open classifier and its generic descent. The reflective predecessor classified nodes by simple
+ * class name and ignored
  * the rest in silence, which cost exactly what it sounds like: it named a `TypeMatchRule` that does
  * not exist and missed the `ExtMatchRule` that does, so every extensible match was undercounted and
  * nothing said so.

@@ -26,6 +26,7 @@ would put compiler concepts straight back into the callers it exists to protect.
 | `adapter.flix0672`: `dev.flixw.metrics.adapter.Flix0672Adapter` | everything | Scala |
 | `adapter.flix0680`: `dev.flixw.metrics.adapter.Flix0680Adapter` | everything | Scala |
 | `adapter.flix0753`: `dev.flixw.metrics.adapter.Flix0753Adapter` | everything | Scala |
+| `adapter.flix0761`: `dev.flixw.metrics.adapter.Flix0761Adapter` | everything | Scala |
 
 Every adapter, including the newest family, is an isolated child of the `adapter` module and is
 compiled against only its own compiler generation. Supporting another Flix generation is an
@@ -40,8 +41,8 @@ packaged in the same jar, they cannot disagree, so nothing checks it. Today's ve
 `Flix0600Adapter`; Flix 0.61.0 and 0.65.0 via `Flix0610Adapter`; Flix 0.66.1 and 0.67.1 via
 `Flix0661Adapter`; Flix 0.67.2 via
 `Flix0672Adapter`; Flix 0.68.0 and 0.75.2 via
-`Flix0680Adapter`; and Flix 0.75.3 and 0.76.0 via
-`Flix0753Adapter`.** Each suffix names the oldest
+`Flix0680Adapter`; Flix 0.75.3 and 0.76.0 via `Flix0753Adapter`; and Flix 0.76.1 via
+`Flix0761Adapter`.** Each suffix names the oldest
 verified release in its family, not a closed range or the current compiler pin. The investigation supporting each release
 is recorded under [`docs/compiler-compatibility`](compiler-compatibility/README.md).
 
@@ -59,8 +60,8 @@ arrives as `NoClassDefFoundError`, which is an `Error` and not an `Exception`.
 
 ## Why the engine is Scala
 
-Flix's AST is a sealed hierarchy, so typed patterns over it are checked. Stock 0.75.3 and 0.76.0
-both have 76 `Expr` constructs. The classifier intentionally has a catch-all because only a small
+Flix's AST is a sealed hierarchy, so typed patterns over it are checked. Stock 0.75.3, 0.76.0,
+and 0.76.1 all have 76 `Expr` constructs. The classifier intentionally has a catch-all because only a small
 subset contributes directly to metrics, while generic `Product` descent still reaches their
 children. Consequently a new AST alternative does not by itself produce an inexhaustive-match
 failure: every compiler repin also needs semantic fixtures and corpus comparison.
