@@ -10,4 +10,4 @@ test:
 	sh scripts/test.sh
 
 package:
-	sh scripts/package.sh 0.4.0
+	sh scripts/package.sh 0.5.0
