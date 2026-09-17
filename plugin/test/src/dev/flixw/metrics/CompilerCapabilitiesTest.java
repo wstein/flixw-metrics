@@ -137,7 +137,7 @@ public final class CompilerCapabilitiesTest {
                 Path resultEra = Path.of(args[4]);
                 CompilerCapabilities stock = inspect(resultEra);
                 require(stock.hasEngineApi() && stock.missing().isEmpty(),
-                    "the Validation-era compiler satisfies an adapter contract");
+                    "the Result-era compiler satisfies an adapter contract");
                 require(!missing(resultEra, AdapterAbi.contracts().get(3)).isEmpty(),
                     "the 0.66.1 compiler does not satisfy the 0.67.2 adapter contract");
                 require(missing(resultEra, AdapterAbi.contracts().get(4)).isEmpty(),
@@ -147,7 +147,7 @@ public final class CompilerCapabilitiesTest {
                 Path validation = Path.of(args[5]);
                 CompilerCapabilities stock = inspect(validation);
                 require(stock.hasEngineApi() && stock.missing().isEmpty(),
-                    "the pre-extensible-match compiler satisfies an adapter contract");
+                    "the Validation-era compiler satisfies an adapter contract");
                 require(!missing(validation, AdapterAbi.contracts().get(4)).isEmpty(),
                     "the Validation-era compiler does not satisfy the Result-era contract");
                 require(missing(validation, AdapterAbi.contracts().get(5)).isEmpty(),
