@@ -278,15 +278,6 @@ public final class Flix0761AdapterTest {
         }
     }
 
-    static void assertLegacyEffectDetails(Model model) {
-        require(model.defs().stream().allMatch(definition ->
-                definition.effectDetails().stream().allMatch(detail ->
-                    detail.arguments().isEmpty())
-                && definition.effectDetails().stream().map(detail -> detail.name()).toList()
-                    .equals(definition.effects())),
-            "legacy adapters expose constructor names with explicit empty argument lists");
-    }
-
     private static void require(boolean condition, String message) {
         if (!condition) throw new AssertionError(message);
     }
