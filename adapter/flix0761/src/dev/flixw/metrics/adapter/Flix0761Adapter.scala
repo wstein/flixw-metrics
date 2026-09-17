@@ -65,40 +65,40 @@ final class Flix0761Adapter extends CompilerModel {
     val flix = bootstrap.mkFlix(Options.Default, Formatter.getDefault)
     implicit val currentFlix: Flix = flix
     try {
-    // `unsafeGet` throws a Scala exception carrying the compiler's whole rendered error, stack
-    // trace and all. That is the compiler talking to its own developers; a plugin that lets it
-    // through has turned "your project does not compile" into a crash report.
-    bootstrap.check(flix) match {
-      case ca.uwaterloo.flix.util.Result.Ok(_) => ()
-      case ca.uwaterloo.flix.util.Result.Err(e) =>
-        // The compiler's own rendering, not a summary of it. Saying "errors are above" while
-        // discarding them was worse than saying nothing: it named a place to look that was empty.
-        throw new ModelFailure("the project does not compile\n" + e.message(Formatter.getDefault))
-    }
-    val root = flix.check()._1.getOrElse(
-      throw new ModelFailure("the project does not compile; the compiler's errors are above"))
+      // `unsafeGet` throws a Scala exception carrying the compiler's whole rendered error, stack
+      // trace and all. That is the compiler talking to its own developers; a plugin that lets it
+      // through has turned "your project does not compile" into a crash report.
+      bootstrap.check(flix) match {
+        case ca.uwaterloo.flix.util.Result.Ok(_) => ()
+        case ca.uwaterloo.flix.util.Result.Err(e) =>
+          // The compiler's own rendering, not a summary of it. Saying "errors are above" while
+          // discarding them was worse than saying nothing: it named a place to look that was empty.
+          throw new ModelFailure("the project does not compile\n" + e.message(Formatter.getDefault))
+      }
+      val root = flix.check()._1.getOrElse(
+        throw new ModelFailure("the project does not compile; the compiler's errors are above"))
 
-    val defs = selected(root.defs.values, include)(_.loc)
-    val effects = selected(root.effects.values, include)(_.loc)
-    // Self-edges dropped: a module calling itself is not coupling.
-    val edges: Set[(String, String)] =
-      defs.flatMap(references).toSet.filter(e => e._1 != e._2)
-    val sources = root.sources.keys.filter(include).toList
-    val lexed = sources.map(lexSource)
-    val tokens = lexed.map(source => source.source.name -> source.tokensPerLine).toMap
-    val infos = defs.map(measureDef(_, projectRoot, tokens))
+      val defs = selected(root.defs.values, include)(_.loc)
+      val effects = selected(root.effects.values, include)(_.loc)
+      // Self-edges dropped: a module calling itself is not coupling.
+      val edges: Set[(String, String)] =
+        defs.flatMap(references).toSet.filter(e => e._1 != e._2)
+      val sources = root.sources.keys.filter(include).toList
+      val lexed = sources.map(lexSource)
+      val tokens = lexed.map(source => source.source.name -> source.tokensPerLine).toMap
+      val infos = defs.map(measureDef(_, projectRoot, tokens))
 
-    new Model(
-      infos.asJava, modules(infos, edges).asJava, lineInfo(lexed),
-      selected(root.traits.values, include)(_.loc).size,
-      selected(root.instances.values, include)(_.loc).size,
-      selected(root.enums.values, include)(_.loc).size,
-      selected(root.restrictableEnums.values, include)(_.loc).size,
-      selected(root.structs.values, include)(_.loc).size,
-      effects.size,
-      selected(root.typeAliases.values, include)(_.loc).size,
-      lexed.map(src => new SourceInfo(sourceName(src.source, projectRoot), src.lines)).asJava,
-      effects.map(measureEffect(_, projectRoot)).asJava)
+      new Model(
+        infos.asJava, modules(infos, edges).asJava, lineInfo(lexed),
+        selected(root.traits.values, include)(_.loc).size,
+        selected(root.instances.values, include)(_.loc).size,
+        selected(root.enums.values, include)(_.loc).size,
+        selected(root.restrictableEnums.values, include)(_.loc).size,
+        selected(root.structs.values, include)(_.loc).size,
+        effects.size,
+        selected(root.typeAliases.values, include)(_.loc).size,
+        lexed.map(src => new SourceInfo(sourceName(src.source, projectRoot), src.lines)).asJava,
+        effects.map(measureEffect(_, projectRoot)).asJava)
     } finally {
       flix.close()
     }
