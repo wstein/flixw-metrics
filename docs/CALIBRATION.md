@@ -22,21 +22,21 @@ The interpretation follows three useful constraints from the background research
 ## Corpus and method
 
 The original analyzer baseline was commit `17de59e`; the final policy includes the calibrated
-threshold in `5f44ff9`. The Flix 0.76 compatibility rerun used analyzer commit `8e47297` on OpenJDK
-21.0.12.1, Darwin arm64, and the pinned Flix 0.76.0 artifact with SHA-256
-`d8d9a3870e199c03ed6364ea9430f56f67bfd38c332c411628a6a7cb88b2b0b4`.
+threshold in `5f44ff9`. The current compatibility rerun used OpenJDK 21.0.12.1, Darwin arm64, and
+the pinned Flix 0.76.1 artifact with SHA-256
+`b2ed2b7f49902e2dfe1b4f10e23d9a5cb085461e7e8c64909ca2b3abfa566e74`.
 
 | Target | Source commit | Declared Flix | Files | Definitions | Lines |
 | --- | --- | ---: | ---: | ---: | ---: |
-| [`flix/flix` Prelude](https://github.com/flix/flix/blob/f2d4678c20bff1242f4cad5e23144db91027b762/main/src/library/Prelude.flix) | `f2d4678c` | 0.76.0 | 1 | 21 | 229 |
+| [`flix/flix` Prelude](https://github.com/flix/flix/blob/0832e818521c524bacef1cd3c046e2f3f0db9db9/main/src/library/Prelude.flix) | `0832e818` | 0.76.1 | 1 | 21 | 229 |
 | [`KengoTODA/flix-semver2`](https://github.com/KengoTODA/flix-semver2/tree/4473950e945e61717000a87d83b94320d0e7e78b) | `4473950e` | 0.73.0 | 2 | 36 | 299 |
 | [`mlutze/flix-json`](https://github.com/mlutze/flix-json/tree/ac9d50c40d1f3fcf5a5317735ab58116e9eaf2ee) | `ac9d50c4` | 0.49.0 | 15 | 113 | 1,478 |
 | [`ababup1192/flix_game_engine`](https://github.com/ababup1192/flix_game_engine/tree/a44ad70e479082bc506b2d741efe95dc7531e3b9) | `a44ad70e` | 0.75.1 | 176 | 2,396 | 33,171 |
 | [`Simmypeet/qual-effect-system`](https://github.com/Simmypeet/qual-effect-system/tree/5632eaf6f2a0c4d65cdf75ce3d62ea032a61d3be) | `5632eaf6` | 0.75.1 | 19 | 36 | 889 |
-| [`flix/flix` Datalog examples](https://github.com/flix/flix/tree/f2d4678c20bff1242f4cad5e23144db91027b762/examples/datalog) | `f2d4678c` | 0.76.0 | 4 | 48 | 971 |
+| [`flix/flix` Datalog examples](https://github.com/flix/flix/tree/0832e818521c524bacef1cd3c046e2f3f0db9db9/examples/datalog) | `0832e818` | 0.76.1 | 4 | 48 | 971 |
 
 The older projects are source-compatibility probes, not evidence that the adapter supports their
-declared compiler versions. The four active projects compile successfully with the pinned 0.76.0
+declared compiler versions. The four active projects compile successfully with the pinned 0.76.1
 compiler, so the measured AST is the supported one.
 
 Two original targets fail before measurement under Flix 0.76.0 and are retained, with their pins
@@ -273,11 +273,11 @@ so a uniformly fast or slow runner cannot hide a broken measurement cache.
 
 | Measure | Local median | Hosted run 1 | Hosted run 2 | Budget |
 | --- | ---: | ---: | ---: | ---: |
-| Cold packaged run | 4,138 ms | 9,911 ms | 8,620 ms | at most 12,000 ms |
-| Warm packaged run | 336 ms | 458 ms | 415 ms | at most 1,200 ms |
+| Cold packaged run | 4,364 ms | 9,911 ms | 8,620 ms | at most 12,000 ms |
+| Warm packaged run | 362 ms | 458 ms | 415 ms | at most 1,200 ms |
 | Warm / cold | 8% | 4% | 4% | at most 25% |
 
-The local measurements were recorded with Flix 0.76.0 on the same Darwin arm64 development machine
+The local measurements were recorded with Flix 0.76.1 on the same Darwin arm64 development machine
 as the calibration above. The hosted measurements are two earlier independent Ubuntu runs.
 The slower hosted cold median leaves 21% headroom under the ceiling, while both cache ratios are
 well inside budget. That supports keeping the current ceilings: tightening the cold limit now would
