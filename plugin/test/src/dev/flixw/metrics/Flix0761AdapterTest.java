@@ -22,6 +22,12 @@ public final class Flix0761AdapterTest {
                     definition.file().startsWith("src/")
                         || definition.file().startsWith("test/")),
                 "only Origin.User definitions enter project metrics");
+            Path relativeProject = Path.of("").toAbsolutePath().normalize().relativize(project);
+            Model relativeModel = new Flix0761Adapter().measure(relativeProject);
+            require(relativeModel.defs().stream().allMatch(definition ->
+                    definition.file().startsWith("src/")
+                        || definition.file().startsWith("test/")),
+                "relative project roots produce project-relative source names");
             require(model.lines().code() == 21 && model.lines().docComment() == 4,
                 "the real lexer classifies fixture lines");
             DefInfo select = definition(model, "Alpha.selectValue");

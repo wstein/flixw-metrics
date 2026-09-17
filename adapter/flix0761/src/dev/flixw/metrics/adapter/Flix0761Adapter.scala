@@ -572,7 +572,7 @@ final class Flix0761Adapter extends CompilerModel {
 
   private def relativise(loc: SourceLocation, projectRoot: Path): String =
     projectFile(loc, projectRoot)
-      .map(projectRoot.relativize(_).toString.replace('\\', '/'))
+      .map(normalized(projectRoot).relativize(_).toString.replace('\\', '/'))
       .getOrElse(loc.source.name.replace('\\', '/'))
 
   /**
