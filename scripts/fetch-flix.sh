@@ -11,6 +11,8 @@ set -eu
 
 FLIX_VERSION=0.76.1
 FLIX_SHA256=b2ed2b7f49902e2dfe1b4f10e23d9a5cb085461e7e8c64909ca2b3abfa566e74
+FLIX_0761_VERSION=0.76.1
+FLIX_0761_SHA256=b2ed2b7f49902e2dfe1b4f10e23d9a5cb085461e7e8c64909ca2b3abfa566e74
 FLIX_0753_VERSION=0.75.3
 FLIX_0753_SHA256=bf123cdb6494d6e0cbff6399bf185314d332bbe97bfd776e4abc03a5d39dd954
 FLIX_0760_VERSION=0.76.0
@@ -59,6 +61,7 @@ fetch() {
 }
 
 fetch "$FLIX_VERSION" "$FLIX_SHA256" "$root/plugin/lib/flix.jar"
+fetch "$FLIX_0761_VERSION" "$FLIX_0761_SHA256" "$root/plugin/lib/flix-0.76.1.jar"
 fetch "$FLIX_0753_VERSION" "$FLIX_0753_SHA256" "$root/plugin/lib/flix-0.75.3.jar"
 fetch "$FLIX_0760_VERSION" "$FLIX_0760_SHA256" "$root/plugin/lib/flix-0.76.0.jar"
 fetch "$FLIX_0680_VERSION" "$FLIX_0680_SHA256" "$root/plugin/lib/flix-0.68.0.jar"

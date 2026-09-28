@@ -6,13 +6,20 @@ private val flixScalaVersion = "2.13.18"
 
 /** Compiler-facing modules, grouped physically and logically under one adapter boundary. */
 object adapter extends Module {
-  /** The current adapter, compiled in isolation against Flix 0.76.1. */
+  /**
+   * The current adapter, compiled in isolation against the oldest compiler in its ABI family.
+   *
+   * Not against the pinned `flix.jar`: that moves forward with each verified release, and
+   * compiling against it would let a reference that only the newer release provides slip into
+   * a family whose floor lacks it.
+   */
   object flix0761 extends ScalaModule {
     def scalaVersion = flixScalaVersion
 
     def scalacOptions = Seq("-deprecation", "-feature", "-Xfatal-warnings")
 
-    def compilerJar = Task.Source(moduleDir / os.up / os.up / "plugin" / "lib" / "flix.jar")
+    def compilerJar = Task.Source(
+      moduleDir / os.up / os.up / "plugin" / "lib" / "flix-0.76.1.jar")
 
     def compileClasspath = Task {
       super.compileClasspath() ++ Seq(plugin.compile().classes, compilerJar())
