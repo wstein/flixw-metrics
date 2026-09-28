@@ -51,6 +51,7 @@ fetch 0.75.2 a2697d875725a0dde6e793b8d54cb220e86167a6d49ec5f0ccb0832966c8c15a
 fetch 0.75.3 bf123cdb6494d6e0cbff6399bf185314d332bbe97bfd776e4abc03a5d39dd954
 fetch 0.76.0 d8d9a3870e199c03ed6364ea9430f56f67bfd38c332c411628a6a7cb88b2b0b4
 fetch 0.76.1 b2ed2b7f49902e2dfe1b4f10e23d9a5cb085461e7e8c64909ca2b3abfa566e74
+fetch 0.77.0 20007d79f97b696ba388113e2a4235227691d33a00bfa669f2316b37a7b14201
 
 java_home=${JAVA_HOME:-}
 if [ -z "$java_home" ]; then
@@ -138,7 +139,7 @@ jq -e '.hasEngineApi and (.missing | length == 0)' "$work/0.75.3.json" >/dev/nul
   exit 1
 }
 
-for version in 0.76.0 0.76.1; do
+for version in 0.76.0 0.76.1 0.77.0; do
   capabilities "$work/flix-$version.jar" > "$work/$version.json"
   jq -e '.hasEngineApi and (.missing | length == 0)' "$work/$version.json" >/dev/null || {
     echo "test-compiler-compatibility: Flix $version did not satisfy the adapter ABI" >&2
@@ -171,5 +172,6 @@ integration "$work/flix-0.75.2.jar"
 integration "$work/flix-0.75.3.jar"
 integration "$work/flix-0.76.0.jar"
 integration "$work/flix-0.76.1.jar"
+integration "$work/flix-0.77.0.jar"
 
-echo "test-compiler-compatibility: 0.59.0 rejected at its AST and 0.66.0 at its Java runtime; 0.60.0 through 0.76.1 passed recorded integration checkpoints"
+echo "test-compiler-compatibility: 0.59.0 rejected at its AST and 0.66.0 at its Java runtime; 0.60.0 through 0.77.0 passed recorded integration checkpoints"

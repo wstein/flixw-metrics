@@ -1,3 +1,5 @@
 /dist/
 lib/
 out/
+# Written by Flix 0.77+ when it resolves a fixture's (empty) dependency graph.
+plugin/test/fixtures/**/packages.lock
