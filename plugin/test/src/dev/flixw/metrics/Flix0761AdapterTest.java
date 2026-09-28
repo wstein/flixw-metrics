@@ -161,7 +161,79 @@ public final class Flix0761AdapterTest {
             require(interop.effects().equals(java.util.List.of("IO"))
                     && interop.cognitive() == 3,
                 "descriptor-backed Java nodes preserve effects and nested branch measurement");
+            assertMountedPackageModules();
             System.out.println("Flix0761AdapterTest: ok");
+        } finally {
+            delete(project);
+        }
+    }
+
+    /**
+     * A mounted package is named under a root that cannot be written in source. Flix 0.77 shows
+     * that root as the package identifier; the module graph must do the same, must keep a
+     * package module apart from a project module of the same name, and must not count package
+     * definitions as project code.
+     *
+     * <p>Offline: the package manager trusts a cached release in {@code lib/}, so the package is
+     * built here as the exact files a download would have left there.
+     */
+    static void assertMountedPackageModules() throws Exception {
+        Path project = Files.createTempDirectory("flixw-metrics-mounted-");
+        try {
+            Path release = project.resolve("lib/github/fixture/clerk/1.0.0");
+            Files.createDirectories(release);
+            String manifest = """
+                [package]
+                name = "clerk"
+                description = "Mounted package fixture."
+                version = "1.0.0"
+                flix = "0.76.1"
+                authors = ["Test <test@example.com>"]
+                """;
+            Files.writeString(release.resolve("clerk-1.0.0.toml"), manifest);
+            try (var zip = new java.util.zip.ZipOutputStream(
+                    Files.newOutputStream(release.resolve("clerk-1.0.0.fpkg")))) {
+                zip.putNextEntry(new java.util.zip.ZipEntry("flix.toml"));
+                zip.write(manifest.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                zip.putNextEntry(new java.util.zip.ZipEntry("src/Board.flix"));
+                zip.write("pub mod Board { pub def place(): Int32 = 42 }\n"
+                    .getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            }
+            Files.writeString(project.resolve("flix.toml"), """
+                [package]
+                name = "consumer"
+                description = "Consumes a mounted package."
+                version = "0.1.0"
+                flix = "0.76.1"
+                authors = ["Test <test@example.com>"]
+
+                [dependencies]
+                "github:fixture/clerk" = { version = "1.0.0", mount = "clerk" }
+                """);
+            Files.createDirectories(project.resolve("src"));
+            Files.writeString(project.resolve("src/Main.flix"), """
+                mod Board {
+                    pub def size(): Int32 = 1
+                }
+
+                mod Game {
+                    use clerk::Board.place
+
+                    pub def play(): Int32 = place() + Board.size()
+                }
+                """);
+            Model model = new Flix0761Adapter().measure(project);
+            require(model.defs().size() == 2
+                    && model.defs().stream().allMatch(d -> d.file().equals("src/Main.flix")),
+                "mounted package definitions do not enter project metrics");
+            var game = model.modules().stream().filter(m -> m.name().equals("Game"))
+                .findFirst().orElseThrow();
+            require(game.fanOut() == 2,
+                "a package module and a project module of the same name stay distinct");
+            require(game.dependencies().equals(
+                    java.util.List.of("Board", "github:fixture/clerk.Board")),
+                "a mounted package module is named by its package identifier: "
+                    + game.dependencies());
         } finally {
             delete(project);
         }

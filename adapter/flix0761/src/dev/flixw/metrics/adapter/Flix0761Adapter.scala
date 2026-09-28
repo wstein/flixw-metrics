@@ -364,7 +364,25 @@ final class Flix0761Adapter extends CompilerModel {
     * cannot be mistaken for a namespace.
     */
   private def moduleOf(sym: Symbol.DefnSym): String =
-    if (sym.namespace.isEmpty) "(root)" else sym.namespace.mkString(".")
+    if (sym.namespace.isEmpty) "(root)"
+    else (packageName(sym.namespace.head) +: sym.namespace.tail).mkString(".")
+
+  /**
+   * The package identifier for a mounted package's namespace root, or `part` unchanged.
+   *
+   * Flix 0.77 names a mounted package under `$pkg$<host>$<owner>$<name>`, a root that cannot be
+   * written in source, and shows it as `<host>:<owner>/<name>`. A report naming the root would
+   * name a module no reader can find. Parsed here rather than through `PackageId`, which the
+   * floor of this family, Flix 0.76.1, does not have: referencing it would unlink the adapter.
+   */
+  private def packageName(part: String): String =
+    if (!part.startsWith(PackageRoot)) part
+    else part.stripPrefix(PackageRoot).split('$') match {
+      case Array(host, owner, name) => s"$host:$owner/$name"
+      case _ => part
+    }
+
+  private val PackageRoot = "$pkg$"
 
   // ---- the walk -------------------------------------------------------------------------
 
