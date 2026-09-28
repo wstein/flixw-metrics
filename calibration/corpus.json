@@ -1,7 +1,7 @@
 {
   "compilerSource": {
     "repository": "https://github.com/flix/flix.git",
-    "commit": "0832e818521c524bacef1cd3c046e2f3f0db9db9",
+    "commit": "4a5b60a31ac03bb762f68b554a0fc2b6f4d982b9",
     "prelude": "main/src/library/Prelude.flix"
   },
   "incompatibleProjects": [
