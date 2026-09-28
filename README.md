@@ -378,11 +378,11 @@ download a compiler, choose one, or run anything else.
 
 ## Supported compilers
 
-Flix **0.60.0, 0.61.0, 0.65.0, 0.66.1, 0.67.1, 0.67.2, 0.68.0, 0.75.2, 0.75.3, 0.76.0, and 0.76.1**
+Flix **0.60.0, 0.61.0, 0.65.0, 0.66.1, 0.67.1, 0.67.2, 0.68.0, 0.75.2, 0.75.3, 0.76.0, 0.76.1, and 0.77.0**
 are verified. Flix 0.60.0 uses `Flix0600Adapter`; Flix 0.61.0 and 0.65.0 use
 `Flix0610Adapter`; Flix 0.66.1 and 0.67.1 use
 `Flix0661Adapter`; Flix 0.67.2 uses `Flix0672Adapter`; Flix 0.68.0 and 0.75.2 use
-`Flix0680Adapter`; Flix 0.75.3 and 0.76.0 use `Flix0753Adapter`; and Flix 0.76.1 uses
+`Flix0680Adapter`; Flix 0.75.3 and 0.76.0 use `Flix0753Adapter`; and Flix 0.76.1 and 0.77.0 use
 `Flix0761Adapter`. Each name records the oldest
 verified release in that linkage family. Each family is compiled in an isolated `adapter.flixNNNN` Mill
 module against only its own compiler generation; the adapters share the
@@ -398,7 +398,7 @@ front of it before running:
 ```console
 $ ./flixw metrics capabilities
 {
-  "compilerJar": "/Users/you/Library/Caches/flixw/compilers/flix-0.76.1-b2ed2b7f....jar",
+  "compilerJar": "/Users/you/Library/Caches/flixw/compilers/flix-0.77.0-20007d79....jar",
   "hasFlixApi": true,
   "hasEngineApi": true,
   "hasNativeMetrics": false,
@@ -414,7 +414,7 @@ boundary itself is described in [docs/COMPILER-SDK.md](docs/COMPILER-SDK.md).
 The full test suite locks the lower boundary by requiring 0.59.0 to fail the derived AST gate. It
 also locks the independently broken 0.66.0 Java-runtime artifact and runs packaged integration
 with 0.60.0, 0.61.0, 0.65.0, 0.66.1, 0.67.1, 0.67.2, 0.68.0, 0.75.2, 0.75.3,
-0.76.0, and 0.76.1.
+0.76.0, 0.76.1, and 0.77.0.
 A release not named above may still link, but it is unsupported until its own compatibility
 investigation is recorded.
 
