@@ -113,6 +113,26 @@ a capability requirement automatically instead of depending on a parallel handwr
 
 A version string is never evidence. The gate asks the JAR.
 
+### A release newer than any recorded one
+
+Flix 0.80.0 does not exist at the time of writing, so this describes the code, checked with a
+renamed 0.79.0 jar and a stub jar by `scripts/test-unknown-flix.sh`:
+
+- A compiler that satisfies one adapter's derived contract is accepted and measured with the newest
+  such adapter. No warning, notice or version comparison is printed, and the report states no
+  compatibility status. The compiler's name or version is not consulted.
+- A compiler that satisfies none is refused before measurement with exit 2 and
+  `metrics: the pinned compiler has no supported engine API`, followed by the jar path and the
+  missing members of the closest contract. No version appears in the message.
+- Two later guards exist and are not covered by that script: `Adapters.resolve()` returning nothing
+  prints `no adapter links against the pinned compiler` with the adapter class names (not Flix
+  versions) this build supports, and a `LinkageError` during measurement prints `this compiler is
+  not the one this build supports`, both with exit 2.
+- Linkage does not prove that the metrics mean the same thing. The 0.79.0 position change is the
+  example: the gate accepted it and only a semantic comparison showed it.
+
+Whether flixw itself warns about an unrecorded compiler for a plugin is not established here.
+
 ## Why there are two JVMs
 
 The compiler is loaded through the **application class path** of a second JVM, launched with
