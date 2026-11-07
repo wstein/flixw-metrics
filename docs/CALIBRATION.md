@@ -95,6 +95,50 @@ When drift is intentional, inspect those reports and update the manifest expecta
 change as the analyzer or policy adjustment. Moving a source pin is a separate corpus decision,
 not a way to make unexpected counts pass.
 
+## Corpus variant for Flix 0.78 and later
+
+Flix 0.78 accepts only `version`, `repository` and `flix` in `[package]` (any other key is
+`IllegalPackageKeyFound`), requires a module to live in a file of the same name, and requires a
+module named like its companion type to be `pub`. The pinned projects were written for older
+compilers, so Flix 0.78 and 0.79.0 cannot load them as cloned. Flix 0.66 through 0.68 still require
+`name`, `description` and `authors`, so the manifests cannot simply be changed at the pin.
+
+[`calibration/corpus-0.78.json`](../calibration/corpus-0.78.json) lists the same projects at the
+same commits plus a `rewrite` object per project. `scripts/calibrate-corpus.sh` applies it with
+`scripts/rewrite-corpus-copy.sh` to the fresh checkout before measuring; no third-party source is
+stored in this repository, and the original `calibration/corpus.json` is unchanged:
+
+```sh
+CALIBRATION_MANIFEST=calibration/corpus-0.78.json \
+CALIBRATION_COMPILER_JAR=/path/to/flix-0.79.0.jar \
+  sh scripts/calibrate-corpus.sh /tmp/flixw-calibration-0.79.0
+```
+
+`CALIBRATION_COMPILER_JAR` defaults to `plugin/lib/flix.jar` (the 0.77.0 pin, which this change does
+not move). The variant's compiler source is the Flix `v0.79.0` tag, `36d923ca`; its Prelude has 232
+lines (229 at the 0.77.0 commit) and the Datalog examples are unchanged.
+
+| Project | License of the origin | Keys removed from `[package]` | Source change |
+| --- | --- | --- | --- |
+| `flix-semver2` | AGPL-3.0-only | name, description, license, authors | `src/Main.flix` renamed to `src/SemVer2.flix`; `mod SemVer2` becomes `pub mod SemVer2` |
+| `flix-json` | Apache-2.0 | name, description, authors | none |
+| `flix-game-engine` | MIT | name, description, authors | `pub mod` for `Duration` (`src/engine/core/Duration.flix`) and `CatalogContainer`, `Dir4`, `GameLogger`, `ViewProjection`, `Worldline` (`src/engine_world/`) |
+| `qual-effect-system` | none declared | name, description, authors | none |
+
+Each rewritten `flix.toml` carries a comment naming the origin repository, commit, and removed
+keys. The licenses stay with the upstream repositories because nothing is copied into this one.
+All four projects compile with Flix 0.78.0 and 0.79.0 after these changes and need no other source
+edit; none had to be left out. `flix-basicdb` and `flix-parsec` stay in `incompatibleProjects`.
+
+Measured with Flix 0.78.0 and the 0.77.0 results above: files, definitions, lines, Datalog counts
+and every finding count agree; Prelude has 232 lines, which is the only drift and comes from the
+newer Prelude source. Flix 0.79.0 starts a documented definition at its `def` line and ends a
+definition at its last token, which without compensation gave `qual-effect-system` one finding
+fewer (`definition-too-long` on `canonEqConstr`, `src/Canonicalization.flix:115`, 75 lines under
+0.78.0, 1 line under uncompensated 0.79.0). `Flix0761Adapter` restores the earlier start and end
+([record](compiler-compatibility/flix-0.79.0.md)), so the variant's expectations are the 0.77.0
+numbers with the 232-line Prelude: `qual-effect-system` keeps its 27 findings.
+
 ## Results after calibration
 
 | Target | Findings | Finding counts by rule |
