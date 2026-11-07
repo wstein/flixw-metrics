@@ -147,6 +147,7 @@ object plugin extends ScalaModule {
                         "dev.flixw.metrics.Flix0680AdapterTest",
                         "dev.flixw.metrics.Flix0753AdapterTest",
                         "dev.flixw.metrics.Flix0761AdapterTest",
+                        "dev.flixw.metrics.DefinitionSpanTest",
                         "dev.flixw.metrics.PluginIntegrationTest")
       val mains = os.walk(sourceRoot)
         .filter(path => path.ext == "java" && path.last.endsWith("Test.java"))
@@ -192,6 +193,8 @@ object plugin extends ScalaModule {
       os.proc("java", "-cp", outgoingIntegrationCp, "dev.flixw.metrics.Flix0753AdapterTest", fixture)
         .call(stdout = os.Inherit, stderr = os.Inherit)
       os.proc("java", "-cp", integrationCp, "dev.flixw.metrics.Flix0761AdapterTest", fixture)
+        .call(stdout = os.Inherit, stderr = os.Inherit)
+      os.proc("java", "-cp", integrationCp, "dev.flixw.metrics.DefinitionSpanTest")
         .call(stdout = os.Inherit, stderr = os.Inherit)
       os.proc("java", "-cp", integrationCp, "dev.flixw.metrics.PluginIntegrationTest", fixture,
               plugin.jar().path, compiler)

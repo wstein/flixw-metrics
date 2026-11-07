@@ -55,6 +55,9 @@ case $class in
     exec java -cp "$classpath:$root/plugin/lib/flix.jar" "$class" \
       "$root/plugin/test/fixtures/semantic"
     ;;
+  dev.flixw.metrics.DefinitionSpanTest)
+    exec java -cp "$classpath:$root/plugin/lib/flix.jar" "$class"
+    ;;
   dev.flixw.metrics.PluginIntegrationTest)
     sh "$root/scripts/package.sh" 0.0.0-test >/dev/null
     exec java -cp "$classpath:$root/plugin/lib/flix.jar" "$class" \
