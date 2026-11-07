@@ -7,6 +7,6 @@ root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd -P)
 sh "$root/scripts/fetch-flix.sh"
 mill=$root/mill
 [ -x "$mill" ] || mill=mill
-(cd "$root" && "$mill" --no-server plugin.compile adapter.flix0753.compile \
-  adapter.flix0680.compile adapter.flix0672.compile adapter.flix0661.compile \
-  adapter.flix0610.compile adapter.flix0600.compile)
+(cd "$root" && "$mill" --no-server plugin.compile + adapter.flix0753.compile \
+  + adapter.flix0680.compile + adapter.flix0672.compile + adapter.flix0661.compile \
+  + adapter.flix0610.compile + adapter.flix0600.compile)
