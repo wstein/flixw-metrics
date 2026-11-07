@@ -13,8 +13,11 @@
 
 - `eff-check` and `eff-lock` without a package act on every dependency of the project, not on
   every installed package.
-- Nothing that intersects the adapter: `TypedAst`, `Typer` and the shared `Origin` types are
-  unchanged against 0.78.0.
+- `TypedAst.Case` and `TypedAst.StructField` gained a leading `doc` field. `javap` lists the same
+  280 `TypedAst` constructors in 0.77.0 and 0.78.0; against 0.78.0 only these two differ. The
+  adapter does not match on either.
+- The source location of a definition that has a doc comment now starts at the `def` line, not at
+  the first doc-comment line. The same source reports a later `line` and fewer `lines`.
 
 ## Adapter impact
 
@@ -38,7 +41,12 @@ Nothing beyond the 0.78.0 manifest rules applies.
 - Supported range and adapter: Flix 0.76.1 through 0.79.0 use `Flix0761Adapter`.
 - Required implementation changes: none in the adapter. The test fixtures now drop the manifest
   keys Flix 0.78 rejects, and a mounted package must declare its `repository`.
-- Metric parity and thresholds: unchanged.
+- Metric parity and thresholds: totals are equal (the probe's report summary is byte-identical on
+  0.77.0, 0.78.0 and 0.79.0), but definition positions move on 0.79.0. A probe with four
+  definitions of 59 to 62 lines, each with two doc-comment lines, reports 59/60/61/62 `lines` and
+  two `definition-too-long` findings (limit 60) on 0.77.0 and 0.78.0, and 57/58/59/60 `lines` and
+  none on 0.79.0. `line` values and the `longest` ranking shift the same way. The adapter does not
+  yet compensate; that is a follow-up PR, and the decision is to compensate.
 - Report schema, wire format, cache, SDK and capability JSON, CLI: unchanged.
 - Calibration pin: stays at 0.77.0. The nine corpus projects carry manifests with `name`,
   `description` or `authors`, which Flix 0.78.0 and later refuse to load, so the corpus cannot be
