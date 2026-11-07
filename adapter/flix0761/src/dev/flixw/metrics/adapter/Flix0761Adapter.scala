@@ -6,7 +6,7 @@ import dev.flixw.metrics.DatalogGraph
 import dev.flixw.metrics.sdk.CompilerModel.{DefInfo, EffectInfo, EffectOperationInfo, LineInfo, Model, ModelFailure, ModuleInfo, SourceInfo}
 
 import ca.uwaterloo.flix.api.{Bootstrap, Flix}
-import ca.uwaterloo.flix.language.ast.shared.{Origin, Source}
+import ca.uwaterloo.flix.language.ast.shared.{Doc, Origin, Source}
 import ca.uwaterloo.flix.language.fmt.FormatType
 import ca.uwaterloo.flix.language.phase.Lexer
 import ca.uwaterloo.flix.language.ast.{Kind, SourceLocation, Symbol, Type, TypeConstructor, TypedAst}
@@ -105,7 +105,8 @@ final class Flix0761Adapter extends CompilerModel {
   }
 
   private def measureEffect(effect: TypedAst.Effect, projectRoot: Path): EffectInfo =
-    new EffectInfo(effect.sym.toString, relativise(effect.loc, projectRoot), effect.loc.startLine,
+    new EffectInfo(effect.sym.toString, relativise(effect.loc, projectRoot),
+      startOf(effect.loc, effect.doc),
       effect.tparams.size, effect.ops.map(op => new EffectOperationInfo(op.sym.name,
         declaredParameters(op.spec.fparams.toList))).asJava)
 
@@ -193,13 +194,14 @@ final class Flix0761Adapter extends CompilerModel {
                          tokens: Map[String, Map[Int, Int]])(implicit flix: Flix): DefInfo = {
     val tally = new Tally
     walk(d.exp, tally)
+    val start = startOf(d.loc, d.spec.doc)
     val onLines = tokens.getOrElse(d.loc.source.name, Map.empty)
-    val codeLines = (d.loc.startLine to d.loc.endLine).count(onLines.contains)
+    val codeLines = (start to d.loc.endLine).count(onLines.contains)
     // The densest line this definition spans, and who actually owns it.
     val (crammedLine, crammedTokens) =
-      (d.loc.startLine to d.loc.endLine)
+      (start to d.loc.endLine)
         .map(line => (line, onLines.getOrElse(line, 0)))
-        .maxByOption(_._2).getOrElse((d.loc.startLine, 0))
+        .maxByOption(_._2).getOrElse((start, 0))
     val owner = tally.locals
       .filter { case (_, loc) => loc.startLine <= crammedLine && crammedLine <= loc.endLine }
       // Innermost wins: nested locals all contain the line, and the smallest span is the one
@@ -210,15 +212,15 @@ final class Flix0761Adapter extends CompilerModel {
     val datalog = analyzeDatalog(tally.datalogEdges.toSet)
     val effectDetails = effectDetailsOf(d.spec.eff)
     DefInfo.builder(d.sym.toString, moduleOf(d.sym), relativise(d.loc, projectRoot),
-      d.loc.startLine)
-      .lines(spannedLines(d.loc))
+      start)
+      .lines(d.loc.endLine - start + 1)
       .codeLines(codeLines)
       .parameters(declaredParameters(d.spec.fparams.toList))
       .maxLocalParameters(tally.widestLocalParams)
       .maxLocalParametersOwner(
         Option(tally.widestLocalName).map(d.sym.toString + "." + _).getOrElse(d.sym.toString))
       .maxLocalParametersLine(
-        if (tally.widestLocalLine == 0) d.loc.startLine else tally.widestLocalLine)
+        if (tally.widestLocalLine == 0) start else tally.widestLocalLine)
       .localDefs(tally.localDefs)
       .nesting(deepestChain(tally.branches.toList))
       .cognitive(cognitive(tally))
@@ -352,7 +354,19 @@ final class Flix0761Adapter extends CompilerModel {
     rendered.codePointCount(0, rendered.length)
   }
 
-  private def spannedLines(loc: SourceLocation): Int = loc.endLine - loc.startLine + 1
+  /**
+   * The first line of a declaration, counting its doc comment.
+   *
+   * Flix 0.76.1 through 0.78.0 start `loc` of a documented definition at the doc comment. From
+   * 0.79.0 it starts at the `def` line, or at its annotation, so a doc comment, and any blank or
+   * `//` lines between it and the definition, fell outside the measured span: shorter
+   * definitions, later findings, fewer `definition-too-long`. The doc carries its own location,
+   * which stays at the comment in every release, so the earlier of the two is the same line for
+   * all of them. An undocumented declaration has no doc lines and keeps `loc.startLine`.
+   */
+  private def startOf(loc: SourceLocation, doc: Doc): Int =
+    if (doc.lines.isEmpty || doc.loc.source != loc.source) loc.startLine
+    else math.min(loc.startLine, doc.loc.startLine)
 
   /**
     * The module a definition belongs to, or a name for the one that has none.
