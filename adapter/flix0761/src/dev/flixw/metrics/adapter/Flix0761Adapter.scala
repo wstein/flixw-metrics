@@ -126,7 +126,7 @@ final class Flix0761Adapter extends CompilerModel {
    * treat it as.
    */
   private case class LexedSource(source: Source, tokensPerLine: Map[Int, Int],
-                                 trailingEnd: Map[Int, Int], lines: LineInfo)
+                                 trailingEnd: Map[(Int, Int), Int], lines: LineInfo)
 
   /** One lex supplies token density, aggregate lines, and the per-source cache model. */
   private def lexSource(src: Source): LexedSource = {
@@ -134,18 +134,19 @@ final class Flix0761Adapter extends CompilerModel {
     val codeLines = scala.collection.mutable.Set.empty[Int]
     val commentLines = scala.collection.mutable.Set.empty[Int]
     val docLines = scala.collection.mutable.Set.empty[Int]
-    // Last line of the non-doc comments that follow a code token, keyed by that token's last line.
-    val trailing = scala.collection.mutable.Map.empty[Int, Int]
-    var lastCodeEnd = 0
+    // Last line of the non-doc comments that follow a code token directly, keyed by where that
+    // token ends (line, column): a later token on the same line is a different key.
+    val trailing = scala.collection.mutable.Map.empty[(Int, Int), Int]
+    var lastCodeEnd = (0, 0)
     var sawDoc = false
     val (tokens, _) = Lexer.lex(src)
     tokens.foreach { t =>
       if (t.kind != ca.uwaterloo.flix.language.ast.TokenKind.Eof) {
         if (!t.kind.isComment) {
-          lastCodeEnd = t.end.lineOneIndexed
+          lastCodeEnd = (t.end.lineOneIndexed, t.end.colOneIndexed.toInt)
           sawDoc = false
         } else if (t.text.startsWith("///")) sawDoc = true
-        else if (!sawDoc && lastCodeEnd > 0)
+        else if (!sawDoc && lastCodeEnd._1 > 0)
           trailing.update(lastCodeEnd, math.max(trailing.getOrElse(lastCodeEnd, 0),
             t.end.lineOneIndexed))
         if (!t.kind.isComment) {
@@ -206,7 +207,7 @@ final class Flix0761Adapter extends CompilerModel {
 
   private def measureDef(d: TypedAst.Def, projectRoot: Path,
                          tokens: Map[String, Map[Int, Int]],
-                         trailing: Map[String, Map[Int, Int]])(implicit flix: Flix): DefInfo = {
+                         trailing: Map[String, Map[(Int, Int), Int]])(implicit flix: Flix): DefInfo = {
     val tally = new Tally
     walk(d.exp, tally)
     val start = startOf(d.loc, d.spec.doc)
@@ -380,22 +381,24 @@ final class Flix0761Adapter extends CompilerModel {
    * which stays at the comment in every release, so the earlier of the two is the same line for
    * all of them. An undocumented declaration has no doc lines and keeps `loc.startLine`.
    */
+  private def startOf(loc: SourceLocation, doc: Doc): Int =
+    if (doc.lines.isEmpty || doc.loc.source != loc.source) loc.startLine
+    else math.min(loc.startLine, doc.loc.startLine)
+
   /**
    * The last line of a definition, counting the comments after it.
    *
    * Flix 0.76.1 through 0.78.0 end `loc` at the last non-doc comment that follows the definition,
    * up to the next token: a commented-out body after `= ???` was part of the definition, and its
    * lines were measured. From 0.79.0 `loc` ends at the definition's last token. The lexer knows
-   * the comments; `trailing` maps the last line of a code token to the last line of those
-   * comments. A doc comment belongs to the next declaration and stops the run. Earlier releases
-   * already end on the comment's line, which is no key of the map, so they keep their end.
+   * the comments; `trailing` maps the end position of a code token to the last line of the
+   * comments that follow it directly. The definition extends only when its own last token is that
+   * token, so a closing brace or a later definition on the same line, which owns the comments
+   * after it, does not extend it. A doc comment belongs to the next declaration and stops the
+   * run. Earlier releases end on a comment, which is no key of the map, and keep their end.
    */
-  private def endOf(loc: SourceLocation, trailing: Map[Int, Int]): Int =
-    math.max(loc.endLine, trailing.getOrElse(loc.endLine, loc.endLine))
-
-  private def startOf(loc: SourceLocation, doc: Doc): Int =
-    if (doc.lines.isEmpty || doc.loc.source != loc.source) loc.startLine
-    else math.min(loc.startLine, doc.loc.startLine)
+  private def endOf(loc: SourceLocation, trailing: Map[(Int, Int), Int]): Int =
+    math.max(loc.endLine, trailing.getOrElse((loc.endLine, loc.endCol), loc.endLine))
 
   /**
     * The module a definition belongs to, or a name for the one that has none.
