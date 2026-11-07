@@ -36,15 +36,16 @@ The position change moves what the adapter reports: `line`, `lines`, `definition
 `maxLocalParametersLine` and effect declaration lines. The corpus project `qual-effect-system`
 shows the end shift: `canonEqConstr` (`= ???` followed by a commented-out body) spans 75 lines
 through 0.78.0 and 1 on 0.79.0, so `definition-too-long` dropped from 27 to 26 findings. On a
-probe project with definitions of one, three and five doc lines, 0.77.0 and 0.78.0 gave five `definition-too-long` findings and 0.79.0
-gave two; module lines were 430 against 419. The adapter now starts a declaration at
+probe project with definitions of one, three and five doc lines, 0.77.0 and 0.78.0 gave five
+`definition-too-long` findings and 0.79.0 gave two; module lines were 430 against 419. The adapter now starts a declaration at
 `min(loc.startLine, doc.loc.startLine)` (`startOf`) and ends it at the last line of the non-doc
 comments that directly follow the definition's last token (`endOf`; a later token on that line
 owns them), the same rules for every release. 0.79.0 then reports the spans of 0.76.1 through
 0.78.0: packaged 0.77.0 reports of five projects (four corpus inputs and the semantic fixture) and
 two probe projects are identical before and after the change, and 0.76.1, 0.77.0, 0.78.0 and
-0.79.0 agree on the probes. `Doc.loc` keeps the comment position in all releases. Not checked: enum and trait positions (they are only counted,
-without a line) and adapters older than `Flix0761Adapter`.
+0.79.0 agree on the probes. `Doc.loc` keeps the comment position in all releases. Not checked:
+enum and trait positions (they are only counted, without a line) and adapters older than
+`Flix0761Adapter`.
 
 ## Verification
 
@@ -61,15 +62,17 @@ without a line) and adapters older than `Flix0761Adapter`.
 ## Decision and compatibility impact
 
 - Supported range and adapter: Flix 0.76.1 through 0.79.0 use `Flix0761Adapter`.
-- Required implementation changes: `Flix0761Adapter.startOf` and `endOf` restore the doc-comment start
-  of definitions and effect declarations and the trailing-comment end of definitions. The test fixtures also drop the manifest keys Flix 0.78
-  rejects, and a mounted package must declare its `repository`.
+- Required implementation changes: `Flix0761Adapter.startOf` and `endOf` restore the doc-comment
+  start of definitions and effect declarations and the trailing-comment end of definitions. The
+  test fixtures also drop the manifest keys Flix 0.78 rejects, and a mounted package must declare
+  its `repository`.
 - Metric parity and thresholds: without the compensation, totals are equal (the probe's report
   summary is byte-identical on 0.77.0, 0.78.0 and 0.79.0) but definition positions move on
   0.79.0. A probe with four definitions of 59 to 62 lines, each with two doc-comment lines,
   reports 59/60/61/62 `lines` and two `definition-too-long` findings (limit 60) on 0.77.0 and
   0.78.0, and 57/58/59/60 `lines` and none on 0.79.0; `line` values and the `longest` ranking
-  shift the same way. With `startOf` the 0.77.0 measurements are reproduced on 0.79.0.
+  shift the same way. With `startOf` and `endOf` the 0.77.0 measurements are reproduced on
+  0.79.0.
 - Report schema, wire format, SDK and capability JSON, CLI: unchanged. The packaged adapter
   changed, so the plugin digest in the cache key invalidates existing cache entries.
 - Baselines: finding identity (rule, subject, file) has no line, so existing baselines keep
