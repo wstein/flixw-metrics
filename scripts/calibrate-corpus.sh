@@ -5,7 +5,16 @@ set -eu
 output=${1:?usage: sh scripts/calibrate-corpus.sh <empty-output-directory>}
 # shellcheck disable=SC1007  # Empty CDPATH is scoped to cd, not assigned to root.
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd -P)
-manifest=$root/calibration/corpus.json
+manifest=${CALIBRATION_MANIFEST:-$root/calibration/corpus.json}
+compiler_jar=${CALIBRATION_COMPILER_JAR:-$root/plugin/lib/flix.jar}
+[ -f "$manifest" ] || {
+  echo "calibrate-corpus: no manifest $manifest" >&2
+  exit 2
+}
+[ -f "$compiler_jar" ] || {
+  echo "calibrate-corpus: no compiler jar $compiler_jar" >&2
+  exit 2
+}
 
 for command in git jq java; do
   command -v "$command" >/dev/null 2>&1 || {
@@ -52,12 +61,19 @@ clone_pin() {
   commit=$2
   target=$3
   source=${4:-}
+  rewritten=${5:-}
   if [ -n "$source" ]; then
     [ -d "$source/.git" ] || {
       echo "calibrate-corpus: no local checkout $source" >&2
       exit 2
     }
-    ln -s "$source" "$target"
+    if [ -n "$rewritten" ]; then
+      # A rewrite edits files, so it works on a copy and never touches the local checkout,
+      # which may itself be a symlink.
+      sh "$root/scripts/copy-corpus-source.sh" "$source" "$target"
+    else
+      ln -s "$source" "$target"
+    fi
   else
     mkdir -p "$target"
     git -C "$target" init -q
@@ -82,7 +98,7 @@ run_project() {
   echo "calibrate-corpus: measuring $id" >&2
   FLIXW_ABI_VERSION=1 \
   FLIXW_PROJECT_ROOT=$project \
-  FLIXW_COMPILER_JAR=$root/plugin/lib/flix.jar \
+  FLIXW_COMPILER_JAR=$compiler_jar \
   FLIXW_JAVA_HOME=$java_home \
   FLIXW_PLUGIN_CACHE=$cache \
     "$java_home/bin/java" -jar "$root/dist/plugin.jar" report --format json \
@@ -91,7 +107,7 @@ run_project() {
   # must not manufacture finding or raw-measurement changes.
   FLIXW_ABI_VERSION=1 \
   FLIXW_PROJECT_ROOT=$project \
-  FLIXW_COMPILER_JAR=$root/plugin/lib/flix.jar \
+  FLIXW_COMPILER_JAR=$compiler_jar \
   FLIXW_JAVA_HOME=$java_home \
   FLIXW_PLUGIN_CACHE=$cache \
     "$java_home/bin/java" -jar "$root/dist/plugin.jar" report --format json \
@@ -112,8 +128,14 @@ prelude=$(jq -r '.compilerSource.prelude' "$manifest")
   echo "calibrate-corpus: missing pinned Prelude source $prelude" >&2
   exit 2
 }
+rewrite_fixture=0
+if [ "$(jq -r '.compilerSource.rewriteFixture // false' "$manifest")" = true ]; then
+  rewrite_fixture=1
+fi
 echo "calibrate-corpus: measuring prelude" >&2
-sh "$root/scripts/calibrate-prelude.sh" "$compiler_checkout" \
+CALIBRATION_REWRITE_FIXTURE=$rewrite_fixture \
+CALIBRATION_COMPILER_JAR=$compiler_jar \
+  sh "$root/scripts/calibrate-prelude.sh" "$compiler_checkout" \
   > "$output/reports/prelude.json"
 
 for id in $(jq -r '.projects[].id' "$manifest"); do
@@ -121,7 +143,13 @@ for id in $(jq -r '.projects[].id' "$manifest"); do
   commit=$(jq -r --arg id "$id" '.projects[] | select(.id == $id) | .commit' "$manifest")
   checkout=$work/$id
   local_source=${source_root:+$source_root/$id}
-  clone_pin "$repository" "$commit" "$checkout" "$local_source"
+  rewrite=$(jq -c --arg id "$id" '.projects[] | select(.id == $id) | .rewrite // empty' "$manifest")
+  clone_pin "$repository" "$commit" "$checkout" "$local_source" "$rewrite"
+  if [ -n "$rewrite" ]; then
+    printf '%s\n' "$rewrite" > "$work/$id.rewrite.json"
+    sh "$root/scripts/rewrite-corpus-copy.sh" "$checkout" "$work/$id.rewrite.json" \
+      "$repository@$commit"
+  fi
   run_project "$id" "$checkout"
 done
 
