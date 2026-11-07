@@ -55,6 +55,27 @@ fetch 0.77.0 20007d79f97b696ba388113e2a4235227691d33a00bfa669f2316b37a7b14201
 fetch 0.78.0 f6a8297a1fe269751aea6255ddd1549f64e74d80b5c6a99ac2a56201a7330957
 fetch 0.79.0 8fad2aa09567a7edabcc43f4101fa6199131df2c22929e001c87659d764f6dcf
 
+# The list the packaged plugin warns from is the one place a verified release is named. Every entry
+# needs a `fetch` line and a packaged-integration checkpoint below, and every checkpoint an entry.
+list=$root/plugin/resources/dev/flixw/metrics/verified-flix-versions.txt
+verified=$(grep -v '^#' "$list" | grep -v '^$' || true)
+[ -n "$verified" ] || {
+  echo "test-compiler-compatibility: no verified releases in $list" >&2
+  exit 1
+}
+for version in $verified; do
+  grep -q "^fetch $version " "$0" && grep -q "^integration \"\$work/flix-$version.jar\"" "$0" || {
+    echo "test-compiler-compatibility: verified release $version has no fetch line or integration checkpoint" >&2
+    exit 1
+  }
+done
+for version in $(grep -o '^integration "\$work/flix-[0-9.]*\.jar"' "$0" | sed 's/.*flix-\(.*\)\.jar".*/\1/'); do
+  printf '%s\n' "$verified" | grep -qx "$version" || {
+    echo "test-compiler-compatibility: integration checkpoint for $version is not in the verified list" >&2
+    exit 1
+  }
+done
+
 java_home=${JAVA_HOME:-}
 if [ -z "$java_home" ]; then
   java_home=$(dirname "$(dirname "$(command -v java)")")
