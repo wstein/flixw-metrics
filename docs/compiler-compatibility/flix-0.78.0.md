@@ -17,8 +17,8 @@
 - A dependency's manifest must declare the repository it was downloaded from
   (`PackageError.MissingRepository`).
 - `HtmlDocumentor` moved to `tools.doc`, and `doc` prints a missing-documentation report.
-- `TypedAst.Case` and `TypedAst.StructField` gained a `doc` field. The adapter does not match on
-  either. No `TypedAst.Expr` alternative was added or removed.
+- `TypedAst` is unchanged against 0.77.0: `javap` lists the same 280 constructors in both release
+  jars. No `TypedAst.Expr` alternative was added or removed.
 
 ## Adapter impact
 
