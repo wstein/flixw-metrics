@@ -23,51 +23,20 @@ import java.util.TreeMap;
 public final class DefinitionSpanTest {
     private DefinitionSpanTest() { }
 
-    private record Expected(String name, int line, int lines, boolean tooLong) { }
+    private record Expected(String name, int line, int lines, boolean tooLong, int trailing) { }
 
     public static void main(String[] args) throws Exception {
+        if (args.length == 2 && args[0].equals("write")) {
+            // For scripts/test-compiler-compatibility.sh: the same project, written for the
+            // compiler on the class path, to be measured through the packaged plugin.
+            writeFixture(Path.of(args[1]), new ArrayList<>(), new ArrayList<>());
+            return;
+        }
         Path project = Files.createTempDirectory("flixw-metrics-span-");
         try {
-            Files.writeString(project.resolve("flix.toml"), Flix0753AdapterTest.adaptManifest("""
-                [package]
-                name = "span-fixture"
-                description = "Definition span fixture."
-                version = "0.1.0"
-                flix = "0.76.0"
-                authors = ["Test <test@example.com>"]
-                """));
-            Files.createDirectories(project.resolve("src"));
-
-            // Lines are counted as the file is written, so each expectation names the line the
-            // doc comment (or, without one, the def) really sits on.
             List<String> source = new ArrayList<>();
             List<Expected> expected = new ArrayList<>();
-            source.add("mod Span {");
-            define(source, expected, "boundary", List.of("/// A documented definition."), 61);
-            define(source, expected, "below", List.of("/// One line under the limit."), 60);
-            define(source, expected, "noDoc", List.of(), 61);
-            define(source, expected, "docTwo", List.of("/// First doc line.", "/// Second."), 61);
-            define(source, expected, "docBlank", List.of("/// Doc, then a blank line.", ""), 61);
-            define(source, expected, "docComment",
-                List.of("/// Doc, then a comment.", "// plain comment"), 61);
-            define(source, expected, "docAnnotation",
-                List.of("/// Doc, then an annotation.", "@Inline"), 61);
-            source.add("}");
-            Files.writeString(project.resolve("src/Span.flix"),
-                String.join("\n", source) + "\n");
-
-            // An effect declaration with a doc comment, after a blank line.
-            Files.writeString(project.resolve("src/Effects.flix"), """
-                /// A documented effect.
-                /// Two doc lines.
-                eff Documented {
-                    def tick(): Unit
-                }
-
-                eff Bare {
-                    def tock(): Unit
-                }
-                """);
+            writeFixture(project, source, expected);
 
             Model model = new Flix0761Adapter().measure(project);
             Map<String, DefInfo> defs = new TreeMap<>();
@@ -86,7 +55,8 @@ public final class DefinitionSpanTest {
                 require(d.maxLocalParametersLine() == e.line(),
                     e.name() + " has no local definition, so it reports its own start: "
                         + d.maxLocalParametersLine());
-                require(d.codeLines() == e.lines() - docLinesOf(e.name(), source, e.line()),
+                require(d.codeLines() == e.lines() - e.trailing()
+                        - docLinesOf(e.name(), source, e.line()),
                     e.name() + " code lines exclude its comments and blanks: " + d.codeLines());
                 total += d.lines();
             }
@@ -135,12 +105,77 @@ public final class DefinitionSpanTest {
         }
     }
 
+    /** Writes the fixture project; {@code source} and {@code expected} describe Span.flix. */
+    private static void writeFixture(Path project, List<String> source, List<Expected> expected)
+            throws Exception {
+        Files.writeString(project.resolve("flix.toml"), Flix0753AdapterTest.adaptManifest("""
+            [package]
+            name = "span-fixture"
+            description = "Definition span fixture."
+            version = "0.1.0"
+            flix = "0.76.0"
+            authors = ["Test <test@example.com>"]
+            """));
+        Files.createDirectories(project.resolve("src"));
+
+        // Lines are counted as the file is written, so each expectation names the line the
+        // doc comment (or, without one, the def) really sits on.
+        source.add("mod Span {");
+        define(source, expected, "boundary", List.of("/// A documented definition."), 61);
+        define(source, expected, "below", List.of("/// One line under the limit."), 60);
+        define(source, expected, "noDoc", List.of(), 61);
+        define(source, expected, "docTwo", List.of("/// First doc line.", "/// Second."), 61);
+        define(source, expected, "docBlank", List.of("/// Doc, then a blank line.", ""), 61);
+        define(source, expected, "docComment",
+            List.of("/// Doc, then a comment.", "// plain comment"), 61);
+        define(source, expected, "docAnnotation",
+            List.of("/// Doc, then an annotation.", "@Inline"), 61);
+        // Trailing comments: Flix 0.79.0 ends the span at the last token of the definition.
+        define(source, expected, "trailingLine", List.of(), 59,
+            List.of("// commented out", "// commented out"));
+        define(source, expected, "trailingBlock", List.of(), 59,
+            List.of("/* block", "   comment */"));
+        define(source, expected, "trailingDetached", List.of(), 59, List.of("", "// detached"));
+        // A comment that precedes the next definition's doc comment still counts; the doc does not.
+        define(source, expected, "trailingBeforeDoc", List.of(), 59,
+            List.of("// before a doc comment", "// still trailing"));
+        define(source, expected, "documentedAfter", List.of("/// Follows trailing comments."), 61);
+        // Followed by the closing brace of the module.
+        define(source, expected, "trailingLast", List.of(), 60, List.of("// last"));
+        source.add("}");
+        Files.writeString(project.resolve("src/Span.flix"),
+            String.join("\n", source) + "\n");
+
+        // An effect declaration with a doc comment, after a blank line.
+        Files.writeString(project.resolve("src/Effects.flix"), """
+            /// A documented effect.
+            /// Two doc lines.
+            eff Documented {
+                def tick(): Unit
+            }
+
+            eff Bare {
+                def tock(): Unit
+            }
+            """);
+    }
+
     /**
      * Appends one definition of exactly {@code total} lines: the preamble, a header, a chain of
      * {@code let} bindings, and a result. Every binding is used, so nothing is an unused variable.
      */
     private static void define(List<String> source, List<Expected> expected, String name,
                                List<String> preamble, int total) {
+        define(source, expected, name, preamble, total, List.of());
+    }
+
+    /**
+     * The same, followed by comment lines that Flix 0.76.1 through 0.78.0 count in the span: every
+     * non-doc comment up to the next token, blank lines between them included. The last line must
+     * be a comment.
+     */
+    private static void define(List<String> source, List<Expected> expected, String name,
+                               List<String> preamble, int total, List<String> trailing) {
         int first = source.size() + 1;
         for (String line : preamble) source.add(line.isEmpty() ? "" : "    " + line);
         source.add("    pub def " + name + "(): Int32 =");
@@ -148,8 +183,12 @@ public final class DefinitionSpanTest {
         for (int i = 1; i <= bindings; i++)
             source.add("        let v" + i + " = " + (i == 1 ? "1" : "v" + (i - 1) + " + 1") + ";");
         source.add("        v" + bindings);
-        expected.add(new Expected(name, first, total, total > 60));
         require(source.size() - first + 1 == total, name + " is built with the intended length");
+        require(trailing.isEmpty() || !trailing.get(trailing.size() - 1).isEmpty(),
+            name + " ends its trailing lines with a comment");
+        for (String line : trailing) source.add(line.isEmpty() ? "" : "    " + line);
+        expected.add(new Expected(name, first, total + trailing.size(),
+            total + trailing.size() > 60, trailing.size()));
     }
 
     /** Doc, comment and blank lines before the def header; an annotation is code. */
