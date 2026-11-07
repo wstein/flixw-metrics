@@ -187,19 +187,22 @@ public final class Flix0761AdapterTest {
                 name = "clerk"
                 description = "Mounted package fixture."
                 version = "1.0.0"
+                repository = "github:fixture/clerk"
                 flix = "0.76.1"
                 authors = ["Test <test@example.com>"]
                 """;
-            Files.writeString(release.resolve("clerk-1.0.0.toml"), manifest);
+            Files.writeString(release.resolve("clerk-1.0.0.toml"),
+                Flix0753AdapterTest.adaptManifest(manifest));
             try (var zip = new java.util.zip.ZipOutputStream(
                     Files.newOutputStream(release.resolve("clerk-1.0.0.fpkg")))) {
                 zip.putNextEntry(new java.util.zip.ZipEntry("flix.toml"));
-                zip.write(manifest.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                zip.write(Flix0753AdapterTest.adaptManifest(manifest)
+                    .getBytes(java.nio.charset.StandardCharsets.UTF_8));
                 zip.putNextEntry(new java.util.zip.ZipEntry("src/Board.flix"));
                 zip.write("pub mod Board { pub def place(): Int32 = 42 }\n"
                     .getBytes(java.nio.charset.StandardCharsets.UTF_8));
             }
-            Files.writeString(project.resolve("flix.toml"), """
+            Files.writeString(project.resolve("flix.toml"), Flix0753AdapterTest.adaptManifest("""
                 [package]
                 name = "consumer"
                 description = "Consumes a mounted package."
@@ -209,7 +212,7 @@ public final class Flix0761AdapterTest {
 
                 [dependencies]
                 "github:fixture/clerk" = { version = "1.0.0", mount = "clerk" }
-                """);
+                """));
             Files.createDirectories(project.resolve("src"));
             Files.writeString(project.resolve("src/Main.flix"), """
                 mod Board {
@@ -341,6 +344,7 @@ public final class Flix0761AdapterTest {
                 else Files.copy(source, destination);
             }
         }
+        Flix0753AdapterTest.adaptManifest(target);
         return target;
     }
 
