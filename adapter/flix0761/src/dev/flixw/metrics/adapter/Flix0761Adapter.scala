@@ -86,7 +86,8 @@ final class Flix0761Adapter extends CompilerModel {
       val sources = root.sources.keys.filter(include).toList
       val lexed = sources.map(lexSource)
       val tokens = lexed.map(source => source.source.name -> source.tokensPerLine).toMap
-      val infos = defs.map(measureDef(_, projectRoot, tokens))
+      val trailing = lexed.map(source => source.source.name -> source.trailingEnd).toMap
+      val infos = defs.map(measureDef(_, projectRoot, tokens, trailing))
 
       new Model(
         infos.asJava, modules(infos, edges).asJava, lineInfo(lexed),
@@ -124,7 +125,8 @@ final class Flix0761Adapter extends CompilerModel {
    * otherwise -- so a line of code with a trailing comment is code, which is what a reader has to
    * treat it as.
    */
-  private case class LexedSource(source: Source, tokensPerLine: Map[Int, Int], lines: LineInfo)
+  private case class LexedSource(source: Source, tokensPerLine: Map[Int, Int],
+                                 trailingEnd: Map[Int, Int], lines: LineInfo)
 
   /** One lex supplies token density, aggregate lines, and the per-source cache model. */
   private def lexSource(src: Source): LexedSource = {
@@ -132,9 +134,20 @@ final class Flix0761Adapter extends CompilerModel {
     val codeLines = scala.collection.mutable.Set.empty[Int]
     val commentLines = scala.collection.mutable.Set.empty[Int]
     val docLines = scala.collection.mutable.Set.empty[Int]
+    // Last line of the non-doc comments that follow a code token, keyed by that token's last line.
+    val trailing = scala.collection.mutable.Map.empty[Int, Int]
+    var lastCodeEnd = 0
+    var sawDoc = false
     val (tokens, _) = Lexer.lex(src)
     tokens.foreach { t =>
       if (t.kind != ca.uwaterloo.flix.language.ast.TokenKind.Eof) {
+        if (!t.kind.isComment) {
+          lastCodeEnd = t.end.lineOneIndexed
+          sawDoc = false
+        } else if (t.text.startsWith("///")) sawDoc = true
+        else if (!sawDoc && lastCodeEnd > 0)
+          trailing.update(lastCodeEnd, math.max(trailing.getOrElse(lastCodeEnd, 0),
+            t.end.lineOneIndexed))
         if (!t.kind.isComment) {
           // Counted against the line it starts on. A token spanning lines is one token to read,
           // and charging every line it touches would make a long string literal look like the
@@ -163,7 +176,8 @@ final class Flix0761Adapter extends CompilerModel {
       else if (commentLines.contains(line)) comment += 1
       else blank += 1
     }
-    LexedSource(src, tokenCounts.toMap, new LineInfo(total, code, comment, doc, blank))
+    LexedSource(src, tokenCounts.toMap, trailing.toMap,
+      new LineInfo(total, code, comment, doc, blank))
   }
 
   private def lineInfo(sources: List[LexedSource]): LineInfo =
@@ -191,15 +205,17 @@ final class Flix0761Adapter extends CompilerModel {
   // ---- one definition -------------------------------------------------------------------
 
   private def measureDef(d: TypedAst.Def, projectRoot: Path,
-                         tokens: Map[String, Map[Int, Int]])(implicit flix: Flix): DefInfo = {
+                         tokens: Map[String, Map[Int, Int]],
+                         trailing: Map[String, Map[Int, Int]])(implicit flix: Flix): DefInfo = {
     val tally = new Tally
     walk(d.exp, tally)
     val start = startOf(d.loc, d.spec.doc)
+    val end = endOf(d.loc, trailing.getOrElse(d.loc.source.name, Map.empty))
     val onLines = tokens.getOrElse(d.loc.source.name, Map.empty)
-    val codeLines = (start to d.loc.endLine).count(onLines.contains)
+    val codeLines = (start to end).count(onLines.contains)
     // The densest line this definition spans, and who actually owns it.
     val (crammedLine, crammedTokens) =
-      (start to d.loc.endLine)
+      (start to end)
         .map(line => (line, onLines.getOrElse(line, 0)))
         .maxByOption(_._2).getOrElse((start, 0))
     val owner = tally.locals
@@ -213,7 +229,7 @@ final class Flix0761Adapter extends CompilerModel {
     val effectDetails = effectDetailsOf(d.spec.eff)
     DefInfo.builder(d.sym.toString, moduleOf(d.sym), relativise(d.loc, projectRoot),
       start)
-      .lines(d.loc.endLine - start + 1)
+      .lines(end - start + 1)
       .codeLines(codeLines)
       .parameters(declaredParameters(d.spec.fparams.toList))
       .maxLocalParameters(tally.widestLocalParams)
@@ -364,6 +380,19 @@ final class Flix0761Adapter extends CompilerModel {
    * which stays at the comment in every release, so the earlier of the two is the same line for
    * all of them. An undocumented declaration has no doc lines and keeps `loc.startLine`.
    */
+  /**
+   * The last line of a definition, counting the comments after it.
+   *
+   * Flix 0.76.1 through 0.78.0 end `loc` at the last non-doc comment that follows the definition,
+   * up to the next token: a commented-out body after `= ???` was part of the definition, and its
+   * lines were measured. From 0.79.0 `loc` ends at the definition's last token. The lexer knows
+   * the comments; `trailing` maps the last line of a code token to the last line of those
+   * comments. A doc comment belongs to the next declaration and stops the run. Earlier releases
+   * already end on the comment's line, which is no key of the map, so they keep their end.
+   */
+  private def endOf(loc: SourceLocation, trailing: Map[Int, Int]): Int =
+    math.max(loc.endLine, trailing.getOrElse(loc.endLine, loc.endLine))
+
   private def startOf(loc: SourceLocation, doc: Doc): Int =
     if (doc.lines.isEmpty || doc.loc.source != loc.source) loc.startLine
     else math.min(loc.startLine, doc.loc.startLine)
