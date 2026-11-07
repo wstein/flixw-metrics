@@ -49,6 +49,7 @@ public final class CompilerVersionsTest {
         String unreadable = warning("flix.jar").orElseThrow();
         require(unreadable.contains("cannot read the Flix version") && unreadable.indexOf('\n') < 0,
             "a jar name without a version gets a single notice that says so");
+        System.out.println("CompilerVersionsTest: ok");
     }
 
     private static Optional<String> warning(String jarName) {
