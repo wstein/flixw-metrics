@@ -28,6 +28,7 @@ if unzip -Z1 "$root/dist/plugin.jar" | grep -Eq '^(scala/|ca/uwaterloo/flix/|man
   exit 1
 fi
 sh "$root/scripts/test-compiler-compatibility.sh"
+sh "$root/scripts/test-flix-sample.sh"
 mill=$root/mill
 [ -x "$mill" ] || mill=mill
 (cd "$root" && "$mill" --no-server plugin.test.check)
