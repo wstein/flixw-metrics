@@ -74,8 +74,9 @@ distribution on releases without a "yes" in the fixture or calibration column ma
 definition and effect positions and the findings that depend on them, the span comparison covers
 0.76.1 through 0.79.0 only; older families are not compared. The
 "473 checks" in the 0.78.0 and 0.79.0 records come from a manual run with `plugin/lib/flix.jar`
-swapped; that run is not reproduced by the suite and was not repeated for this table. Whether a
-Flix release newer than 0.79.0 loads is decided only by the linkage gate (below), not by a record.
+swapped; that run is not reproduced by the suite and was not repeated for this table. A Flix
+release newer than 0.79.0 is loaded if it links, with one stderr warning that it has no checkpoint
+(see [COMPILER-SDK.md](../COMPILER-SDK.md#a-release-newer-than-any-recorded-one)).
 
 The adapter-family suffix names its oldest compatible release. It never encodes an upper bound:
 the upper end is evidence that grows release by release, not part of the JVM package name. The
@@ -87,7 +88,9 @@ artifacts: 0.59.0 must fail the AST gate and 0.66.0 must fail compiler-runtime i
 integration. Intermediate releases may satisfy the structural gate, but remain unverified
 until they receive their own row and investigation.
 
-For a new release, copy [the template](template.md), complete every applicable check, update this
-matrix, and link the record from the compiler-repin pull request. Keep measurement distributions
+For a new release, copy [the template](template.md), complete every applicable check, add the
+release to `plugin/resources/dev/flixw/metrics/verified-flix-versions.txt` together with its `fetch`
+line and integration checkpoint in `scripts/test-compiler-compatibility.sh` (the script fails if
+they disagree), update this matrix, and link the record from the compiler-repin pull request. Keep measurement distributions
 and threshold decisions in [`docs/CALIBRATION.md`](../CALIBRATION.md); this directory answers the
 different question of whether a compiler release can be loaded and interpreted correctly.

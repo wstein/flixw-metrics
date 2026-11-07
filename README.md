@@ -416,8 +416,8 @@ also locks the independently broken 0.66.0 Java-runtime artifact and runs packag
 with 0.60.0, 0.61.0, 0.65.0, 0.66.1, 0.67.1, 0.67.2, 0.68.0, 0.75.2, 0.75.3,
 0.76.0, 0.76.1, 0.77.0, 0.78.0, and 0.79.0.
 A release not named above may still link, but it is unsupported until its own compatibility
-investigation is recorded. Today a newer release that links is loaded without any warning, and one
-that does not link is refused with exit 2 and a list of the missing members; see
+investigation is recorded. A newer release that links is loaded with one warning line on stderr saying it has no
+checkpoint, and one that does not link is refused with exit 2 and a list of the missing members; see
 [docs/COMPILER-SDK.md](docs/COMPILER-SDK.md). Flix 0.79.0 moves the start line of a documented
 definition to its `def` line; `Flix0761Adapter` restores the earlier start, see
 [the Flix 0.79.0 record](docs/compiler-compatibility/flix-0.79.0.md).
