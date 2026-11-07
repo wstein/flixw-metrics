@@ -77,8 +77,10 @@ independently, so the two can't drift apart.
   the real-compiler fixture, integration tests, the 0.59.0/0.60.0 AST boundary, and the known
   incompatible 0.66.0 runtime artifact. It also verifies packaged operation on 0.60.0, 0.61.0, 0.65.0,
   0.67.1, 0.67.2, 0.68.0, 0.75.2,
-  0.75.3, 0.76.0, 0.76.1, 0.77.0, 0.78.0, and 0.79.0. Historical compiler jars are downloaded
-  into ignored `out/` storage when absent. Its packaging
+  0.75.3, 0.76.0, 0.76.1, 0.77.0, 0.78.0, and 0.79.0. `scripts/test-flix-sample.sh` compares the
+  totals and one definition position of a sample project on the 0.78.0 and 0.79.0 jars with
+  golden files, and `scripts/test-unknown-flix.sh` pins how an unrecorded Flix release is
+  admitted. Historical compiler jars are downloaded into ignored `out/` storage when absent. Its packaging
   check deliberately builds twice with a two-second gap to prove reproducibility; that pause is expected.
 - `sh scripts/test-one.sh MetricsTest` compiles as needed and runs one test main. The wrapper also supplies
   the special fixtures and classpaths required by `CompilerCapabilitiesTest`, the adapter tests, and
