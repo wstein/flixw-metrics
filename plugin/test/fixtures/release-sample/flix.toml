@@ -1,0 +1,4 @@
+[package]
+version = "0.1.0"
+repository = "github:wstein/probe"
+flix = "0.78.0"

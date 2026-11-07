@@ -1,0 +1,11 @@
+{
+  "files": 3,
+  "modules": 4,
+  "definitions": 7,
+  "effects": 1,
+  "tests": 1,
+  "cognitive": 4,
+  "effectPolymorphicDefinitions": 1,
+  "smells": 4,
+  "smellRules": ["undocumented-public", "undocumented-public", "undocumented-public", "undocumented-public"]
+}
