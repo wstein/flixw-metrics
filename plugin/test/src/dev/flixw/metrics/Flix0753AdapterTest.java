@@ -259,7 +259,42 @@ public final class Flix0753AdapterTest {
                 else Files.copy(source, destination);
             }
         }
+        adaptManifest(target);
         return target;
+    }
+
+    /**
+     * Flix 0.78.0 rejects every {@code [package]} key but {@code version}, {@code repository} and
+     * {@code flix} (ManifestError.IllegalPackageKeyFound), while 0.66 through 0.68 still require
+     * {@code name}, {@code description} and {@code authors}. One fixture cannot satisfy both, so
+     * the copy is cut down when the compiler on the class path is 0.78.0 or later.
+     *
+     * <p>Told apart by bytecode, not file name (the pinned jar is just {@code flix.jar}):
+     * {@code ReleaseAsset} first appears with the 0.78.0 manifest rewrite.
+     */
+    static void adaptManifest(Path project) throws Exception {
+        Path manifest = project.resolve("flix.toml");
+        if (Files.isRegularFile(manifest)) {
+            Files.writeString(manifest, adaptManifest(Files.readString(manifest)));
+        }
+    }
+
+    /** The same cut for a manifest held as text, such as the ones a test writes itself. */
+    static String adaptManifest(String text) {
+        try {
+            Class.forName("ca.uwaterloo.flix.tools.pkg.ReleaseAsset", false,
+                Flix0753AdapterTest.class.getClassLoader());
+        } catch (ClassNotFoundException absent) {
+            return text;
+        }
+        StringBuilder kept = new StringBuilder();
+        for (String line : text.split("\n", -1)) {
+            String key = line.contains("=") ? line.substring(0, line.indexOf('=')).trim() : line.trim();
+            boolean packageKey = key.equals("name") || key.equals("description")
+                || key.equals("authors") || key.equals("license") || key.equals("modules");
+            if (!packageKey) kept.append(line).append('\n');
+        }
+        return kept.toString().stripTrailing() + "\n";
     }
 
     static void delete(Path root) throws Exception {
