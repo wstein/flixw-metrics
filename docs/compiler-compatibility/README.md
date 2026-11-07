@@ -23,8 +23,9 @@ runs semantic and packaged-process regressions, and compares the calibration cor
 | 0.79.0 | `Flix0761Adapter` | no | yes | yes | yes | not rerun | [investigation](flix-0.79.0.md) |
 
 Declaration positions: from 0.79.0 (not 0.78.0), the compiler starts a documented definition or
-effect at its `def`/`eff` line or annotation instead of its doc comment. `Flix0761Adapter` takes
-the earlier of that and `Doc.loc` for every release, so `line`, `lines` and the findings that
+effect at its `def`/`eff` line or annotation instead of its doc comment, and ends a definition at
+its last token instead of its last trailing comment. `Flix0761Adapter` takes the earlier start
+from `Doc.loc` and the trailing comments from the lexer for every release, so `line`, `lines` and the findings that
 depend on them are the same on 0.76.1 through 0.79.0 ([record](flix-0.79.0.md)).
 
 The adapter-family suffix names its oldest compatible release. It never encodes an upper bound:
