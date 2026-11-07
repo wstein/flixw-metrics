@@ -17,6 +17,7 @@ cache, JSON schema, or report formats would change.
 
 The build requires Java 21, `jq`, `unzip`, and `shasum`. The checked-in `./mill` launcher
 bootstraps the build tool, and `scripts/fetch-flix.sh` downloads digest-verified compiler jars.
+On its first run Mill downloads Temurin 21 itself (`mill-jvm-version` in `build.mill`; the default would be `zulu:25`).
 Generated `out/`, `dist/`, and `plugin/lib/flix*.jar` files must not be committed.
 
 Useful commands:
