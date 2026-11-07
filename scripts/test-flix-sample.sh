@@ -3,10 +3,12 @@
 # the totals with a golden file per release.
 #
 # Why: the semantic fixtures run against the pinned compiler only, and test-compiler-compatibility.sh
-# checks linkage and the fixture's own counts. Neither proves that a release after the pin reports
-# the same totals for a project that has a module pair, an effect with a handler, a test and a
-# documented definition. Line numbers are deliberately NOT compared: from Flix 0.78 a definition
-# with a doc comment starts at its `def` line, not at the doc comment (docs/compiler-compatibility).
+# checks linkage, the fixture's own counts and one span project against 0.77.0. None proves that
+# a release after the pin reports the same totals for a project that has a module pair, an effect
+# with a handler, a test and a documented definition. Positions are kept out of the totals golden
+# and pinned separately, per release: Flix 0.79.0 starts a documented definition at its `def`
+# line, and Flix0761Adapter restores the doc-comment start, so both releases are pinned to the
+# same position (docs/compiler-compatibility/flix-0.79.0.md).
 #
 # The release digests are read from the `fetch <version> <sha256>` lines of
 # test-compiler-compatibility.sh, so a digest is stated once. Needs dist/plugin.jar (make package).
@@ -80,10 +82,12 @@ fetch() {
 }
 
 for version in $versions; do
-  [ -f "$golden/release-sample-$version.json" ] || {
-    echo "test-flix-sample: golden file is missing: plugin/test/golden/release-sample-$version.json" >&2
-    exit 1
-  }
+  for name in release-sample release-sample-positions; do
+    [ -f "$golden/$name-$version.json" ] || {
+      echo "test-flix-sample: golden file is missing: plugin/test/golden/$name-$version.json" >&2
+      exit 1
+    }
+  done
   fetch "$version"
   project=$scratch/$version/project
   mkdir -p "$project"
@@ -109,10 +113,17 @@ for version in $versions; do
     echo "test-flix-sample: Flix $version totals differ from plugin/test/golden/release-sample-$version.json" >&2
     exit 1
   }
-  # Informational only: positions move between releases and are not part of the golden.
-  jq -r '.definitions[] | select(.name == "Counter.silence")
-    | "test-flix-sample: Flix '"$version"' Counter.silence line \(.line), \(.lines) lines (not compared)"' \
-    "$scratch/$version/report.json" >&2
+  # Positions are pinned apart from the totals, per release. Flix 0.79.0 starts a documented
+  # definition at its `def` line; the adapter restores the doc-comment start, so the 0.78.0 and
+  # 0.79.0 goldens are equal. A golden change here is a decision about positions, not a totals
+  # regression.
+  jq -S '[.definitions[] | select(.name == "Counter.silence") | {name, line, lines}][0]' \
+    "$scratch/$version/report.json" > "$scratch/$version/actual-positions.json"
+  jq -S . "$golden/release-sample-positions-$version.json" > "$scratch/$version/expected-positions.json"
+  diff -u "$scratch/$version/expected-positions.json" "$scratch/$version/actual-positions.json" >&2 || {
+    echo "test-flix-sample: Flix $version positions differ from plugin/test/golden/release-sample-positions-$version.json" >&2
+    exit 1
+  }
 done
 
-echo "test-flix-sample: totals match the golden files for Flix $versions"
+echo "test-flix-sample: totals and positions match the golden files for Flix $versions"
