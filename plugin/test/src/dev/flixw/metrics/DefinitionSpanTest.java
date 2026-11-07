@@ -25,6 +25,37 @@ public final class DefinitionSpanTest {
 
     private record Expected(String name, int line, int lines, boolean tooLong, int trailing) { }
 
+    /** A hand-counted definition of {@link #ADJACENT}: line, spanned lines, lines with code. */
+    private record Fixed(String name, int line, int lines, int code) { }
+
+    /**
+     * Comments next to code that follows them on the same line. Flix 0.76.1 through 0.78.0 end a
+     * definition at the comments directly after its last token, and only there: a later token on
+     * the same line, a comment before the next definition on its line, and a {@code //} inside a
+     * string literal are all told apart by position.
+     */
+    private static final String ADJACENT = """
+        mod Adj {
+            pub def strSlash(): String =
+                "a // b /* c */"
+            // trailing after string
+
+            pub def adjacent(): Int32 = 5
+            /* same */ pub def sameLine(): Int32 = 6
+            // after sameLine
+
+        }
+        mod Inner { pub def inner(): Int32 = 7 }
+        // after the module brace
+        // two
+        """;
+
+    private static final List<Fixed> ADJACENT_DEFS = List.of(
+        new Fixed("Adj.strSlash", 2, 3, 2),
+        new Fixed("Adj.adjacent", 6, 2, 2),
+        new Fixed("Adj.sameLine", 7, 2, 1),
+        new Fixed("Inner.inner", 11, 1, 1));
+
     public static void main(String[] args) throws Exception {
         if (args.length == 2 && args[0].equals("write")) {
             // For scripts/test-compiler-compatibility.sh: the same project, written for the
@@ -41,7 +72,7 @@ public final class DefinitionSpanTest {
             Model model = new Flix0761Adapter().measure(project);
             Map<String, DefInfo> defs = new TreeMap<>();
             for (DefInfo d : model.defs()) defs.put(d.name(), d);
-            require(defs.size() == expected.size(),
+            require(defs.size() == expected.size() + ADJACENT_DEFS.size(),
                 "every fixture definition is measured: " + defs.keySet());
 
             int total = 0;
@@ -60,6 +91,17 @@ public final class DefinitionSpanTest {
                     e.name() + " code lines exclude its comments and blanks: " + d.codeLines());
                 total += d.lines();
             }
+
+            for (Fixed f : ADJACENT_DEFS) {
+                DefInfo d = defs.get(f.name());
+                require(d != null, f.name() + " is measured");
+                require(d.line() == f.line() && d.lines() == f.lines() && d.codeLines() == f.code(),
+                    f.name() + " is " + f.line() + "+" + f.lines() + " lines with " + f.code()
+                        + " code lines but reports " + d.line() + "+" + d.lines() + " with "
+                        + d.codeLines());
+            }
+            require(module(model, "Adj").lines() == 7 && module(model, "Inner").lines() == 1,
+                "a comment after a closing brace or a later token on the line is not module code");
 
             var module = model.modules().stream().filter(m -> m.name().equals("Span"))
                 .findFirst().orElseThrow();
@@ -146,6 +188,8 @@ public final class DefinitionSpanTest {
         Files.writeString(project.resolve("src/Span.flix"),
             String.join("\n", source) + "\n");
 
+        Files.writeString(project.resolve("src/Adjacent.flix"), ADJACENT);
+
         // An effect declaration with a doc comment, after a blank line.
         Files.writeString(project.resolve("src/Effects.flix"), """
             /// A documented effect.
@@ -198,6 +242,11 @@ public final class DefinitionSpanTest {
         for (; !source.get(header - 1).contains("def " + name + "("); header++)
             if (!source.get(header - 1).trim().startsWith("@")) notCode++;
         return notCode;
+    }
+
+    private static dev.flixw.metrics.sdk.CompilerModel.ModuleInfo module(Model model, String name) {
+        return model.modules().stream().filter(m -> m.name().equals(name)).findFirst()
+            .orElseThrow();
     }
 
     private static EffectInfo effect(Model model, String name) {
