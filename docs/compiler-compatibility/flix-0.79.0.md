@@ -35,13 +35,15 @@ The position change moves what the adapter reports: `line`, `lines`, `definition
 (limit 60), the `longest` ranking, module `lines`, finding and SARIF positions,
 `maxLocalParametersLine` and effect declaration lines. The corpus project `qual-effect-system`
 shows the end shift: `canonEqConstr` (`= ???` followed by a commented-out body) spans 75 lines
-through 0.78.0 and 1 on 0.79.0, so `definition-too-long` dropped from 27 to 26 findings. On a probe project with definitions of one,
-three and five doc lines, 0.77.0 and 0.78.0 gave five `definition-too-long` findings and 0.79.0
+through 0.78.0 and 1 on 0.79.0, so `definition-too-long` dropped from 27 to 26 findings. On a
+probe project with definitions of one, three and five doc lines, 0.77.0 and 0.78.0 gave five `definition-too-long` findings and 0.79.0
 gave two; module lines were 430 against 419. The adapter now starts a declaration at
 `min(loc.startLine, doc.loc.startLine)` (`startOf`) and ends it at the last line of the non-doc
-comments the lexer finds after the definition's last token (`endOf`), the same rules for every
-release, so the spans of 0.76.1 through 0.78.0 are unchanged and 0.79.0 reports them too. `Doc.loc` keeps the
-comment position in all releases. Not checked: enum and trait positions (they are only counted,
+comments that directly follow the definition's last token (`endOf`; a later token on that line
+owns them), the same rules for every release. 0.79.0 then reports the spans of 0.76.1 through
+0.78.0: packaged 0.77.0 reports of five projects (four corpus inputs and the semantic fixture) and
+two probe projects are identical before and after the change, and 0.76.1, 0.77.0, 0.78.0 and
+0.79.0 agree on the probes. `Doc.loc` keeps the comment position in all releases. Not checked: enum and trait positions (they are only counted,
 without a line) and adapters older than `Flix0761Adapter`.
 
 ## Verification

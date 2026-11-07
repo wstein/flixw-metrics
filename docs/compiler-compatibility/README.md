@@ -25,8 +25,9 @@ runs semantic and packaged-process regressions, and compares the calibration cor
 Declaration positions: from 0.79.0 (not 0.78.0), the compiler starts a documented definition or
 effect at its `def`/`eff` line or annotation instead of its doc comment, and ends a definition at
 its last token instead of its last trailing comment. `Flix0761Adapter` takes the earlier start
-from `Doc.loc` and the trailing comments from the lexer for every release, so `line`, `lines` and the findings that
-depend on them are the same on 0.76.1 through 0.79.0 ([record](flix-0.79.0.md)).
+from `Doc.loc` and the comments that directly follow the last token from the lexer for every
+release, so `line`, `lines` and the findings that depend on them match the 0.76.1 through 0.78.0
+values on 0.79.0 for the projects checked ([record](flix-0.79.0.md)).
 
 The adapter-family suffix names its oldest compatible release. It never encodes an upper bound:
 the upper end is evidence that grows release by release, not part of the JVM package name. The
