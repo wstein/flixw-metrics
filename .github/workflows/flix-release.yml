@@ -1,0 +1,38 @@
+name: flix-release
+
+# The adapter binds to compiler internals, and a Flix release changes them without a single
+# commit here. This job fails when the newest Flix release has no checkpoint in the
+# compatibility run, so a new release is noticed within a week and an investigation is
+# opened, instead of being found by a user whose project stopped measuring.
+#
+# It checks only that a checkpoint exists. Whether the release actually passes is decided by
+# `scripts/test-compiler-compatibility.sh` once the checkpoint is added.
+on:
+  schedule:
+    - cron: "23 6 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  newest:
+    name: newest Flix has a compatibility checkpoint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: compare the newest release with the checkpoints
+        run: |
+          # The tag, not the API's JSON body: one redirect, and no rate limit.
+          v=$(curl -fsSLI -o /dev/null -w '%{url_effective}' \
+                https://github.com/flix/flix/releases/latest | sed 's|.*/tag/v||')
+          case $v in
+            [0-9]*.[0-9]*.[0-9]*) ;;
+            *) echo "could not resolve a Flix version (got '$v')" >&2; exit 1 ;;
+          esac
+          echo "newest Flix release: $v"
+          if ! grep -q "^fetch $v " scripts/test-compiler-compatibility.sh; then
+            echo "::error::Flix $v has no checkpoint in scripts/test-compiler-compatibility.sh;" \
+                 "add one and record docs/compiler-compatibility/flix-$v.md"
+            exit 1
+          fi
