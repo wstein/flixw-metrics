@@ -28,11 +28,9 @@ reflective predecessor classified nodes by simple class name and silently ignore
 anywhere. That failure mode is why the AST-facing half of the plugin is Scala at all; see
 `docs/COMPILER-SDK.md` and `docs/compiler-compatibility/` for the full contract and release evidence.
 
-`Flix0600Adapter` is verified with Flix 0.60.0; `Flix0610Adapter` with Flix 0.61.0 and 0.65.0;
-`Flix0661Adapter` with Flix 0.66.1 and 0.67.1; `Flix0672Adapter` with Flix 0.67.2;
-`Flix0680Adapter` with Flix 0.68.0 and 0.75.2; `Flix0753Adapter` with Flix 0.75.3 and 0.76.0;
-and `Flix0761Adapter` with Flix 0.76.1 through 0.79.0.
-Each name records the oldest verified release in its linkage family.
+Which releases each adapter serves is listed in `docs/COMPILER-SDK.md`; the verified list itself is
+`plugin/resources/dev/flixw/metrics/verified-flix-versions.txt`. Each adapter name records the oldest
+verified release in its linkage family.
 Supporting an incompatible Flix generation means
 adding one adapter class plus a line in `Adapters.KNOWN` — never
 touching the report, findings, formats, cache, or CLI. Adapters are selected by **linkage, not version
@@ -75,12 +73,13 @@ independently, so the two can't drift apart.
 - `make lint` fetches the pinned compiler and compiles with all warnings fatal.
 - `make test` runs linting, calibration and performance-contract tests, all executable unit tests,
   the real-compiler fixture, integration tests, the 0.59.0/0.60.0 AST boundary, and the known
-  incompatible 0.66.0 runtime artifact. It also verifies packaged operation on 0.60.0, 0.61.0, 0.65.0,
-  0.67.1, 0.67.2, 0.68.0, 0.75.2,
-  0.75.3, 0.76.0, 0.76.1, 0.77.0, 0.78.0, and 0.79.0. `scripts/test-flix-sample.sh` compares the
+  incompatible 0.66.0 runtime artifact. It also verifies packaged operation on every verified
+  release. `scripts/test-flix-sample.sh` compares the
   totals and one definition position of a sample project on the 0.78.0 and 0.79.0 jars with
   golden files, and `scripts/test-unknown-flix.sh` pins the warning for a Flix release without
-  a checkpoint. Historical compiler jars are downloaded into ignored `out/` storage when absent.
+  a checkpoint. A compiler jar named `flix.jar`, such as the pin in `plugin/lib`, has no readable
+  version, so a measuring run against it prints the `cannot read the Flix version` warning on stderr.
+  Historical compiler jars are downloaded into ignored `out/` storage when absent.
   Its packaging
   check deliberately builds twice with a two-second gap to prove reproducibility; that pause is expected.
 - `sh scripts/test-one.sh MetricsTest` compiles as needed and runs one test main. The wrapper also supplies
