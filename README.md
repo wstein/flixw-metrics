@@ -34,6 +34,8 @@ colleague's clone.
 ```console
 $ ./flixw metrics
 files: 3
+analyzedFiles: 3
+excludedFiles: 0
 modules: 2
 definitions: 5
 localDefinitions: 1
@@ -70,6 +72,7 @@ docCoveragePercent: 25
 purityPercent: 75
 
 where each measure peaks
+(dense findings require at least 4 code lines; shorter definitions may still rank)
   longest            11 lines                           Json.encode  (src/Json.flix:15)
   densest            1.1 complexity/line                Json.size  (src/Json.flix:33)
   most-complex       11 complexity                      Json.size  (src/Json.flix:33)
@@ -374,7 +377,12 @@ plugins are unsandboxed code running as their caller, and flixw prints that warn
 invocation, not only at install.
 
 This plugin reads your source through the compiler flixw already verified. It does not
-download a compiler, choose one, or run anything else.
+download a compiler or choose one. Measuring does run that compiler's own project bootstrap
+(`Bootstrap.bootstrap`, `Flix0761Adapter.scala:59`), which resolves the project's declared
+dependencies: on a project without dependencies it printed `Downloading Flix dependencies` and
+`Running Maven dependency resolver` on stderr and created `lib/` and `packages.lock` in the project
+directory. With declared dependencies it may download them. Whether `./flixw check` does the same
+was not compared.
 
 ## Supported compilers
 
@@ -446,7 +454,7 @@ definition to its `def` line; `Flix0761Adapter` restores the earlier start, see
 
 ```console
 sh scripts/test.sh                 # lint, build, tests
-sh scripts/package.sh 0.2.0        # reproducible dist/plugin.jar and dist/SHA256SUMS
+sh scripts/package.sh <version>    # reproducible dist/plugin.jar and dist/SHA256SUMS
 sh scripts/validate-report-schema.sh # packaged fixture report against the published schema
 sh scripts/calibrate-corpus.sh /tmp/flixw-calibration-results
 sh scripts/measure-performance.sh /tmp/flixw-performance.json

@@ -4,7 +4,7 @@
 
 The analyzer is a mixed Java/Scala Mill build. Compiler-neutral code lives in
 `plugin/src/dev/flixw/metrics/`; every Flix adapter is compiled in isolation under `adapter/`, in
-`adapter/flix0753/src/` through `adapter/flix0600/src/`. The stable boundary is under
+`adapter/flix0761/src/` through `adapter/flix0600/src/`. The stable boundary is under
 `plugin/src/dev/flixw/metrics/sdk/`. Tests live in `plugin/test/src/` and use the Flix fixture in
 `plugin/test/fixtures/semantic/`. Calibration inputs and budgets live in `calibration/`, project
 documentation in `docs/`, automation in `scripts/`, and CI workflows in `.github/workflows/`.
@@ -52,8 +52,8 @@ loader defined the compiler classes. Consequence: `flix.jar` bundles ASM, JLine,
 0.76 Byte Buddy and jsr305, **unshaded** on that flat class path, so any dependency this plugin adds
 must be shaded or classpath order decides which copy wins.
 
-Each adapter's `flix.jar` is wired into that adapter module via `compileClasspath` in `build.mill`,
-not `unmanagedClasspath` — it must stay compile-time only. The compiler-neutral `plugin` module has no
+Each adapter's floor jar (`flix-<version>.jar` in `plugin/lib`) is wired into that adapter module
+via `compileClasspath` in `build.mill`, not `unmanagedClasspath` — it must stay compile-time only. The compiler-neutral `plugin` module has no
 Flix jar on its compile class path. At runtime the compiler is whatever flixw pinned for the target
 project; bundling a copy would mean measuring one compiler while claiming to measure another.
 
