@@ -24,8 +24,8 @@ tables below record; a column that says "no" or "not rerun" is a gap, not a pass
 | 0.76.0 | `Flix0753Adapter` | yes | yes | yes | yes | 9 active targets; 2 upstream-incompatible | [investigation](flix-0.76.0.md) |
 | 0.76.1 | `Flix0761Adapter` | yes | yes | yes | yes | exact parity on 9 active targets | [investigation](flix-0.76.1.md) |
 | 0.77.0 | `Flix0761Adapter` | yes | yes | yes | yes | exact parity on 9 active targets | [investigation](flix-0.77.0.md) |
-| 0.78.0 | `Flix0761Adapter` | no | yes | yes | yes | 4 active targets via `corpus-0.78.json`; parity with 0.77.0 except Prelude 232 lines ([calibration](../CALIBRATION.md#corpus-variant-for-flix-078-and-later)) | [investigation](flix-0.78.0.md) |
-| 0.79.0 | `Flix0761Adapter` | no | yes | yes | yes | 4 active targets via `corpus-0.78.json`; parity with 0.77.0 except Prelude 232 lines ([calibration](../CALIBRATION.md#corpus-variant-for-flix-078-and-later)) | [investigation](flix-0.79.0.md) |
+| 0.78.0 | `Flix0761Adapter` | no | yes | yes | yes | exact parity on 9 active targets via `corpus-0.78.json` (4 projects rewritten), except Prelude 232 lines ([calibration](../CALIBRATION.md#corpus-variant-for-flix-078-and-later)) | [investigation](flix-0.78.0.md) |
+| 0.79.0 | `Flix0761Adapter` | no | yes | yes | yes | exact parity on 9 active targets via `corpus-0.78.json` (4 projects rewritten), except Prelude 232 lines ([calibration](../CALIBRATION.md#corpus-variant-for-flix-078-and-later)) | [investigation](flix-0.79.0.md) |
 
 Declaration positions: from 0.79.0 (not 0.78.0), the compiler starts a documented definition or
 effect at its `def`/`eff` line or annotation instead of its doc comment, and ends a definition at
@@ -54,8 +54,8 @@ semantic fixture, which runs against one jar per family, not against every relea
 | 0.76.0 | `Flix0753Adapter` | yes | `Flix0753AdapterTest` (0.76.0) | no | no | no |
 | 0.76.1 | `Flix0761Adapter` | yes | no | yes | no | no |
 | 0.77.0 | `Flix0761Adapter` | yes | `Flix0761AdapterTest` and `PluginIntegrationTest` (the 0.77.0 pin in `plugin/lib/flix.jar`) | yes | no | yes, the only compiler of the `calibration` workflow (`corpus.json`) |
-| 0.78.0 | `Flix0761Adapter` | yes | no | yes | yes | no; measured by hand on the `corpus-0.78.json` variant, which neither the suite nor CI runs |
-| 0.79.0 | `Flix0761Adapter` | yes | no | yes | yes | no; measured by hand on the `corpus-0.78.json` variant, which neither the suite nor CI runs |
+| 0.78.0 | `Flix0761Adapter` | yes | no | yes | yes | no; measured by hand on the `corpus-0.78.json` variant, which neither the suite nor CI measures (`test-calibration.sh` checks only its manifest and rewrite) |
+| 0.79.0 | `Flix0761Adapter` | yes | no | yes | yes | no; measured by hand on the `corpus-0.78.json` variant, which neither the suite nor CI measures (`test-calibration.sh` checks only its manifest and rewrite) |
 
 The same script also requires 0.59.0 and 0.66.0 to be refused (not in the table: they are not
 supported). `test-flix-sample.sh` analyzes `plugin/test/fixtures/release-sample` (three files, four
