@@ -1,7 +1,8 @@
 # Shared compiler SDK: boundaries
 
 Status: proposal for owner decision. Refs wstein/flixw-metrics#20.
-Basis: `origin/main` at 614c4a53bc07081217f1f260ff5feb6e1554107b. Paths are relative to the
+Basis: `origin/main` at 419c9247687ef16d2a67c7b576ba76b9d06fd534. Line numbers were taken at 614c4a53bc07081217f1f260ff5feb6e1554107b and shifted
+to this basis; each shifted range was checked to hold identical text at both revisions. Paths are relative to the
 repository root unless stated. `L<n>` is a line number in that revision.
 
 Decided by the owner (chartroom note "Plugins share one compiler SDK", 2026-11-08): one repo
@@ -16,28 +17,28 @@ Marker: UNKNOWN means not verified from a file or a run for this document.
 
 | Concern | Source today | Moves as |
 | --- | --- | --- |
-| Read the flixw context: `FLIXW_ABI_VERSION` must be `1`, `FLIXW_PROJECT_ROOT`, `FLIXW_COMPILER_JAR`, `FLIXW_JAVA_HOME`, optional `FLIXW_PLUGIN_CACHE` | `plugin/src/dev/flixw/metrics/Main.java` L419-438 (`Context`), L440-443 (`Usage`) | `Context` record and `Usage` exception |
-| Two-phase launch: outer JVM, bridge JVM with `-Xss64m` and `-cp plugin.jar:flix.jar` | `Main.java` L33-95, L243-275 (`spawnBridge`, `bridgeCommand`) | Launcher parameterised by main class and arguments. Reason for two JVMs: `docs/COMPILER-SDK.md` L116-141 |
-| Inspection class loader (platform-parented `URLClassLoader`, no class initialisation) | `Main.java` L234-241 | `kit` helper |
+| Read the flixw context: `FLIXW_ABI_VERSION` must be `1`, `FLIXW_PROJECT_ROOT`, `FLIXW_COMPILER_JAR`, `FLIXW_JAVA_HOME`, optional `FLIXW_PLUGIN_CACHE` | `plugin/src/dev/flixw/metrics/Main.java` L421-440 (`Context`), L442-445 (`Usage`) | `Context` record and `Usage` exception |
+| Two-phase launch: outer JVM, bridge JVM with `-Xss64m` and `-cp plugin.jar:flix.jar` | `Main.java` L33-97, L245-277 (`spawnBridge`, `bridgeCommand`) | Launcher parameterised by main class and arguments. Reason for two JVMs: `docs/COMPILER-SDK.md` L155-180 |
+| Inspection class loader (platform-parented `URLClassLoader`, no class initialisation) | `Main.java` L236-243 | `kit` helper |
 | ABI check driver: compare every adapter contract with the pinned jar, keep the contract with fewest missing references, add `dev.flix.runtime.Global` | `plugin/src/dev/flixw/metrics/CompilerCapabilities.java` L27-43, L45-52 | Design proposal, direction in section 7: the check needs `AdapterAbi.contracts()`, which belongs to `compiler`, so this row moves in step 2 and lives in `compiler`, not in `kit`. This differs from issue #21 (Goal) and flixw-mutate#2, which list the ABI check under `kit`; the issue texts need adjusting after the owner decides |
 | `capabilities` command JSON (`compilerJar`, `hasFlixApi`, `hasEngineApi`, `missing`) | `CompilerCapabilities.java` L54-70 | `kit`. `hasNativeMetrics` (L42, probes `ca.uwaterloo.flix.tools.Metrics$`) is metrics-specific and stays in the plugin |
 | Cache key and entry store: SHA-256 over plugin version, plugin artifact tree, compiler jar, `flix.toml`, sorted project-relative source paths with digests; atomic write; every failure is a miss | `plugin/src/dev/flixw/metrics/ResultCache.java` L60-87 (key), L89-123 (read, write), L125-155 (hashing) | Keyed store. The payload codec (`Wire`, version `Wire.java` L45) stays in the plugin. Whether the key also takes the SDK version and the adapter family is question 6 |
-| Stable-input retry around measurement | `plugin/src/dev/flixw/metrics/StableInputs.java` L10-30 | Design proposal, not decided: it calls `Metrics.projectFiles` (L28, L31; defined `Metrics.java` L621), a plugin class, and `Work` throws `CompilerModel.ModelFailure` (import L7, `Work` L20), a `compiler` type. Either it stays in the plugin, or the source lister is passed as a parameter and the row moves with `CompilerModel` in step 2 (question 11). `Main.java` L87-90 and L138-141 catch `ModelFailure` and follow the same choice |
+| Stable-input retry around measurement | `plugin/src/dev/flixw/metrics/StableInputs.java` L10-30 | Design proposal, not decided: it calls `Metrics.projectFiles` (L28, L31; defined `Metrics.java` L621), a plugin class, and `Work` throws `CompilerModel.ModelFailure` (import L7, `Work` L20), a `compiler` type. Either it stays in the plugin, or the source lister is passed as a parameter and the row moves with `CompilerModel` in step 2 (question 11). `Main.java` L89-92 and L140-143 catch `ModelFailure` and follow the same choice |
 | Provenance: commit, dirty flag, timestamp, bounded `git` call | `plugin/src/dev/flixw/metrics/Provenance.java` L18-86 | Header record and git probe. Rendering (`Formats.java` L50-57, L342; `Metrics.java` L359) stays in the plugin |
-| Atomic report output (`--output`) | `Main.java` L166-190 | `kit` |
-| Exit codes: `1` when `--fail-on` or `--fail-on-new` crosses (L83, L129); `2` for usage, configuration, compiler or model failure, and `LinkageError` (L87-94, L130-145) | `Main.java` | One documented table in `kit`. `1` stays a plugin policy decision; `2` is shell-level |
+| Atomic report output (`--output`) | `Main.java` L168-192 | `kit` |
+| Exit codes: `1` when `--fail-on` or `--fail-on-new` crosses (L85, L131); `2` for usage, configuration, compiler or model failure, and `LinkageError` (L89-96, L132-147) | `Main.java` | One documented table in `kit`. `1` stays a plugin policy decision; `2` is shell-level |
 
 Couplings to plugin classes (grep on `origin/main` over the classes of this table, the adapters and
 `sdk/`; every occurrence): `StableInputs.java` L28 and L31 call `Metrics.projectFiles`;
 `Provenance.java` L22-27 call `SourceMetrics.Smell.quote`; `ResultCache.java` L62 and
-`Main.java` L258 and L268 use `Main.class` to locate the plugin artifact and to relaunch it;
+`Main.java` L260 and L270 use `Main.class` to locate the plugin artifact and to relaunch it;
 `CompilerCapabilities.java` L42 probes `tools.Metrics$` (above); all seven adapters import
 `DatalogGraph` (question 2). References to `Main.Context` and `Main.Usage` (`StableInputs.java`
 L15, L25, L35; `CompilerCapabilities.java` L29, L54; `ResultCache.java` L49, L60, L69; `Provenance.java` L30)
 disappear when `Context` and `Usage` move to `kit`. `sdk/*.java` references no plugin class. Each
 coupling needs a parameter, an interface or a stay-in-plugin decision; none is decided here.
 
-Not in `kit`: option parsing (`Main.java` L282-373), because the options are plugin-specific.
+Not in `kit`: option parsing (`Main.java` L284-375), because the options are plugin-specific.
 
 ## 2. Module `compiler`: adapters and version data
 
@@ -49,9 +50,9 @@ Not in `kit`: option parsing (`Main.java` L282-373), because the options are plu
 | `Adapters`: registry `KNOWN` (newest first) and `resolve()` | `plugin/src/dev/flixw/metrics/sdk/Adapters.java` L28-35 (`KNOWN`), L38-53 (`resolve`), L56-58 (`known`) | `compiler`; `KNOWN` is replaced by the version data file |
 | Stable model `CompilerModel` and its records | `plugin/src/dev/flixw/metrics/sdk/CompilerModel.java` L33-61 (`SDK_VERSION = 1` at L50, `measure` at L61), records from L114 (`DefInfo`; `Model` at L370), `ModelFailure` L396 | `compiler`, as the `Metrics` capability (section 4). Its records are metrics-shaped (definitions, effects, Datalog, lines) |
 | Compiler jars with SHA-256: the seven adapters compile against 0.76.1, 0.75.3, 0.68.0, 0.67.2, 0.66.1, 0.61.0, 0.60.0 (`build.mill` L31-49); 0.77.0 (`flix.jar`) and 0.76.0 are fetched for tests and the current pin, and no adapter compiles against them. The jars are not tracked (`.gitignore` ignores `lib/`) | `scripts/fetch-flix.sh` L12-29 (digests), L63-71 (fetch calls) | Script and digests in `compiler` |
-| Compatibility documents: table of 14 verified releases and the 0.59.0 and 0.66.0 rejections | `docs/compiler-compatibility/README.md`, `flix-*.md`, `template.md`; `docs/COMPILER-SDK.md` L1-114 (contract, linkage-based selection, ABI gate) | `compiler`. Metrics-specific sections of `docs/COMPILER-SDK.md` (L143 onward, "What is measured") stay |
-| Verification CI: official release jars must pass the ABI gate and packaged integration; 0.59.0 and 0.66.0 must fail | `scripts/test-compiler-compatibility.sh` L76-102, L144-150, L166-179; `scripts/check-lint-adapters.sh`; `.github/workflows/quality.yml` | `compiler`. The packaged integration step runs a plugin; the SDK needs a fixture plugin or the conformance suite (section 6) |
-| Version data as a file | Spread over five places today: `Adapters.KNOWN`, `build.mill` L31-49, `scripts/fetch-flix.sh` L12-29, `docs/compiler-compatibility/README.md` table, the version loops in `scripts/test-compiler-compatibility.sh` (L144-150, L166-179); also prose in `AGENTS.md` | One data file; schema below |
+| Compatibility documents: table of 14 verified releases and the 0.59.0 and 0.66.0 rejections | `docs/compiler-compatibility/README.md`, `flix-*.md`, `template.md`; `docs/COMPILER-SDK.md` L1-114 (contract, linkage-based selection, ABI gate) | `compiler`. Metrics-specific sections of `docs/COMPILER-SDK.md` (L182 onward, "What is measured") stay |
+| Verification CI: official release jars must pass the ABI gate and packaged integration; 0.59.0 and 0.66.0 must fail | `scripts/test-compiler-compatibility.sh` L97-123, L165-171, L187-200; `scripts/check-lint-adapters.sh`; `.github/workflows/quality.yml` | `compiler`. The packaged integration step runs a plugin; the SDK needs a fixture plugin or the conformance suite (section 6) |
+| Version data as a file | Spread over six places today: `Adapters.KNOWN`, `build.mill` L31-49, `scripts/fetch-flix.sh` L12-29, `docs/compiler-compatibility/README.md` table, `plugin/resources/dev/flixw/metrics/verified-flix-versions.txt` (14 entries, read by `CompilerVersions`), the version loops in `scripts/test-compiler-compatibility.sh` (L165-171, L187-200); also prose in `AGENTS.md` | One data file; schema below |
 
 Proposed data file `compiler/versions.json` (format is UNKNOWN until decided; JSON is proposed
 because `jq` is already a build requirement, `CONTRIBUTING.md`):
@@ -64,7 +65,7 @@ because `jq` is already a build requirement, `CONTRIBUTING.md`):
 Fields: Flix version, adapter family, status (`verified`, `rejected`, `unrecorded`), capabilities.
 `build.mill`, `fetch-flix.sh`, the compatibility table, the CI loops and the registry derive from it.
 Status values come from the existing documents: verified rows in the README table, rejected for
-0.59.0 and 0.66.0 (`scripts/test-compiler-compatibility.sh` L76-93). `unrecorded` is proposed
+0.59.0 and 0.66.0 (`scripts/test-compiler-compatibility.sh` L97-114). `unrecorded` is proposed
 (draft PRs #14, #15 and #17 concern unrecorded releases; contents not read for this document).
 
 ## 3. What stays in the plugins
@@ -105,13 +106,13 @@ section 8 lists it as a question.
 | --- | --- | --- | --- |
 | Flix | Compiler release | Data (`versions.json`) | `compiler` |
 | SDK | `flixw-compiler-sdk` | Semver, embedded in the plugin jar; additive evolution, removal only in a major version | `compiler` and `kit` released together; `CompilerModel.SDK_VERSION` (L50) is declared and unused today |
-| Plugin | Each plugin | Free | `Implementation-Version` of the jar, read by `Main.version()` (L277-280) |
+| Plugin | Each plugin | Free | `Implementation-Version` of the jar, read by `Main.version()` (L279-282) |
 
 Report header today (`Provenance.java` L18-19, `json()` L21-28): `commit`, `dirty`,
 `analyzerVersion`, `measuredAt`, `compilerArtifact` (file name only, `Provenance.java` L35),
 `inputDigest`. The schema accepts any object (`docs/metrics-report.schema.json` L21), so fields are
 additive at the schema level; `Metrics.schemaVersion()` is 35 (`Metrics.java` L78-79) and each
-additive change has raised it (`docs/COMPILER-SDK.md` L203-210, L240-241).
+additive change has raised it (`docs/COMPILER-SDK.md` L242-249, L279-280).
 
 Proposed additional fields, all populated by `kit` and `compiler`:
 
@@ -124,7 +125,7 @@ Proposed additional fields, all populated by `kit` and `compiler`:
 | `capability` | Capability the report was produced with | Plugin |
 | `skippedAdapters` | List of `{adapter, reason}` for each adapter that was tried and rejected, with the missing references | Not available today: `Adapters.resolve()` discards the result at L41-42 (`continue`) and swallows the exceptions at L46-50 |
 
-`Main.java` L108-109 reports only the list of known adapters when none links. With
+`Main.java` L110-111 reports only the list of known adapters when none links. With
 `skippedAdapters` the same failure names the missing references per adapter, which closes the gap
 recorded in DESIGN.md L100 ("A skipped adapter and its reason are lost").
 
@@ -138,12 +139,12 @@ verified Flix version of that family:
 2. Capability behaviour on a fixed fixture: for `Metrics`, the fixed expected values now in
    `plugin/test/src/dev/flixw/metrics/Flix0NNNAdapterTest.java` (one per family) and the semantic fixture
    `plugin/test/fixtures/semantic/`. Flix 0.60.0, 0.61.0 and 0.65.0 run against
-   `plugin/test/fixtures/semantic-validation` (`scripts/test-compiler-compatibility.sh` L166-168),
+   `plugin/test/fixtures/semantic-validation` (`scripts/test-compiler-compatibility.sh` L187-189),
    so a fixture is chosen per family.
 3. Cross-version parity within a family, as in the compatibility table (columns "Semantic fixture"
    and "Corpus").
 4. Failure mode: an unlinkable jar produces the sentence and exit code `2`, not a stack trace
-   (`Main.java` L130-137). The case where no adapter links is a separate sentence (`Main.java` L107-109, L138-141).
+   (`Main.java` L132-139). The case where no adapter links is a separate sentence (`Main.java` L109-111, L140-143).
 
 The dependency on metrics classes is in the adapter code, not in the tests: all seven adapters
 import `dev.flixw.metrics.DatalogGraph` (`Flix0761Adapter.scala` L5), and every adapter module
@@ -161,7 +162,7 @@ mechanically.
 | --- | --- | --- | --- |
 | 0 | #20 | This document | Owner decision |
 | 0a | owner | Repository `wstein/flixw-compiler-sdk` exists (blocker of #20) | Owner |
-| 1 | #21 | Extract `kit` (section 1) without the ABI driver and `StableInputs`, which depend on `compiler` or plugin types (direction and couplings below). Metrics consumes `kit` as an embedded, pinned release asset | Existing tests unchanged. Reports on the calibration corpus equal before and after, compared as `jq -S 'del(.provenance)'` (the pattern of `scripts/test-compiler-compatibility.sh` L205; `provenance.measuredAt` differs on every run, so byte equality is not a gate) |
+| 1 | #21 | Extract `kit` (section 1) without the ABI driver and `StableInputs`, which depend on `compiler` or plugin types (direction and couplings below). Metrics consumes `kit` as an embedded, pinned release asset | Existing tests unchanged. Reports on the calibration corpus equal before and after, compared as `jq -S 'del(.provenance)'` (the pattern of `scripts/test-compiler-compatibility.sh` L226; `provenance.measuredAt` differs on every run, so byte equality is not a gate) |
 | 2 | #22 | Move adapters, `AdapterAbi`, `Adapters`, `CompilerModel`, the ABI driver, `fetch-flix.sh`, compatibility documents and verification CI into `compiler`; introduce `versions.json` | Existing adapter tests green and unedited apart from package renames. The conformance suite (section 6) runs in the SDK repository for all seven families. `scripts/test-compiler-compatibility.sh` is split (below); both halves are green against the same version list |
 | 3 | #23 | Capability-based selection and the new header fields | New tests first (failing against step 2), cache key change documented, schema version raised |
 | 4 | none | `ProgramLoader`, `TestRunner` once mutate needs them; `SolverHook` after the spike. Also after the spike, from DESIGN.md L97-101 and L124: a run-time smoke test in the SDK that metrics can reuse, declared-member lookup for hook targets (`getDeclaredMethods`, paired with the smoke test), and a CI matrix over the version data that runs the smoke test | Not before the spike |
@@ -171,10 +172,10 @@ nor Flix. Hence the ABI driver is not in step 1, and `StableInputs` and the `Mod
 The alternative, a `kit` that defines the contract and failure types and `compiler` that fills them,
 is question 11.
 
-`scripts/test-compiler-compatibility.sh` needs `dist/plugin.jar` (L73) and `PluginIntegrationTest`
-(L161-163), so it cannot run in the SDK repository as it is. Proposal for step 2: the ABI-gate part
-(L76-150, official jars through the `capabilities` command, which also runs `dist/plugin.jar`, L73)
-moves to the SDK repository and runs there through the conformance suite or a fixture plugin; the packaged-integration part (L161-179) stays in
+`scripts/test-compiler-compatibility.sh` needs `dist/plugin.jar` (L94) and `PluginIntegrationTest`
+(L182-184), so it cannot run in the SDK repository as it is. Proposal for step 2: the ABI-gate part
+(L97-171, official jars through the `capabilities` command, which also runs `dist/plugin.jar`, L94)
+moves to the SDK repository and runs there through the conformance suite or a fixture plugin; the packaged-integration part (L182-200) stays in
 `flixw-metrics` and runs against the embedded SDK. Whether the script splits at that line is
 UNKNOWN. Question 8 stays open until then.
 
@@ -204,7 +205,7 @@ moves with it.
 9. Whether flixw ABI v2 should supply the SDK later: owner decision, only with a third plugin
    (chartroom note).
 10. Shell-level exit codes: `kit` owns `2`; whether mutate's "compiler incompatible" also uses `2`
-    (DESIGN.md L78) is consistent with `Main.java` L87-94 but is not tested.
+    (DESIGN.md L78) is consistent with `Main.java` L89-96 but is not tested.
 11. Dependency direction between `kit` and `compiler` (section 7): `compiler` depends on `kit` with
     the ABI driver in `compiler` (proposal), or `kit` defines the contract and failure types. Also
     whether `StableInputs` stays in the plugin or takes the source lister as a parameter, and how
