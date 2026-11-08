@@ -441,7 +441,7 @@ with every verified release.
 A release that is not verified may still link, but it is unsupported until its own compatibility
 investigation is recorded. If it links, it is loaded with one warning line on stderr saying it has no
 checkpoint, whether it is older or newer than the verified releases and whether it is a prerelease, a
-`FLIX_JAR` override or a `flix.jar` without a version in its name; if it does not link, it is refused
+`FLIX_JAR` override or a `flix.jar` with a name that carries no version; if it does not link, it is refused
 with exit 2 and a list of the missing members. [Other compilers](docs/COMPILER-SDK.md#other-compilers)
 lists every case with its exit code and the exact warning text. A fork whose base version is
 verified is not warned about, and its behavior is not checked; detecting a fork is follow-up work in
@@ -456,7 +456,7 @@ the location the compiler reports, and their positions were not compared across 
 SARIF regions use the same lines: a finding gets a region only when it has a line, `startLine` is
 that line, and `endLine` is the last line of the definition when that line is the definition's
 `line` (`definition-too-long`, for example), otherwise `startLine` again (`crammed-line` inside
-the body). A module-level finding has no location at all.
+the body). A module-level finding has no `locations` entry.
 
 ## Building it yourself
 

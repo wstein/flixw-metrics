@@ -144,7 +144,7 @@ are not in the suite.
 | Links to no adapter | refused before measurement | the message under exit 2 below | 2 |
 | Links at the gate, fails while the compiler loads | stops | the message under exit 2 below | 2 |
 
-Exit 1 instead of 0 applies to every row that measures, when the run asked for a gate (see below).
+Exit 1 instead of 0 applies to every row that measures, when the run passed `--fail-on` or `--fail-on-new` (see below).
 Every release that is not listed gets a warning, not only a newer one, and so does every name
 without a version.
 
@@ -174,7 +174,7 @@ Source: `CompilerVersions.java:55-63`. Each warning is a single line.
 |---|---|---|
 | 0 | the report was written; also `capabilities`, `--version` and help | `Main.java:41-62,86` |
 | 1 | `--fail-on` found a finding at or above its level, or `--fail-on-new` found a new or worsened one; the report was written first | `Main.java:85,131,288-296` |
-| 2 | everything the plugin reports as `metrics: ...`: usage errors, invalid configuration or baseline, a failed measurement or project load | `Main.java:89-96,140-147` |
+| 2 | every error the plugin reports on stderr as `metrics: <message>`: usage errors, invalid configuration or baseline, a failed measurement or project load | `Main.java:89-96,140-147` |
 
 Exit 2 covers these messages:
 
@@ -193,9 +193,15 @@ Source: `Main.java:63-66,109-111,136-138,423-437`, `CompilerCapabilities.java:29
 `scripts/test-unknown-flix.sh`. The no-engine-API message names no version. The second JVM's exit
 code is the plugin's (`Main.java:88`).
 
-All plugin lines start with `metrics: `; the warnings above start with `metrics: warning: `.
+Plugin error lines start with `metrics: `, the warnings above with `metrics: warning: ` (a run that
+prints one can still end with any exit code), and the `--diagnostics` line with `metrics diagnostics: `.
 Continuation lines are indented by seven spaces. The compiler writes its own progress lines to
 stderr as well, with ANSI colors, so stderr as a whole is not a machine interface.
+
+An exception the plugin does not handle is not covered by this table. Observed: an unreadable source
+file (`chmod 000 src/Counter.flix`) raised an `IllegalArgumentException` from the compiler, and the run
+ended with a Java stack trace, exit 1 and no report. Exit 1 therefore does not always mean a gate; this
+behavior is not a contract.
 
 ### Forks
 
