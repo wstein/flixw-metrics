@@ -437,7 +437,12 @@ with 0.60.0, 0.61.0, 0.65.0, 0.66.1, 0.67.1, 0.67.2, 0.68.0, 0.75.2, 0.75.3,
 A release not named above may still link, but it is unsupported until its own compatibility
 investigation is recorded. A newer release that links is loaded with one warning line on stderr saying it has no
 checkpoint, and one that does not link is refused with exit 2 and a list of the missing members; see
-[docs/COMPILER-SDK.md](docs/COMPILER-SDK.md). Flix 0.79.0 moves the start line of a documented
+[docs/COMPILER-SDK.md](docs/COMPILER-SDK.md). A fork whose base version is verified is not warned
+about, and its behaviour is not checked: flixw drops the `+fork...` suffix from the cached jar name,
+the plugin reads only that name, and the fork variables flixw passes (`FLIXW_COMPILER_VERSION` with
+`+fork`, `FLIXW_COMPILER_REPO`, `FLIXW_COMPILER_SHA256`) are not read yet; detecting a fork is
+follow-up work in [#24](https://github.com/wstein/flixw-metrics/issues/24).
+Flix 0.79.0 moves the start line of a documented
 definition to its `def` line; `Flix0761Adapter` restores the earlier start, see
 [the Flix 0.79.0 record](docs/compiler-compatibility/flix-0.79.0.md).
 
