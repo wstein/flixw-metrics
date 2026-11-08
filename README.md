@@ -392,6 +392,22 @@ module against only its own compiler generation; the adapters share the
 `dev.flixw.metrics.adapter` package and ship together in `plugin.jar`. The compiler-neutral
 `plugin` module has no Flix jar on its compile class path.
 
+The first plugin release that lists a Flix release as verified (from `docs/releases/` and the tagged
+sources):
+
+| Flix | First plugin release |
+| --- | --- |
+| 0.60.0, 0.61.0, 0.65.0, 0.66.1, 0.67.1, 0.67.2, 0.68.0, 0.75.2, 0.75.3, 0.76.0 | 0.3.0 |
+| 0.76.1 | 0.5.0 |
+| 0.77.0 | 0.6.0, the release installed above |
+| 0.78.0, 0.79.0 | not yet released: the release after 0.6.0 |
+
+Plugin 0.2.0 already ran on Flix 0.75.3, its pin, but listed only "0.75.x". Plugin 0.6.0 does not
+list Flix 0.78.0 or 0.79.0. It has no unknown-release warning and no `Flix0761Adapter` position
+compensation for 0.79.0, and how it behaves on those releases has not been run. Everything below
+that mentions 0.78.0, 0.79.0, the warning or the position compensation describes the repository
+head, not 0.6.0.
+
 The plugin's own version follows its independent SemVer lifecycle because analyzer behavior,
 rules, formats, and schemas do not share the compiler's release cadence. The engine reads the
 compiler's internal AST, which carries no
