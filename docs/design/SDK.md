@@ -2,7 +2,10 @@
 
 Status: owner decisions on the design questions recorded (section 8); remaining open points are marked UNKNOWN. Refs wstein/flixw-metrics#20.
 Basis: `origin/main` at 419c9247687ef16d2a67c7b576ba76b9d06fd534. Line numbers were taken at 614c4a53bc07081217f1f260ff5feb6e1554107b and shifted
-to this basis; each shifted range was checked to hold identical text at both revisions. Paths are relative to the
+to this basis. Each shifted range holds the same text at both revisions, except `Main.java` L33-97,
+which contains two new lines (L67-68, the `CompilerVersions` warning from #17). Files with
+references that did not change between the two revisions keep their numbers. PRs #14 to #17 are merged
+into this basis. Paths are relative to the
 repository root unless stated. `L<n>` is a line number in that revision.
 
 Decided by the owner (chartroom note "Plugins share one compiler SDK", 2026-11-08): one repo
@@ -66,8 +69,10 @@ Not in `kit`: option parsing (`Main.java` L284-375), because the options are plu
 | Stable model `CompilerModel` and its records | `plugin/src/dev/flixw/metrics/sdk/CompilerModel.java` L33-61 (`SDK_VERSION = 1` at L50, `measure` at L61), records from L114 (`DefInfo`; `Model` at L370), `ModelFailure` L396 | `flix-bridge`, as the `Metrics` capability (section 4). Its records are metrics-shaped (definitions, effects, Datalog, lines); decided (Q3): the model splits per capability, so these records belong to `Metrics` only. UNKNOWN: the records of other capabilities |
 | Compiler jars with SHA-256: the seven adapters compile against 0.76.1, 0.75.3, 0.68.0, 0.67.2, 0.66.1, 0.61.0, 0.60.0 (`build.mill` L31-49); 0.77.0 (`flix.jar`) and 0.76.0 are fetched for tests and the current pin, and no adapter compiles against them. The jars are not tracked (`.gitignore` ignores `lib/`) | `scripts/fetch-flix.sh` L12-29 (digests), L63-71 (fetch calls) | Script in `flix-bridge`; the digests move into `versions.json` (Q5) |
 | Compatibility documents: table of 14 verified releases and the 0.59.0 and 0.66.0 rejections | `docs/compiler-compatibility/README.md`, `flix-*.md`, `template.md`; `docs/COMPILER-SDK.md` L1-114 (contract, linkage-based selection, ABI gate) | `flix-bridge`. Metrics-specific sections of `docs/COMPILER-SDK.md` (L182 onward, "What is measured") stay |
-| Verification CI: official release jars must pass the ABI gate and packaged integration; 0.59.0 and 0.66.0 must fail | `scripts/test-compiler-compatibility.sh` L97-123, L165-171, L187-200; `scripts/check-lint-adapters.sh`; `.github/workflows/quality.yml` | `flix-bridge`. The packaged integration step runs a plugin; the SDK needs a fixture plugin or the conformance suite (section 6) |
-| Version data as a file | Spread over six places today: `Adapters.KNOWN`, `build.mill` L31-49, `scripts/fetch-flix.sh` L12-29, `docs/compiler-compatibility/README.md` table, `plugin/resources/dev/flixw/metrics/verified-flix-versions.txt` (14 entries, read by `CompilerVersions`), the version loops in `scripts/test-compiler-compatibility.sh` (L165-171, L187-200); also prose in `AGENTS.md` | One data file; schema below |
+| Verification CI: official release jars must pass the ABI gate and packaged integration; 0.59.0 and 0.66.0 must fail | `scripts/test-compiler-compatibility.sh` L97-123, L165-171, L187-200; `scripts/check-lint-adapters.sh`; `.github/workflows/quality.yml` | `flix-bridge`. The packaged integration step runs a plugin; the SDK runs the conformance suite plus an example plugin (Q8, section 6) |
+| Version data as a file | Spread over twelve places today, in these files: `Adapters.KNOWN` (`Adapters.java` L28-35); `build.mill` L31-49; `scripts/fetch-flix.sh` L12-29 (8 releases with digests); `scripts/test-compiler-compatibility.sh` L41-56 (16 `fetch` lines with SHA-256, a second copy of the digests: Q5), L58-77 (cross-check with the list), and the loops L165-171, L187-200; `docs/compiler-compatibility/README.md` table; `plugin/resources/dev/flixw/metrics/verified-flix-versions.txt` (14 entries, read by `CompilerVersions`); `plugin/test/src/dev/flixw/metrics/CompilerVersionsTest.java` L13-14; `scripts/test-flix-sample.sh` L22; `scripts/test-unknown-flix.sh` L23; `CompilerModel.java` L45-46 (Javadoc list); prose in `AGENTS.md`. `test-flix-sample.sh` and `test-unknown-flix.sh` read the digests from the `fetch` lines (L50 in both), and `.github/workflows/flix-release.yml` L34 reads the `fetch` lines to find a missing checkpoint; they hold no copy | One data file; schema below |
+| Release-without-checkpoint rule (#14 to #17): `CompilerVersions.java` L1-76 reads the Flix version from the jar file name and prints one warning; `docs/COMPILER-SDK.md` L116-153 documents it; `.github/workflows/flix-release.yml` fails when the newest Flix release has no `fetch` line | those files | UNKNOWN: placement. The version data is `flix-bridge` data (Q5), the warning is printed by the plugin shell, and under Q7 the version comes from `FLIXW_COMPILER_VERSION` instead of the jar file name; how these fit is not decided |
+| Tests added by #14 to #17: `scripts/test-unknown-flix.sh` (warning, and exit 2 for a compiler that does not link, L154), `scripts/test-flix-sample.sh` (golden totals for 0.78.0 and 0.79.0 per release), `CompilerVersionsTest.java`, golden files `plugin/test/golden/release-sample-*.json` | those files | UNKNOWN: placement. The exit-2 check at `test-unknown-flix.sh` L154 is a candidate for the shared exit-code test (Q10); the golden-totals test is a candidate for conformance item 2 (section 6) |
 
 Data file `flix-bridge/versions.json`. Decided (Q5): the file lives in the SDK repository and holds
 the digest of each compiler jar per version. The field names below are a proposal. JSON follows from
@@ -78,11 +83,13 @@ the digest of each compiler jar per version. The field names below are a proposa
   "capabilities": ["metrics"], "jar": {"sha256": "..."} }
 ```
 
-Fields: Flix version, adapter family, status (`verified`, `rejected`, `unrecorded`), capabilities.
+Fields: Flix version, adapter family, status (`verified`, `rejected`), capabilities.
 `build.mill`, `fetch-flix.sh`, the compatibility table, the CI loops and the registry derive from it.
 Status values come from the existing documents: verified rows in the README table, rejected for
-0.59.0 and 0.66.0 (`scripts/test-compiler-compatibility.sh` L97-114). `unrecorded` is proposed
-(draft PRs #14, #15 and #17 concern unrecorded releases; contents not read for this document).
+0.59.0 and 0.66.0 (`scripts/test-compiler-compatibility.sh` L97-114). A release with no
+checkpoint is not a stored status: since #14 to #17 the plugin loads it when it links and prints one
+warning (`docs/COMPILER-SDK.md` L116-153; `CompilerVersions.java`). Whether `versions.json` replaces the
+list `verified-flix-versions.txt` and how the warning derives from it is UNKNOWN.
 
 ## 3. What stays in the plugins
 
@@ -142,7 +149,7 @@ Proposed additional fields, all populated by `kit` and `flix-bridge`:
 | Field | Meaning | Source |
 | --- | --- | --- |
 | `sdkVersion` | Embedded SDK semver; also a cache key field (Q6) | SDK build |
-| `flixVersion` | Version of the pinned compiler | Decided (Q7): the environment variable `FLIXW_COMPILER_VERSION`, listed in flixw ABI 1 (`projects/flixw/docs/CONTRACT.md` L1168 on flixw `origin/main` 35a61cd8c0c83cecfafea34649c274046cbbda02) and set by flixw from its lock (`src/stage0/flixw.java` L6321-6322, inside `if (lock != null)`). No `lock.toml` read. Nothing in this repository reads it today: `Context` (`Main.java` L421-440) does not read it; `compilerArtifact` is only the jar file name. UNKNOWN: the value when flixw runs a plugin without a lock |
+| `flixVersion` | Version of the pinned compiler | Decided (Q7): the environment variable `FLIXW_COMPILER_VERSION`, listed in flixw ABI 1 (`projects/flixw/docs/CONTRACT.md` L1168 on flixw `origin/main` 35a61cd8c0c83cecfafea34649c274046cbbda02) and set by flixw from its lock (`src/stage0/flixw.java` L6321-6322, inside `if (lock != null)`). No `lock.toml` read. Nothing in this repository reads it today: `Context` (`Main.java` L421-440) does not read it; `compilerArtifact` is only the jar file name. Without a lock flixw does not set the variable (`src/stage0/flixw.java` L6311-6313, L6321); `FLIXW_COMPILER_JAR` is set separately (L6326). UNKNOWN: the fallback when the jar is set and the version is absent (for example the file name, as `CompilerVersions` reads it) |
 | `compilerDigest` | SHA-256 of the pinned jar | Computed already for the cache key (`ResultCache.java` L75), not reported |
 | `adapter` | Chosen adapter class and family; the family is also a cache key field (Q6) | `Adapters.resolve()` |
 | `capability` | Capability the report was produced with | Plugin |
@@ -184,7 +191,7 @@ mechanically.
 | Step | Issue | Content | Gate |
 | --- | --- | --- | --- |
 | 0 | #20 | This document | Owner decisions recorded in section 8 |
-| 0a | owner | Repository `wstein/flixw-compiler-sdk` exists (blocker of #20) | Owner |
+| 0a | owner | Repository `wstein/flixw-compiler-sdk` exists (done 2026-11-08, one empty first commit) | Owner |
 | 1 | #21 | Extract `kit` (section 1) without the ABI driver and `StableInputs`, which depend on `flix-bridge` or plugin types (direction and couplings below). Metrics consumes `kit` as an embedded, pinned release asset | Existing tests unchanged. Reports on the calibration corpus equal before and after, compared as `jq -S 'del(.provenance)'` (the pattern of `scripts/test-compiler-compatibility.sh` L226; `provenance.measuredAt` differs on every run, so byte equality is not a gate) |
 | 2 | #22 | Move adapters, `DatalogGraph`, `AdapterAbi`, `Adapters`, `CompilerModel`, the ABI driver, `fetch-flix.sh`, compatibility documents and verification CI into `flix-bridge`; introduce `versions.json` | Existing adapter tests green and unedited apart from package renames. The conformance suite (section 6) runs in the SDK repository for all seven families, with an example plugin for the packaged check (Q8) and a test of the shared exit codes (Q10). `scripts/test-compiler-compatibility.sh` is split (below); both halves are green against the same version list |
 | 3 | #23 | Capability-based selection and the new header fields | New tests first (failing against step 2), cache key change documented (explicit SDK version and family fields, Q6; `flixVersion` read from `FLIXW_COMPILER_VERSION`, Q7), schema version raised |
@@ -221,15 +228,14 @@ are those of the questions in the first version of this document.
 5. Q5, version data: `versions.json` in the SDK repository, with the digest of each compiler jar per
    version.
 6. Q6, cache key: SDK version and adapter family join the key as explicit fields. The embedded SDK
-   bytes are hashed already through the plugin artifact tree (`ResultCache.java` L74); the explicit
-   fields make the key readable.
+   bytes are hashed already through the plugin artifact tree (`ResultCache.java` L74).
 7. Q7, `flixVersion`: from `FLIXW_COMPILER_VERSION` (flixw ABI 1, `projects/flixw/docs/CONTRACT.md`
-   L1168), no `lock.toml` read. Section 5 has the setter in flixw.
+   L1168), no `lock.toml` read. Section 5 has the setter in flixw and the case without a lock.
 8. Q8, packaged check: the conformance suite plus a small example plugin.
 9. Q9, flixw ABI v2: deferred until a third plugin exists.
 10. Q10, exit codes: shared, owned by `kit`; the test of the codes joins the conformance suite.
     UNKNOWN: whether mutate's "compiler incompatible" (DESIGN.md L78) is covered by `2`; metrics
-    uses `2` at `Main.java` L89-96, and no test checks it today.
+    uses `2` at `Main.java` L89-96; `scripts/test-unknown-flix.sh` L154 checks exit 2 for a compiler that does not link, whether mutate has such a test is UNKNOWN.
 11. Q11, direction: `flix-bridge` depends on `kit`; the ABI driver lives in `flix-bridge`;
     `StableInputs` stays in the metrics plugin. This deviates from #21 (Goal) and flixw-mutate#2,
     which name the ABI check under `kit`; the owner decided the deviation.
@@ -242,7 +248,8 @@ Still UNKNOWN after these decisions:
 - How `scripts/test-compiler-compatibility.sh` splits (section 7).
 - How the remaining couplings of section 1 are cut (`Smell.quote`, `Main.class`, `hasNativeMetrics`).
 - Whether the `Flix0NNNAdapter` class names stay (Q1).
-- The value of `FLIXW_COMPILER_VERSION` when flixw runs a plugin without a lock (Q7).
+- The `flixVersion` fallback when `FLIXW_COMPILER_JAR` is set and `FLIXW_COMPILER_VERSION` is absent (Q7).
+- Placement of the release-without-checkpoint rule and of the tests added by #14 to #17 (section 2).
 - The records of capabilities other than `Metrics` (Q3).
 
 ## Appendix: `origin/main` and `refactor/adapter-modules`
@@ -250,20 +257,19 @@ Still UNKNOWN after these decisions:
 Checked with `git rev-list --left-right --count`, `git cherry` and `git diff` (2026-11-08).
 
 - `origin/refactor/adapter-modules` is 1c8fc3860494b1a74efaf396886000159151aea1, equal to the
-  owner's local branch. It is 8 commits ahead of the merge base 37dfa9114bd12a3670612a801ced52d4c71c1cf8
-  and 21 behind `origin/main`.
+  owner's local branch. `git rev-list --left-right --count origin/main...origin/refactor/adapter-modules`
+  gives 39 and 8: the branch is 8 commits ahead of the merge base 37dfa9114bd12a3670612a801ced52d4c71c1cf8
+  and 39 behind `origin/main`.
 - `git cherry origin/main origin/refactor/adapter-modules` marks all 8 commits `-`: each has a
   patch-equivalent on `origin/main` (for example "define the Flix adapter modules once" is
   733dee8 on `origin/main`). The adapter build (`FlixAdapter` trait, `adapter.all`, seven modules)
   is the same on both.
-- Content differences in `git diff origin/main origin/refactor/adapter-modules` (7 files, 27
-  insertions, 439 deletions) exist only on `origin/main`: the Flix 0.79.0 declaration-position
-  compensation in `Flix0761Adapter.scala` (`startOf`, `endOf`, `trailingEnd`), `DefinitionSpanTest`
-  with its entries in `build.mill` (3 lines) and `scripts/test-one.sh` (3 lines), the 0.79.0 changes in
-  `docs/compiler-compatibility/`, and a 48-line `span_report` block in
-  `scripts/test-compiler-compatibility.sh`.
-- Draft PRs #14 to #17 are on their own branches (`ci/flix-release-watch`,
-  `docs/compat-matrix-and-checks`, `chore/calibration-corpus-0.78`, `feat/warn-unknown-flix`), not
-  on `refactor/adapter-modules`. Their contents were not read for this document.
+- `git diff --stat origin/main origin/refactor/adapter-modules` shows 34 files, 40 insertions, 1926
+  deletions. The differences are later changes that exist only on `origin/main`: the Flix 0.79.0
+  declaration-position compensation in `Flix0761Adapter.scala`, `DefinitionSpanTest` with its entries
+  in `build.mill` and `scripts/test-one.sh`, and the content of #14 to #17 (checkpoint workflow,
+  `CompilerVersions`, the unrecorded-release rule, the 0.78 corpus variant, the added test scripts and
+  records). Per-file contents beyond these were not read for this document.
+- PRs #14 to #17 are merged into `origin/main` (2026-11-08), not into `refactor/adapter-modules`.
 - Result: the SDK extraction starts from `origin/main`. The branch adds nothing to the adapter
   build that `origin/main` lacks.
