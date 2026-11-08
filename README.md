@@ -379,7 +379,10 @@ download a compiler, choose one, or run anything else.
 ## Supported compilers
 
 Flix **0.60.0, 0.61.0, 0.65.0, 0.66.1, 0.67.1, 0.67.2, 0.68.0, 0.75.2, 0.75.3, 0.76.0, 0.76.1, 0.77.0, 0.78.0, and 0.79.0**
-are verified. Flix 0.60.0 uses `Flix0600Adapter`; Flix 0.61.0 and 0.65.0 use
+are verified. Verified means that the bytecode-derived gate accepts the release and that a packaged
+integration checkpoint for it passes in `scripts/test-compiler-compatibility.sh`; semantic fixture,
+span and corpus evidence differs per release, see the
+[matrix](docs/compiler-compatibility/README.md). Flix 0.60.0 uses `Flix0600Adapter`; Flix 0.61.0 and 0.65.0 use
 `Flix0610Adapter`; Flix 0.66.1 and 0.67.1 use
 `Flix0661Adapter`; Flix 0.67.2 uses `Flix0672Adapter`; Flix 0.68.0 and 0.75.2 use
 `Flix0680Adapter`; Flix 0.75.3 and 0.76.0 use `Flix0753Adapter`; and Flix 0.76.1 through 0.79.0 use

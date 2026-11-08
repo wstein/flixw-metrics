@@ -2,8 +2,13 @@
 
 The adapter binds to compiler internals that do not promise ABI or semantic stability. This
 directory records the evidence behind each supported Flix release. A passing linkage gate is
-necessary but not sufficient: every investigation also compiles the adapter against the release,
-runs semantic and packaged-process regressions, and compares the calibration corpus.
+necessary but not sufficient.
+
+**Verified** means two things for a release: the bytecode-derived gate accepts it, and a packaged
+integration checkpoint for it passes in `scripts/test-compiler-compatibility.sh`. Both are required
+for an entry in `plugin/resources/dev/flixw/metrics/verified-flix-versions.txt`. Evidence beyond
+that differs per release (source build, semantic fixture, span comparison, corpus) and is what the
+tables below record; a column that says "no" or "not rerun" is a gap, not a pass.
 
 | Flix | Adapter family | Source build | ABI gate | Semantic fixture | Integration | Corpus | Record |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | --- |
