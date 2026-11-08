@@ -378,19 +378,16 @@ download a compiler, choose one, or run anything else.
 
 ## Supported compilers
 
-Flix **0.60.0, 0.61.0, 0.65.0, 0.66.1, 0.67.1, 0.67.2, 0.68.0, 0.75.2, 0.75.3, 0.76.0, 0.76.1, 0.77.0, 0.78.0, and 0.79.0**
-are verified. Verified means that the bytecode-derived gate accepts the release and that a packaged
-integration checkpoint for it passes in `scripts/test-compiler-compatibility.sh`; semantic fixture,
-span and corpus evidence differs per release, see the
-[matrix](docs/compiler-compatibility/README.md). Flix 0.60.0 uses `Flix0600Adapter`; Flix 0.61.0 and
-0.65.0 use `Flix0610Adapter`; Flix 0.66.1 and 0.67.1 use
-`Flix0661Adapter`; Flix 0.67.2 uses `Flix0672Adapter`; Flix 0.68.0 and 0.75.2 use
-`Flix0680Adapter`; Flix 0.75.3 and 0.76.0 use `Flix0753Adapter`; and Flix 0.76.1 through 0.79.0 use
-`Flix0761Adapter`. Each name records the oldest
-verified release in that linkage family. Each family is compiled in an isolated `adapter.flixNNNN` Mill
-module against only its own compiler generation; the adapters share the
-`dev.flixw.metrics.adapter` package and ship together in `plugin.jar`. The compiler-neutral
-`plugin` module has no Flix jar on its compile class path.
+Flix 0.60.0 through 0.79.0 is verified, with gaps: the releases are listed in the
+[compatibility matrix](docs/compiler-compatibility/README.md), whose machine-readable source is
+`plugin/resources/dev/flixw/metrics/verified-flix-versions.txt`. Verified means that the
+bytecode-derived gate accepts the release and that a packaged integration checkpoint for it passes in
+`scripts/test-compiler-compatibility.sh`; semantic fixture, span and corpus evidence differs per
+release, see the matrix. The adapter families and the releases each one
+serves are listed in [docs/COMPILER-SDK.md](docs/COMPILER-SDK.md). Each family is compiled in an
+isolated `adapter.flixNNNN` Mill module against the oldest verified release of that family; the
+adapters share the `dev.flixw.metrics.adapter` package and ship together in `plugin.jar`. The
+compiler-neutral `plugin` module has no Flix jar on its compile class path.
 
 The first plugin release that lists a Flix release as verified (from `docs/releases/` and the tagged
 sources):
@@ -411,8 +408,8 @@ head, not 0.6.0.
 The plugin's own version follows its independent SemVer lifecycle because analyzer behavior,
 rules, formats, and schemas do not share the compiler's release cadence. The engine reads the
 compiler's internal AST, which carries no
-compatibility promise, so it is compiled against one release and checks what is actually in
-front of it before running:
+compatibility promise, so each adapter family is compiled against the oldest release of its family
+and the plugin checks what is actually in front of it before running:
 
 ```console
 $ ./flixw metrics capabilities
@@ -432,16 +429,15 @@ boundary itself is described in [docs/COMPILER-SDK.md](docs/COMPILER-SDK.md).
 
 The full test suite locks the lower boundary by requiring 0.59.0 to fail the derived AST gate. It
 also locks the independently broken 0.66.0 Java-runtime artifact and runs packaged integration
-with 0.60.0, 0.61.0, 0.65.0, 0.66.1, 0.67.1, 0.67.2, 0.68.0, 0.75.2, 0.75.3,
-0.76.0, 0.76.1, 0.77.0, 0.78.0, and 0.79.0.
-A release not named above may still link, but it is unsupported until its own compatibility
-investigation is recorded. A newer release that links is loaded with one warning line on stderr saying it has no
-checkpoint, and one that does not link is refused with exit 2 and a list of the missing members; see
-[docs/COMPILER-SDK.md](docs/COMPILER-SDK.md). A fork whose base version is verified is not warned
-about, and its behavior is not checked: flixw drops any `+...` build metadata (such as `+fork.x`)
-from the cached jar name and the plugin reads only that name. flixw passes `FLIXW_COMPILER_VERSION`,
-`FLIXW_COMPILER_REPO` (which identifies a fork) and `FLIXW_COMPILER_SHA256` for every pin; the plugin
-does not read them yet. Detecting a fork is follow-up work in [#24](https://github.com/wstein/flixw-metrics/issues/24).
+with every verified release.
+A release that is not verified may still link, but it is unsupported until its own compatibility
+investigation is recorded. If it links, it is loaded with one warning line on stderr saying it has no
+checkpoint, whether it is older or newer than the verified releases and whether it is a prerelease, a
+`FLIX_JAR` override or a `flix.jar` without a version in its name; if it does not link, it is refused
+with exit 2 and a list of the missing members. [Other compilers](docs/COMPILER-SDK.md#other-compilers)
+lists every case with its exit code and the exact warning text. A fork whose base version is
+verified is not warned about, and its behavior is not checked; detecting a fork is follow-up work in
+[#24](https://github.com/wstein/flixw-metrics/issues/24).
 Flix 0.79.0 moves the start line of a documented
 definition to its `def` line; `Flix0761Adapter` restores the earlier start, see
 [the Flix 0.79.0 record](docs/compiler-compatibility/flix-0.79.0.md).

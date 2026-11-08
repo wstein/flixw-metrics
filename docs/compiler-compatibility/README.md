@@ -89,9 +89,8 @@ plugin itself retains an independent SemVer because its reporting behavior evolv
 
 `scripts/test-compiler-compatibility.sh` enforces the current lower boundary with official release
 artifacts: 0.59.0 must fail the AST gate and 0.66.0 must fail compiler-runtime inspection, while
-0.60.0, 0.61.0, 0.65.0, 0.66.1, 0.67.1, 0.67.2, 0.68.0, 0.75.2, 0.75.3, 0.76.0, 0.76.1, 0.77.0, 0.78.0, and 0.79.0 must pass packaged
-integration. Intermediate releases may satisfy the structural gate, but remain unverified
-until they receive their own row and investigation.
+every release in the table above must pass packaged integration. Intermediate releases may satisfy
+the structural gate, but remain unverified until they receive their own row and investigation.
 
 For a new release, copy [the template](template.md), complete every applicable check, add the
 release to `plugin/resources/dev/flixw/metrics/verified-flix-versions.txt` together with its `fetch`
