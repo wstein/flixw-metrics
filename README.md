@@ -382,8 +382,8 @@ Flix **0.60.0, 0.61.0, 0.65.0, 0.66.1, 0.67.1, 0.67.2, 0.68.0, 0.75.2, 0.75.3, 0
 are verified. Verified means that the bytecode-derived gate accepts the release and that a packaged
 integration checkpoint for it passes in `scripts/test-compiler-compatibility.sh`; semantic fixture,
 span and corpus evidence differs per release, see the
-[matrix](docs/compiler-compatibility/README.md). Flix 0.60.0 uses `Flix0600Adapter`; Flix 0.61.0 and 0.65.0 use
-`Flix0610Adapter`; Flix 0.66.1 and 0.67.1 use
+[matrix](docs/compiler-compatibility/README.md). Flix 0.60.0 uses `Flix0600Adapter`; Flix 0.61.0 and
+0.65.0 use `Flix0610Adapter`; Flix 0.66.1 and 0.67.1 use
 `Flix0661Adapter`; Flix 0.67.2 uses `Flix0672Adapter`; Flix 0.68.0 and 0.75.2 use
 `Flix0680Adapter`; Flix 0.75.3 and 0.76.0 use `Flix0753Adapter`; and Flix 0.76.1 through 0.79.0 use
 `Flix0761Adapter`. Each name records the oldest
@@ -404,7 +404,7 @@ sources):
 
 Plugin 0.2.0 already ran on Flix 0.75.3, its pin, but listed only "0.75.x". Plugin 0.6.0 does not
 list Flix 0.78.0 or 0.79.0. It has no unknown-release warning and no `Flix0761Adapter` position
-compensation for 0.79.0, and how it behaves on those releases has not been run. Everything below
+compensation for 0.79.0, and it has not been tested on those releases. Everything below
 that mentions 0.78.0, 0.79.0, the warning or the position compensation describes the repository
 head, not 0.6.0.
 
@@ -438,10 +438,10 @@ A release not named above may still link, but it is unsupported until its own co
 investigation is recorded. A newer release that links is loaded with one warning line on stderr saying it has no
 checkpoint, and one that does not link is refused with exit 2 and a list of the missing members; see
 [docs/COMPILER-SDK.md](docs/COMPILER-SDK.md). A fork whose base version is verified is not warned
-about, and its behaviour is not checked: flixw drops the `+fork...` suffix from the cached jar name,
-the plugin reads only that name, and the fork variables flixw passes (`FLIXW_COMPILER_VERSION` with
-`+fork`, `FLIXW_COMPILER_REPO`, `FLIXW_COMPILER_SHA256`) are not read yet; detecting a fork is
-follow-up work in [#24](https://github.com/wstein/flixw-metrics/issues/24).
+about, and its behavior is not checked: flixw drops any `+...` build metadata (such as `+fork.x`)
+from the cached jar name and the plugin reads only that name. flixw passes `FLIXW_COMPILER_VERSION`,
+`FLIXW_COMPILER_REPO` (which identifies a fork) and `FLIXW_COMPILER_SHA256` for every pin; the plugin
+does not read them yet. Detecting a fork is follow-up work in [#24](https://github.com/wstein/flixw-metrics/issues/24).
 Flix 0.79.0 moves the start line of a documented
 definition to its `def` line; `Flix0761Adapter` restores the earlier start, see
 [the Flix 0.79.0 record](docs/compiler-compatibility/flix-0.79.0.md).

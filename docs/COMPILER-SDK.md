@@ -132,14 +132,15 @@ Flix 0.80.0 does not exist at the time of writing, so this is checked by
   the file name is the one place it looks for a version. A name without a version, such as
   `flix.jar`, gets the same single warning saying the version cannot be read. A jar renamed to claim
   another release is judged by that name; its contents are still judged by the gate.
-- A fork whose base version is verified is not warned about, and its behaviour is not checked. flixw
-  passes the pinned version with its build metadata (`0.77.0+fork.x`) in `FLIXW_COMPILER_VERSION`, but
-  drops the `+fork...` suffix when it names the cached jar, so the plugin sees `flix-0.77.0-<sha256>.jar`
-  and counts it as 0.77.0. The linkage gate checks only bytecode contracts, and flixw's own contract
-  says a fork is not evidence of compatibility with the stock compiler. Detecting a fork is follow-up
-  work in wstein/flixw-metrics#24. It needs no file-name convention from flixw: the version (with
-  `+fork`), the repository and the pinned digest are already in the ABI v1 environment. The text of
-  #24 still proposes comparing the digest in the file name.
+- A fork whose base version is verified is not warned about, and its behavior is not checked. flixw
+  pins a fork by repository and an optional build-metadata suffix (`0.77.0+fork.x`). It passes
+  `FLIXW_COMPILER_VERSION` (with the suffix), `FLIXW_COMPILER_REPO` (which identifies a fork) and
+  `FLIXW_COMPILER_SHA256` for every pin, but drops any `+...` suffix when it names the cached jar, so
+  the plugin sees `flix-0.77.0-<sha256>.jar` and counts it as 0.77.0. The linkage gate checks only
+  bytecode contracts, and flixw's own contract says a fork is not evidence of compatibility with the
+  stock compiler. Detecting a fork is follow-up work in wstein/flixw-metrics#24. It needs no file-name
+  convention from flixw: version, repository and pinned digest are already in the ABI v1 environment.
+  The text of #24 still proposes comparing the digest in the file name.
 - A compiler that satisfies none is refused before measurement with exit 2 and
   `metrics: the pinned compiler has no supported engine API`, followed by the jar path and the
   missing members of the closest contract. No warning and no version appear in that message.
