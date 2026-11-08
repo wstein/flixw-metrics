@@ -19,13 +19,23 @@ Marker: UNKNOWN means not verified from a file or a run for this document.
 | Read the flixw context: `FLIXW_ABI_VERSION` must be `1`, `FLIXW_PROJECT_ROOT`, `FLIXW_COMPILER_JAR`, `FLIXW_JAVA_HOME`, optional `FLIXW_PLUGIN_CACHE` | `plugin/src/dev/flixw/metrics/Main.java` L419-438 (`Context`), L440-443 (`Usage`) | `Context` record and `Usage` exception |
 | Two-phase launch: outer JVM, bridge JVM with `-Xss64m` and `-cp plugin.jar:flix.jar` | `Main.java` L33-95, L243-275 (`spawnBridge`, `bridgeCommand`) | Launcher parameterised by main class and arguments. Reason for two JVMs: `docs/COMPILER-SDK.md` L116-141 |
 | Inspection class loader (platform-parented `URLClassLoader`, no class initialisation) | `Main.java` L234-241 | `kit` helper |
-| ABI check driver: compare every adapter contract with the pinned jar, keep the contract with fewest missing references, add `dev.flix.runtime.Global` | `plugin/src/dev/flixw/metrics/CompilerCapabilities.java` L27-43, L45-52 | Design proposal, direction in section 7: the check needs `AdapterAbi.contracts()`, which belongs to `compiler`, so this row moves in step 2 and lives in `compiler`, not in `kit` |
+| ABI check driver: compare every adapter contract with the pinned jar, keep the contract with fewest missing references, add `dev.flix.runtime.Global` | `plugin/src/dev/flixw/metrics/CompilerCapabilities.java` L27-43, L45-52 | Design proposal, direction in section 7: the check needs `AdapterAbi.contracts()`, which belongs to `compiler`, so this row moves in step 2 and lives in `compiler`, not in `kit`. This differs from issue #21 (Goal) and flixw-mutate#2, which list the ABI check under `kit`; the issue texts need adjusting after the owner decides |
 | `capabilities` command JSON (`compilerJar`, `hasFlixApi`, `hasEngineApi`, `missing`) | `CompilerCapabilities.java` L54-70 | `kit`. `hasNativeMetrics` (L42, probes `ca.uwaterloo.flix.tools.Metrics$`) is metrics-specific and stays in the plugin |
 | Cache key and entry store: SHA-256 over plugin version, plugin artifact tree, compiler jar, `flix.toml`, sorted project-relative source paths with digests; atomic write; every failure is a miss | `plugin/src/dev/flixw/metrics/ResultCache.java` L60-87 (key), L89-123 (read, write), L125-155 (hashing) | Keyed store. The payload codec (`Wire`, version `Wire.java` L45) stays in the plugin. Whether the key also takes the SDK version and the adapter family is question 6 |
-| Stable-input retry around measurement | `plugin/src/dev/flixw/metrics/StableInputs.java` L10-30 | Design proposal: `Work` throws `CompilerModel.ModelFailure` (import L7, `Work` L20), a `compiler` type, as do the `catch` blocks in `Main.java` L87-90 and L138-141. The row moves with `CompilerModel` in step 2, unless `kit` defines a generic failure type that `ModelFailure` extends (question 11) |
+| Stable-input retry around measurement | `plugin/src/dev/flixw/metrics/StableInputs.java` L10-30 | Design proposal, not decided: it calls `Metrics.projectFiles` (L28, L31; defined `Metrics.java` L621), a plugin class, and `Work` throws `CompilerModel.ModelFailure` (import L7, `Work` L20), a `compiler` type. Either it stays in the plugin, or the source lister is passed as a parameter and the row moves with `CompilerModel` in step 2 (question 11). `Main.java` L87-90 and L138-141 catch `ModelFailure` and follow the same choice |
 | Provenance: commit, dirty flag, timestamp, bounded `git` call | `plugin/src/dev/flixw/metrics/Provenance.java` L18-86 | Header record and git probe. Rendering (`Formats.java` L50-58, L342; `Metrics.java` L359) stays in the plugin |
 | Atomic report output (`--output`) | `Main.java` L166-190 | `kit` |
 | Exit codes: `1` when `--fail-on` or `--fail-on-new` crosses (L83, L129); `2` for usage, configuration, compiler or model failure, and `LinkageError` (L87-94, L130-145) | `Main.java` | One documented table in `kit`. `1` stays a plugin policy decision; `2` is shell-level |
+
+Couplings to plugin classes (grep on `origin/main` over the classes of this table, the adapters and
+`sdk/`; every occurrence): `StableInputs.java` L28 and L31 call `Metrics.projectFiles`;
+`Provenance.java` L22-27 call `SourceMetrics.Smell.quote`; `ResultCache.java` L62 and
+`Main.java` L258 and L268 use `Main.class` to locate the plugin artifact and to relaunch it;
+`CompilerCapabilities.java` L42 probes `tools.Metrics$` (above); all seven adapters import
+`DatalogGraph` (question 2). References to `Main.Context` and `Main.Usage` (`StableInputs.java`
+L15, L25, L35; `CompilerCapabilities.java` L29, L54; `ResultCache.java` L49, L60, L69; `Provenance.java` L30)
+disappear when `Context` and `Usage` move to `kit`. `sdk/*.java` references no plugin class. Each
+coupling needs a parameter, an interface or a stay-in-plugin decision; none is decided here.
 
 Not in `kit`: option parsing (`Main.java` L282-373), because the options are plugin-specific.
 
@@ -151,13 +161,13 @@ mechanically.
 | --- | --- | --- | --- |
 | 0 | #20 | This document | Owner decision |
 | 0a | owner | Repository `wstein/flixw-compiler-sdk` exists (blocker of #20) | Owner |
-| 1 | #21 | Extract `kit` (section 1) without the ABI driver and `StableInputs`, which depend on `compiler` types (direction below). Metrics consumes `kit` as an embedded, pinned release asset | Existing tests unchanged. Reports on the calibration corpus equal before and after, compared as `jq -S 'del(.provenance)'` (the pattern of `scripts/test-compiler-compatibility.sh` L205; `provenance.measuredAt` differs on every run, so byte equality is not a gate) |
-| 2 | #22 | Move adapters, `AdapterAbi`, `Adapters`, `CompilerModel`, the ABI driver, `StableInputs`, `fetch-flix.sh`, compatibility documents and verification CI into `compiler`; introduce `versions.json` | Existing adapter tests green and unedited apart from package renames. The conformance suite (section 6) runs in the SDK repository for all seven families. `scripts/test-compiler-compatibility.sh` is split (below); both halves are green against the same version list |
+| 1 | #21 | Extract `kit` (section 1) without the ABI driver and `StableInputs`, which depend on `compiler` or plugin types (direction and couplings below). Metrics consumes `kit` as an embedded, pinned release asset | Existing tests unchanged. Reports on the calibration corpus equal before and after, compared as `jq -S 'del(.provenance)'` (the pattern of `scripts/test-compiler-compatibility.sh` L205; `provenance.measuredAt` differs on every run, so byte equality is not a gate) |
+| 2 | #22 | Move adapters, `AdapterAbi`, `Adapters`, `CompilerModel`, the ABI driver, `fetch-flix.sh`, compatibility documents and verification CI into `compiler`; introduce `versions.json` | Existing adapter tests green and unedited apart from package renames. The conformance suite (section 6) runs in the SDK repository for all seven families. `scripts/test-compiler-compatibility.sh` is split (below); both halves are green against the same version list |
 | 3 | #23 | Capability-based selection and the new header fields | New tests first (failing against step 2), cache key change documented, schema version raised |
 | 4 | none | `ProgramLoader`, `TestRunner` once mutate needs them; `SolverHook` after the spike. Also after the spike, from DESIGN.md L97-101 and L124: a run-time smoke test in the SDK that metrics can reuse, declared-member lookup for hook targets (`getDeclaredMethods`, paired with the smoke test), and a CI matrix over the version data that runs the smoke test | Not before the spike |
 
 Dependency direction (design proposal): `compiler` depends on `kit`; `kit` knows neither `compiler`
-nor Flix. Hence the ABI driver, `StableInputs` and the `ModelFailure` handling are not in step 1.
+nor Flix. Hence the ABI driver is not in step 1, and `StableInputs` and the `ModelFailure` handling follow question 11.
 The alternative, a `kit` that defines the contract and failure types and `compiler` that fills them,
 is question 11.
 
@@ -196,7 +206,9 @@ moves with it.
 10. Shell-level exit codes: `kit` owns `2`; whether mutate's "compiler incompatible" also uses `2`
     (DESIGN.md L78) is consistent with `Main.java` L87-94 but is not tested.
 11. Dependency direction between `kit` and `compiler` (section 7): `compiler` depends on `kit` with
-    the ABI driver in `compiler` (proposal), or `kit` defines the contract and failure types.
+    the ABI driver in `compiler` (proposal), or `kit` defines the contract and failure types. Also
+    whether `StableInputs` stays in the plugin or takes the source lister as a parameter, and how
+    the other couplings listed after the table in section 1 are cut.
 
 ## Appendix: `origin/main` and `refactor/adapter-modules`
 
