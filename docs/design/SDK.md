@@ -38,7 +38,7 @@ Marker: UNKNOWN means not verified from a file or a run for this document.
 | Read the flixw context: `FLIXW_ABI_VERSION` must be `1`, `FLIXW_PROJECT_ROOT`, `FLIXW_COMPILER_JAR`, `FLIXW_JAVA_HOME`, optional `FLIXW_PLUGIN_CACHE` | `plugin/src/dev/flixw/metrics/Main.java` L421-440 (`Context`), L442-445 (`Usage`) | `Context` record and `Usage` exception |
 | Two-phase launch: outer JVM, bridge JVM with `-Xss64m` and `-cp plugin.jar:flix.jar` | `Main.java` L33-97, L245-277 (`spawnBridge`, `bridgeCommand`) | Launcher parameterised by main class and arguments. Reason for two JVMs: `docs/COMPILER-SDK.md` L155-180 |
 | Inspection class loader (platform-parented `URLClassLoader`, no class initialisation) | `Main.java` L236-243 | `kit` helper |
-| ABI check driver: compare every adapter contract with the pinned jar, keep the contract with fewest missing references, add `dev.flix.runtime.Global` | `plugin/src/dev/flixw/metrics/CompilerCapabilities.java` L27-43, L45-52 | Decided (Q11): the check needs `AdapterAbi.contracts()`, which belongs to `flix-bridge`, so this row moves in step 2 and lives in `flix-bridge`, not in `kit`. Issue #21 (Goal) and flixw-mutate#2 list the ABI check under `kit`; the owner decided the deviation and the decision supersedes both texts. The issue texts themselves are not changed by this document |
+| ABI check driver (`CompilerCapabilities`; the contracts come from `AdapterAbi`, section 2): compare every adapter contract with the pinned jar, keep the contract with fewest missing references, add `dev.flix.runtime.Global` | `plugin/src/dev/flixw/metrics/CompilerCapabilities.java` L27-43, L45-52 | Decided (Q11): the check needs `AdapterAbi.contracts()`, which belongs to `flix-bridge`, so this row moves in step 2 and lives in `flix-bridge`, not in `kit`. The first version of #21 (Goal) and flixw-mutate#2 listed the ABI check under `kit`; the owner decided the deviation, and both issue texts now name `flix-bridge` |
 | `capabilities` command JSON (`compilerJar`, `hasFlixApi`, `hasEngineApi`, `missing`) | `CompilerCapabilities.java` L54-70 | `kit`. `hasNativeMetrics` (L42, probes `ca.uwaterloo.flix.tools.Metrics$`) is metrics-specific and stays in the plugin |
 | Cache key and entry store: SHA-256 over plugin version, plugin artifact tree, compiler jar, `flix.toml`, sorted project-relative source paths with digests; atomic write; every failure is a miss | `plugin/src/dev/flixw/metrics/ResultCache.java` L60-87 (key), L89-123 (read, write), L125-155 (hashing) | Keyed store. The payload codec (`Wire`, version `Wire.java` L45) stays in the plugin. Decided (Q6): the SDK version and the adapter family join the key as explicit fields |
 | Stable-input retry around measurement | `plugin/src/dev/flixw/metrics/StableInputs.java` L10-30 | Decided (Q11): stays in the metrics plugin and does not move. It calls `Metrics.projectFiles` (L28, L31; defined `Metrics.java` L621), a plugin class, and `Work` throws `CompilerModel.ModelFailure` (import L7, `Work` L20), a `flix-bridge` type; the plugin uses both modules, so no parameter is needed. `Main.java` L89-92 and L140-143 catch `ModelFailure` and stay in the plugin as well |
@@ -192,13 +192,13 @@ mechanically.
 | --- | --- | --- | --- |
 | 0 | #20 | This document | Owner decisions recorded in section 8 |
 | 0a | owner | Repository `wstein/flixw-compiler-sdk` exists (done 2026-11-08, one empty first commit) | Owner |
-| 1 | #21 | Extract `kit` (section 1) without the ABI driver and `StableInputs`, which depend on `flix-bridge` or plugin types (direction and couplings below). Metrics consumes `kit` as an embedded, pinned release asset | Existing tests unchanged. Reports on the calibration corpus equal before and after, compared as `jq -S 'del(.provenance)'` (the pattern of `scripts/test-compiler-compatibility.sh` L226; `provenance.measuredAt` differs on every run, so byte equality is not a gate) |
-| 2 | #22 | Move adapters, `DatalogGraph`, `AdapterAbi`, `Adapters`, `CompilerModel`, the ABI driver, `fetch-flix.sh`, compatibility documents and verification CI into `flix-bridge`; introduce `versions.json` | Existing adapter tests green and unedited apart from package renames. The conformance suite (section 6) runs in the SDK repository for all seven families, with an example plugin for the packaged check (Q8) and a test of the shared exit codes (Q10). `scripts/test-compiler-compatibility.sh` is split (below); both halves are green against the same version list |
+| 1 | #21 | Extract `kit` (section 1) without the ABI check driver and `StableInputs`, which depend on `flix-bridge` or plugin types (direction and couplings below). Metrics consumes `kit` as an embedded, pinned release asset | Existing tests unchanged. Reports on the calibration corpus equal before and after, compared as `jq -S 'del(.provenance)'` (the pattern of `scripts/test-compiler-compatibility.sh` L226; `provenance.measuredAt` differs on every run, so byte equality is not a gate) |
+| 2 | #22 | Move adapters, `DatalogGraph`, `AdapterAbi`, `Adapters`, `CompilerModel`, `CompilerCapabilities` (the ABI check driver), `fetch-flix.sh`, compatibility documents and verification CI into `flix-bridge`; introduce `versions.json` | Existing adapter tests green and unedited apart from package renames. The conformance suite (section 6) runs in the SDK repository for all seven families, with an example plugin for the packaged check (Q8) and a test of the shared exit codes (Q10). `scripts/test-compiler-compatibility.sh` is split (below); both halves are green against the same version list |
 | 3 | #23 | Capability-based selection and the new header fields | New tests first (failing against step 2), cache key change documented (explicit SDK version and family fields, Q6; `flixVersion` read from `FLIXW_COMPILER_VERSION`, Q7), schema version raised |
 | 4 | none | `ProgramLoader`, `TestRunner` once mutate needs them; `SolverHook` after the spike. Also after the spike, from DESIGN.md L97-101 and L124: a run-time smoke test in the SDK that metrics can reuse, declared-member lookup for hook targets (`getDeclaredMethods`, paired with the smoke test), and a CI matrix over the version data that runs the smoke test | Not before the spike |
 
 Dependency direction (decided, Q11): `flix-bridge` depends on `kit`; `kit` knows neither `flix-bridge`
-nor Flix. Hence the ABI driver is not in step 1 but in `flix-bridge`, and `StableInputs` and the
+nor Flix. Hence the ABI check driver is not in step 1 but in `flix-bridge`, and `StableInputs` and the
 `ModelFailure` handling stay in the plugin.
 
 `scripts/test-compiler-compatibility.sh` needs `dist/plugin.jar` (L94) and `PluginIntegrationTest`
@@ -236,9 +236,11 @@ are those of the questions in the first version of this document.
 10. Q10, exit codes: shared, owned by `kit`; the test of the codes joins the conformance suite.
     UNKNOWN: whether mutate's "compiler incompatible" (DESIGN.md L78) is covered by `2`; metrics
     uses `2` at `Main.java` L89-96; `scripts/test-unknown-flix.sh` L154 checks exit 2 for a compiler that does not link, whether mutate has such a test is UNKNOWN.
-11. Q11, direction: `flix-bridge` depends on `kit`; the ABI driver lives in `flix-bridge`;
-    `StableInputs` stays in the metrics plugin. This deviates from #21 (Goal) and flixw-mutate#2,
-    which name the ABI check under `kit`; the owner decided the deviation.
+11. Q11, direction: `flix-bridge` depends on `kit`; the ABI driver (see below) lives in `flix-bridge`;
+    `StableInputs` stays in the metrics plugin. The first versions of #21 (Goal) and flixw-mutate#2
+    named the ABI check under `kit`; the owner decided the deviation, and both issues were updated.
+    "ABI driver" here means `CompilerCapabilities` (contract check, L27-52) together with
+    `AdapterAbi` (contract derivation, L19-50); both move to `flix-bridge`.
 
 Still UNKNOWN after these decisions:
 
