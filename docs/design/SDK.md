@@ -23,7 +23,7 @@ Marker: UNKNOWN means not verified from a file or a run for this document.
 | `capabilities` command JSON (`compilerJar`, `hasFlixApi`, `hasEngineApi`, `missing`) | `CompilerCapabilities.java` L54-70 | `kit`. `hasNativeMetrics` (L42, probes `ca.uwaterloo.flix.tools.Metrics$`) is metrics-specific and stays in the plugin |
 | Cache key and entry store: SHA-256 over plugin version, plugin artifact tree, compiler jar, `flix.toml`, sorted project-relative source paths with digests; atomic write; every failure is a miss | `plugin/src/dev/flixw/metrics/ResultCache.java` L60-87 (key), L89-123 (read, write), L125-155 (hashing) | Keyed store. The payload codec (`Wire`, version `Wire.java` L45) stays in the plugin. Whether the key also takes the SDK version and the adapter family is question 6 |
 | Stable-input retry around measurement | `plugin/src/dev/flixw/metrics/StableInputs.java` L10-30 | Design proposal, not decided: it calls `Metrics.projectFiles` (L28, L31; defined `Metrics.java` L621), a plugin class, and `Work` throws `CompilerModel.ModelFailure` (import L7, `Work` L20), a `compiler` type. Either it stays in the plugin, or the source lister is passed as a parameter and the row moves with `CompilerModel` in step 2 (question 11). `Main.java` L87-90 and L138-141 catch `ModelFailure` and follow the same choice |
-| Provenance: commit, dirty flag, timestamp, bounded `git` call | `plugin/src/dev/flixw/metrics/Provenance.java` L18-86 | Header record and git probe. Rendering (`Formats.java` L50-58, L342; `Metrics.java` L359) stays in the plugin |
+| Provenance: commit, dirty flag, timestamp, bounded `git` call | `plugin/src/dev/flixw/metrics/Provenance.java` L18-86 | Header record and git probe. Rendering (`Formats.java` L50-57, L342; `Metrics.java` L359) stays in the plugin |
 | Atomic report output (`--output`) | `Main.java` L166-190 | `kit` |
 | Exit codes: `1` when `--fail-on` or `--fail-on-new` crosses (L83, L129); `2` for usage, configuration, compiler or model failure, and `LinkageError` (L87-94, L130-145) | `Main.java` | One documented table in `kit`. `1` stays a plugin policy decision; `2` is shell-level |
 
@@ -45,13 +45,13 @@ Not in `kit`: option parsing (`Main.java` L282-373), because the options are plu
 | --- | --- | --- |
 | Seven Scala adapters, one per ABI family: `Flix0600`, `Flix0610`, `Flix0661`, `Flix0672`, `Flix0680`, `Flix0753`, `Flix0761` (581-652 lines each, 4151 in total) | `adapter/flixNNNN/src/dev/flixw/metrics/adapter/FlixNNNNAdapter.scala` | Same files; package renamed (see section 8, question 1) |
 | `FlixAdapter` build trait: one module per adapter, compiled against the oldest compiler of its family, compiler jar on `compileClasspath` only | `build.mill` L8-54 | Build file of `compiler` |
-| `AdapterAbi`: reads each adapter's class files including nested `$` classes, collects `ca/uwaterloo/flix/*` references, resolves them with `Class.forName(name, false, loader)` and an exact descriptor | `plugin/src/dev/flixw/metrics/sdk/AdapterAbi.java` L19-55 | `compiler` |
+| `AdapterAbi`: reads each adapter's class files including nested `$` classes, collects `ca/uwaterloo/flix/*` references, resolves them with `Class.forName(name, false, loader)` and an exact descriptor | `plugin/src/dev/flixw/metrics/sdk/AdapterAbi.java` L19-50 | `compiler` |
 | `Adapters`: registry `KNOWN` (newest first) and `resolve()` | `plugin/src/dev/flixw/metrics/sdk/Adapters.java` L28-35 (`KNOWN`), L38-53 (`resolve`), L56-58 (`known`) | `compiler`; `KNOWN` is replaced by the version data file |
 | Stable model `CompilerModel` and its records | `plugin/src/dev/flixw/metrics/sdk/CompilerModel.java` L33-61 (`SDK_VERSION = 1` at L50, `measure` at L61), records from L114 (`DefInfo`; `Model` at L370), `ModelFailure` L396 | `compiler`, as the `Metrics` capability (section 4). Its records are metrics-shaped (definitions, effects, Datalog, lines) |
-| Compiler jars with SHA-256: the seven adapters compile against 0.76.1, 0.75.3, 0.68.0, 0.67.2, 0.66.1, 0.61.0, 0.60.0 (`build.mill` L31-49); 0.77.0 (`flix.jar`) and 0.76.0 are fetched for tests and the current pin, and no adapter compiles against them. The jars are not tracked (`.gitignore` ignores `lib/`) | `scripts/fetch-flix.sh` L12-37 (digests), L63-71 (fetch calls) | Script and digests in `compiler` |
+| Compiler jars with SHA-256: the seven adapters compile against 0.76.1, 0.75.3, 0.68.0, 0.67.2, 0.66.1, 0.61.0, 0.60.0 (`build.mill` L31-49); 0.77.0 (`flix.jar`) and 0.76.0 are fetched for tests and the current pin, and no adapter compiles against them. The jars are not tracked (`.gitignore` ignores `lib/`) | `scripts/fetch-flix.sh` L12-29 (digests), L63-71 (fetch calls) | Script and digests in `compiler` |
 | Compatibility documents: table of 14 verified releases and the 0.59.0 and 0.66.0 rejections | `docs/compiler-compatibility/README.md`, `flix-*.md`, `template.md`; `docs/COMPILER-SDK.md` L1-114 (contract, linkage-based selection, ABI gate) | `compiler`. Metrics-specific sections of `docs/COMPILER-SDK.md` (L143 onward, "What is measured") stay |
 | Verification CI: official release jars must pass the ABI gate and packaged integration; 0.59.0 and 0.66.0 must fail | `scripts/test-compiler-compatibility.sh` L76-102, L144-150, L166-179; `scripts/check-lint-adapters.sh`; `.github/workflows/quality.yml` | `compiler`. The packaged integration step runs a plugin; the SDK needs a fixture plugin or the conformance suite (section 6) |
-| Version data as a file | Spread over five places today: `Adapters.KNOWN`, `build.mill` L31-49, `scripts/fetch-flix.sh` L12-37, `docs/compiler-compatibility/README.md` table, the version loops in `scripts/test-compiler-compatibility.sh` (L144-150, L166-179); also prose in `AGENTS.md` | One data file; schema below |
+| Version data as a file | Spread over five places today: `Adapters.KNOWN`, `build.mill` L31-49, `scripts/fetch-flix.sh` L12-29, `docs/compiler-compatibility/README.md` table, the version loops in `scripts/test-compiler-compatibility.sh` (L144-150, L166-179); also prose in `AGENTS.md` | One data file; schema below |
 
 Proposed data file `compiler/versions.json` (format is UNKNOWN until decided; JSON is proposed
 because `jq` is already a build requirement, `CONTRIBUTING.md`):
@@ -91,11 +91,11 @@ usable for one capability and not for another.
 | --- | --- | --- |
 | `Metrics` | Exists | `CompilerModel.measure(Path)` returns `Model` (`CompilerModel.java` L61). Seven adapters implement it |
 | `ProgramLoader` | Required by mutate; not in the code | DESIGN.md L118-124 lists "program loading" in the compiler layer. Metrics loads a project through `Bootstrap.bootstrap` (`COMPILER-SDK.md` L98) and discards the compiled program. Interface shape UNKNOWN |
-| `TestRunner` | Required by mutate; not in the code | DESIGN.md L146-149 asks whether single tests run through internal `Tester` classes or whole suites per mutant. Open |
+| `TestRunner` | Required by mutate; not in the code | DESIGN.md L148 asks whether single tests run through internal `Tester` classes or whole suites per mutant. Open |
 | `SolverHook` | Open until the spike wstein/flixw-mutate#1 | Bytecode rewrite or patched library source is UNKNOWN (chartroom note, "Open"; DESIGN.md L59-68). No interface is defined here |
 
 Consequence for the code: `AdapterAbi.contract(name)` derives one contract per adapter class
-(`AdapterAbi.java` L21-22, L41-45; `Adapters.java` L41-42). A per-capability check needs one class per
+(`AdapterAbi.java` L21-22, L41-44; `Adapters.java` L41-42). A per-capability check needs one class per
 capability and family, so each class has its own bytecode-derived contract. This is a proposal;
 section 8 lists it as a question.
 
