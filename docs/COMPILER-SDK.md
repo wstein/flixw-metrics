@@ -127,14 +127,19 @@ Flix 0.80.0 does not exist at the time of writing, so this is checked by
   code, stdout and the JSON, Markdown, SARIF and text content are unchanged; the report carries no
   verified/unverified marker.
 - The release is read from the compiler jar's file name (`flix-<version>-<sha256>.jar` in flixw's
-  compiler cache), because the outer phase never initialises compiler classes. A name without a
-  version, such as `flix.jar`, gets the same single warning saying the version cannot be read. A jar
-  renamed to claim another release is judged by that name; its contents are still judged by the gate.
-- A fork is judged by the same name. flixw drops a `+fork...` suffix when it names the cached jar,
-  so a fork whose canonical version equals a verified release counts as that release and gets no
-  warning. The digest in the file name is a claim, not a measurement, and the linkage gate checks
-  only bytecode contracts, not behaviour. Comparing the digest with the `fetch` digests is open
-  in wstein/flixw-metrics#24; it depends on flixw's file naming convention.
+  compiler cache). flixw ABI v1 also passes `FLIXW_COMPILER_VERSION`, `FLIXW_COMPILER_REPO` and
+  `FLIXW_COMPILER_SHA256`; this build reads only `FLIXW_COMPILER_JAR` from the compiler variables, so
+  the file name is the one place it looks for a version. A name without a version, such as
+  `flix.jar`, gets the same single warning saying the version cannot be read. A jar renamed to claim
+  another release is judged by that name; its contents are still judged by the gate.
+- A fork whose base version is verified is not warned about, and its behaviour is not checked. flixw
+  passes the pinned version with its build metadata (`0.77.0+fork.x`) in `FLIXW_COMPILER_VERSION`, but
+  drops the `+fork...` suffix when it names the cached jar, so the plugin sees `flix-0.77.0-<sha256>.jar`
+  and counts it as 0.77.0. The linkage gate checks only bytecode contracts, and flixw's own contract
+  says a fork is not evidence of compatibility with the stock compiler. Detecting a fork is follow-up
+  work in wstein/flixw-metrics#24. It needs no file-name convention from flixw: the version (with
+  `+fork`), the repository and the pinned digest are already in the ABI v1 environment. The text of
+  #24 still proposes comparing the digest in the file name.
 - A compiler that satisfies none is refused before measurement with exit 2 and
   `metrics: the pinned compiler has no supported engine API`, followed by the jar path and the
   missing members of the closest contract. No warning and no version appear in that message.
