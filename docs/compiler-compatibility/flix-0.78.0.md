@@ -36,7 +36,7 @@ project that still has the old keys. That message reaches the user unchanged.
 | Bytecode-derived ABI gate | packaged `capabilities` | `hasEngineApi=true`; no missing members |
 | Packaged integration | `scripts/test-compiler-compatibility.sh` | 0.60.0 through 0.78.0 checkpoints passed |
 | Semantic fixture | `scripts/test.sh` with `plugin/lib/flix.jar` temporarily set to 0.78.0 | passed, 473 checks |
-| Corpus calibration | `scripts/calibrate-corpus.sh` | not rerun on 0.78.0; see the decision below |
+| Corpus calibration | `scripts/calibrate-corpus.sh` | measured on the `corpus-0.78.json` variant: parity with 0.77.0 except the Prelude (232 lines); see [CALIBRATION.md](../CALIBRATION.md#corpus-variant-for-flix-078-and-later) |
 
 ## Decision and compatibility impact
 
@@ -45,8 +45,8 @@ project that still has the old keys. That message reaches the user unchanged.
   keys Flix 0.78 rejects, and a mounted package must declare its `repository`.
 - Metric parity and thresholds: unchanged.
 - Report schema, wire format, cache, SDK and capability JSON, CLI: unchanged.
-- Calibration pin: stays at 0.77.0. The nine corpus projects carry manifests with `name`,
-  `description` or `authors`, which Flix 0.78.0 and later refuse to load, so the corpus cannot be
-  measured by a 0.78+ compiler without rewriting pinned third-party sources.
-- Follow-up work: decide whether calibration measures rewritten copies of the corpus manifests,
-  and then move the `flix.jar` pin forward.
+- Calibration pin: stays at 0.77.0. The pinned corpus manifests carry `name`, `description` or
+  `authors`, which Flix 0.78.0 and later refuse to load. A variant (`calibration/corpus-0.78.json`)
+  rewrites a fresh checkout of four projects before measuring and measures 0.78.0 and 0.79.0; see
+  [CALIBRATION.md](../CALIBRATION.md#corpus-variant-for-flix-078-and-later).
+- Follow-up work: decide whether to move the `flix.jar` pin forward.

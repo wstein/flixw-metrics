@@ -55,7 +55,7 @@ adapters older than `Flix0761Adapter`.
 | Semantic fixture | `scripts/test.sh` with `plugin/lib/flix.jar` temporarily set to 0.79.0 | passed, 473 checks (before the position change) |
 | Definition and effect spans | `DefinitionSpanTest` on 0.76.1, 0.77.0, 0.78.0, 0.79.0 | same `line` and `lines` on every release |
 | Cross-release report | `scripts/test-compiler-compatibility.sh` | 0.77.0, 0.78.0 and 0.79.0 reports of one project agree; a 0.77.0 baseline gates a 0.79.0 run with 0 new, 0 resolved |
-| Corpus calibration | `scripts/calibrate-corpus.sh` | not rerun on 0.79.0; see the decision below |
+| Corpus calibration | `scripts/calibrate-corpus.sh` | measured on the `corpus-0.78.json` variant with the `startOf`/`endOf` compensation: parity with 0.77.0 except the Prelude (232 lines); see [CALIBRATION.md](../CALIBRATION.md#corpus-variant-for-flix-078-and-later) |
 
 ## Decision and compatibility impact
 
@@ -75,8 +75,8 @@ adapters older than `Flix0761Adapter`.
   changed, so the plugin digest in the cache key invalidates existing cache entries.
 - Baselines: finding identity (rule, subject, file) has no line, so existing baselines keep
   matching; measured values change only in 0.79.0 runs, and only back to the 0.77.0 values.
-- Calibration pin: stays at 0.77.0. The nine corpus projects carry manifests with `name`,
-  `description` or `authors`, which Flix 0.78.0 and later refuse to load, so the corpus cannot be
-  measured by a 0.78+ compiler without rewriting pinned third-party sources.
-- Follow-up work: decide whether calibration measures rewritten copies of the corpus manifests,
-  and then move the `flix.jar` pin forward.
+- Calibration pin: stays at 0.77.0. The pinned corpus manifests carry `name`, `description` or
+  `authors`, which Flix 0.78.0 and later refuse to load. A variant (`calibration/corpus-0.78.json`)
+  rewrites a fresh checkout of four projects before measuring and measures 0.78.0 and 0.79.0; see
+  [CALIBRATION.md](../CALIBRATION.md#corpus-variant-for-flix-078-and-later).
+- Follow-up work: decide whether to move the `flix.jar` pin forward.
