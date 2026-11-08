@@ -1,9 +1,11 @@
 #!/bin/sh
-# Put the Flix release this engine is written against into plugin/lib, and check its digest.
+# Put the Flix releases this build is written against into plugin/lib, and check their digests.
 #
-# The engine pattern-matches Flix's AST, so it is compiled against one release and links
-# against that release's shape. Which release that is has to be a fact in the repository, not
-# whatever jar happened to be on the machine -- otherwise "it built here" means nothing.
+# The engine pattern-matches Flix's AST, so each adapter family is compiled against the oldest
+# release of its family and links against that release's shape. The 0.77.0 jar, kept as
+# plugin/lib/flix.jar, is the test and calibration pin; 0.76.0 is used by the tests. Which
+# releases these are has to be a fact in the repository, not whatever jar happened to be on the
+# machine -- otherwise "it built here" means nothing.
 #
 # This is the same discipline flixw applies to the compiler itself: name the version, name the
 # digest, refuse anything else.

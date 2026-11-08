@@ -452,9 +452,9 @@ sh scripts/calibrate-corpus.sh /tmp/flixw-calibration-results
 sh scripts/measure-performance.sh /tmp/flixw-performance.json
 ```
 
-`./mill` bootstraps the pinned build tool, and `scripts/fetch-flix.sh` downloads the Flix
-release the engine is written against and checks its digest — so "it builds here" means
-something.
+`./mill` bootstraps the pinned build tool, and `scripts/fetch-flix.sh` downloads the oldest Flix
+release of each adapter family, the 0.77.0 test pin and the 0.76.0 test jar, and checks every
+digest — so "it builds here" means something.
 
 The corpus command is the slower, networked dogfood check, so it is scheduled weekly rather than
 run on every pull request. It clones only the full commits recorded in
