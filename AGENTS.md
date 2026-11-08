@@ -53,8 +53,9 @@ loader defined the compiler classes. Consequence: `flix.jar` bundles ASM, JLine,
 must be shaded or classpath order decides which copy wins.
 
 Each adapter's floor jar (`flix-<version>.jar` in `plugin/lib`) is wired into that adapter module
-via `compileClasspath` in `build.mill`, not `unmanagedClasspath` — it must stay compile-time only. The compiler-neutral `plugin` module has no
-Flix jar on its compile class path. At runtime the compiler is whatever flixw pinned for the target
+via `compileClasspath` in `build.mill`, not `unmanagedClasspath` — it must stay compile-time only.
+The compiler-neutral `plugin` module has no Flix jar on its compile class path. At runtime the
+compiler is whatever flixw pinned for the target
 project; bundling a copy would mean measuring one compiler while claiming to measure another.
 
 Only **measurements** are cached (`ResultCache`/`Wire`), keyed on sources, `flix.toml`, the pinned
