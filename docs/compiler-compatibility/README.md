@@ -81,7 +81,7 @@ definition and effect positions and the findings that depend on them, the span c
 "473 checks" in the 0.78.0 and 0.79.0 records come from a manual run with `plugin/lib/flix.jar`
 swapped; that run is not reproduced by the suite and was not repeated for this table. A Flix
 release newer than 0.79.0 is loaded if it links, with one stderr warning that it has no checkpoint
-(see [COMPILER-SDK.md](../COMPILER-SDK.md#a-release-newer-than-any-recorded-one)).
+(see [COMPILER-SDK.md](../COMPILER-SDK.md#other-compilers)).
 
 The adapter-family suffix names its oldest compatible release. It never encodes an upper bound:
 the upper end is evidence that grows release by release, not part of the JVM package name. The

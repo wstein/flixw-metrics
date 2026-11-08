@@ -113,48 +113,108 @@ a capability requirement automatically instead of depending on a parallel handwr
 
 A version string is never evidence. The gate asks the JAR.
 
-### A release newer than any recorded one
+## Other compilers
 
-Flix 0.80.0 does not exist at the time of writing, so this is checked by
-`scripts/test-unknown-flix.sh` with the 0.79.0 jar copied to `flix-0.80.0.jar` and with a stub jar:
+Admission is linkage, never a version. A compiler jar that satisfies one adapter's derived contract
+is measured with the newest such adapter, whatever it is called; the version decides only whether a
+warning is printed.
 
-- A compiler that satisfies one adapter's derived contract is accepted and measured with the newest
-  such adapter, whatever its version. This is unchanged: admission is linkage, never a version.
-- If its release is not in `plugin/resources/dev/flixw/metrics/verified-flix-versions.txt` (the
-  releases with a checkpoint in `scripts/test-compiler-compatibility.sh`), the plugin prints exactly
-  one line on stderr, `metrics: warning: Flix 0.80.0 has no compatibility checkpoint (newest
-  verified: 0.79.0); results are not verified for it, ...`, on every measuring run, cache hits included (`capabilities` returns before the warning). Exit
-  code, stdout and the JSON, Markdown, SARIF and text content are unchanged; the report carries no
-  verified/unverified marker.
-- The release is read from the compiler jar's file name (`flix-<version>-<sha256>.jar` in flixw's
-  compiler cache). flixw ABI v1 also passes `FLIXW_COMPILER_VERSION`, `FLIXW_COMPILER_REPO` and
-  `FLIXW_COMPILER_SHA256`; this build reads only `FLIXW_COMPILER_JAR` from the compiler variables, so
-  the file name is the one place it looks for a version. A name without a version, such as
-  `flix.jar`, gets the same single warning saying the version cannot be read. A jar renamed to claim
-  another release is judged by that name; its contents are still judged by the gate.
-- A fork whose base version is verified is not warned about, and its behavior is not checked. flixw
-  pins a fork by repository and an optional build-metadata suffix (`0.77.0+fork.x`). It passes
-  `FLIXW_COMPILER_VERSION` (with the suffix), `FLIXW_COMPILER_REPO` (which identifies a fork) and
-  `FLIXW_COMPILER_SHA256` for every pin, but drops any `+...` suffix when it names the cached jar, so
-  the plugin sees `flix-0.77.0-<sha256>.jar` and counts it as 0.77.0. The linkage gate checks only
-  bytecode contracts, and flixw's own contract says a fork is not evidence of compatibility with the
-  stock compiler. Detecting a fork is follow-up work in wstein/flixw-metrics#24. It needs no file-name
-  convention from flixw: version, repository and pinned digest are already in the ABI v1 environment.
-  The text of #24 still proposes comparing the digest in the file name.
-- A compiler that satisfies none is refused before measurement with exit 2 and
-  `metrics: the pinned compiler has no supported engine API`, followed by the jar path and the
-  missing members of the closest contract. No warning and no version appear in that message.
-- Two later guards exist and are not covered by that script: `Adapters.resolve()` returning nothing
-  prints `no adapter links against the pinned compiler` with the adapter class names (not Flix
-  versions) this build supports, and a `LinkageError` during measurement prints `this compiler is
-  not the one this build supports`, both with exit 2.
+The list of verified releases has one source,
+`plugin/resources/dev/flixw/metrics/verified-flix-versions.txt`. The packaged plugin reads it, and
+`test-compiler-compatibility.sh` fails unless every entry has a `fetch` line and a packaged
+integration checkpoint and every checkpoint is listed. The evidence per release is the matrix in
+[compiler-compatibility](compiler-compatibility/README.md). Other documents link to these two
+instead of repeating the list.
+
+### What a compiler jar gets
+
+The plugin reads the release from the compiler jar's file name: `flix-<x.y.z>.jar`, or
+`flix-<x.y.z>-<hex>.jar` with a lower-case hexadecimal suffix, which is flixw's cache name
+(`CompilerVersions.java:29`). A jar renamed to claim another release is judged by that name; its
+contents are still judged by the gate. `scripts/test-unknown-flix.sh` covers rows 1, 2 and 5 with
+the 0.79.0 jar under its own name, copied to `flix-0.80.0.jar`, and with a stub jar; rows 3, 4 and 6
+are not in the suite.
+
+| Compiler jar | Admission | stderr | Exit |
+|---|---|---|---|
+| Verified release: `flix-0.77.0-<sha256>.jar`, `flix-0.77.0.jar` | measured if it links | nothing | 0 |
+| Release not in the list that links: any other `flix-<x.y.z>...` name, older or newer than the verified ones | measured with the newest adapter that links | warning 1 | 0 |
+| Name without a readable version: a prerelease (`flix-0.80.0-rc.1-<hex>.jar`), `flix.jar`, a local build, a `FLIX_JAR` override with such a name | measured if it links | warning 2 | 0 |
+| Fork whose base version is listed (flixw drops `+...` from the name) | measured as the base version | nothing | 0 |
+| Links to no adapter | refused before measurement | the message under exit 2 below | 2 |
+| Links at the gate, fails while the compiler loads | stops | the message under exit 2 below | 2 |
+
+Exit 1 instead of 0 applies to every row that measures, when the run asked for a gate (see below).
+Every release that is not listed gets a warning, not only a newer one, and so does every name
+without a version.
+
+Both warnings, verbatim, as the plugin prints them (the version and the newest verified release
+come from the list and change with it):
+
+```text
+metrics: warning: Flix 0.80.0 has no compatibility checkpoint (newest verified: 0.79.0); results are not verified for it, see scripts/test-compiler-compatibility.sh and docs/compiler-compatibility
+metrics: warning: cannot read the Flix version from the compiler jar name flix.jar; this release has no compatibility checkpoint (newest verified: 0.79.0), see scripts/test-compiler-compatibility.sh and docs/compiler-compatibility
+```
+
+Source: `CompilerVersions.java:55-63`. Each warning is a single line.
+
+- It is printed once per measuring run, after the gate accepted the compiler and before the options
+  are parsed (`Main.java:68`). Cache hits print it again, and so does a run that then fails on an
+  invalid option with exit 2. `capabilities`, `--version` and the help text return earlier
+  (`Main.java:41-62`) and never warn.
+- Exit code, stdout and the JSON, Markdown, SARIF and text content are unchanged; the report
+  carries no verified/unverified marker.
 - Linkage does not prove that the metrics mean the same thing. The 0.79.0 position change is the
   example: the gate accepted it and only a semantic comparison showed it. That is why the warning
   exists.
 
-The verified list has one source, the resource file above. The packaged plugin reads it, and
-`test-compiler-compatibility.sh` fails unless every entry has a `fetch` line and a packaged
-integration checkpoint and every checkpoint is listed.
+### Exit codes and stderr
+
+| Exit | Meaning | Source |
+|---|---|---|
+| 0 | the report was written; also `capabilities`, `--version` and help | `Main.java:41-62,86` |
+| 1 | `--fail-on` found a finding at or above its level, or `--fail-on-new` found a new or worsened one; the report was written first | `Main.java:85,131,288-296` |
+| 2 | everything the plugin reports as `metrics: ...`: usage errors, invalid configuration or baseline, a failed measurement or project load | `Main.java:89-96,140-147` |
+
+Exit 2 covers these messages:
+
+| Message after `metrics: ` | Cause |
+|---|---|
+| `requires flixw ABI version 1` | `FLIXW_ABI_VERSION` is not `1`: the plugin was not started through flixw's plugin ABI |
+| `missing FLIXW_<name>` | a required variable is unset or blank (`PROJECT_ROOT`, `COMPILER_JAR`, `JAVA_HOME`) |
+| `FLIXW_COMPILER_JAR is not a regular file: <path>` | the compiler jar does not exist |
+| `the pinned compiler has no supported engine API`, then `jar:` and `missing:` lines | no adapter's contract is satisfied; refused before measurement |
+| `no adapter links against the pinned compiler`, then the adapter class names this build supports | `Adapters.resolve()` found nothing in the second JVM |
+| `this compiler is not the one this build supports`, then the error and `run: ./flixw metrics capabilities` | a `LinkageError` while measuring |
+| `cannot load the project: <error>` | the compiler could not load the project |
+
+Source: `Main.java:63-66,109-111,136-138,423-437`, `CompilerCapabilities.java:29`, and
+`cannot load the project` in every adapter. The first two guards after the gate are not covered by
+`scripts/test-unknown-flix.sh`. The no-engine-API message names no version. The second JVM's exit
+code is the plugin's (`Main.java:88`).
+
+All plugin lines start with `metrics: `; the warnings above start with `metrics: warning: `.
+Continuation lines are indented by seven spaces. The compiler writes its own progress lines to
+stderr as well, with ANSI colors, so stderr as a whole is not a machine interface.
+
+### Forks
+
+A fork whose base version is verified is not warned about, and its behavior is not checked. flixw
+pins a fork by repository and an optional build-metadata suffix (`0.77.0+fork.x`). It passes
+`FLIXW_COMPILER_VERSION` (with the suffix), `FLIXW_COMPILER_REPO` (which identifies a fork) and
+`FLIXW_COMPILER_SHA256` for every pin, but drops any `+...` suffix when it names the cached jar, so
+the plugin sees `flix-0.77.0-<sha256>.jar` and counts it as 0.77.0. The linkage gate checks only
+bytecode contracts, and flixw's own contract says a fork is not evidence of compatibility with the
+stock compiler. flixw ABI v1 passes the three variables, but this build reads only
+`FLIXW_COMPILER_JAR` from the compiler variables, so the file name is the one place it looks for a
+version. Detecting a fork is follow-up work in wstein/flixw-metrics#24. It needs no file-name
+convention from flixw: version, repository and pinned digest are already in the ABI v1 environment.
+The text of #24 still proposes comparing the digest in the file name.
+
+A `FLIX_JAR` override and a local compiler selection are announced by flixw as unverified and not
+evidence of compatibility with the stock compiler. flixw selects that jar and passes it as the
+compiler jar (`src/stage0/flixw.java:6026-6046` in flixw; not run here), so the plugin judges it by its name like any
+other.
 
 Whether flixw itself warns about an unrecorded compiler for a plugin is not established here.
 
