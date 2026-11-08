@@ -25,36 +25,50 @@ public final class DefinitionSpanTest {
 
     private record Expected(String name, int line, int lines, boolean tooLong, int trailing) { }
 
-    /** A hand-counted definition of {@link #ADJACENT}: line, spanned lines, lines with code. */
-    private record Fixed(String name, int line, int lines, int code) { }
+    /**
+     * A hand-counted definition of {@link #ADJACENT}: line, spanned lines, lines with code, and
+     * the line with the most tokens.
+     */
+    private record Fixed(String name, int line, int lines, int code, int dense) { }
 
     /**
      * Comments next to code that follows them on the same line. Flix 0.76.1 through 0.78.0 end a
      * definition at the comments directly after its last token, and only there: a later token on
      * the same line, a comment before the next definition on its line, and a {@code //} inside a
-     * string literal are all told apart by position.
+     * string literal are all told apart by position. {@code first} sits on line 1 of the file,
+     * {@code letter} ends in a character literal, and {@code sameLine} has more tokens than the
+     * line of {@code adjacent}, which owns the comment before it.
      */
     private static final String ADJACENT = """
+        pub def first(): Int32 = 1
+        // after first
+
         mod Adj {
             pub def strSlash(): String =
                 "a // b /* c */"
             // trailing after string
 
             pub def adjacent(): Int32 = 5
-            /* same */ pub def sameLine(): Int32 = 6
+            /* same */ pub def sameLine(): Int32 = 6 + 7
             // after sameLine
 
         }
         mod Inner { pub def inner(): Int32 = 7 }
         // after the module brace
         // two
+        mod Chars {
+            pub def letter(): Char = 'x'
+            // after char
+        }
         """;
 
     private static final List<Fixed> ADJACENT_DEFS = List.of(
-        new Fixed("Adj.strSlash", 2, 3, 2),
-        new Fixed("Adj.adjacent", 6, 2, 2),
-        new Fixed("Adj.sameLine", 7, 2, 1),
-        new Fixed("Inner.inner", 11, 1, 1));
+        new Fixed("first", 1, 2, 1, 1),
+        new Fixed("Adj.strSlash", 5, 3, 2, 5),
+        new Fixed("Adj.adjacent", 9, 2, 2, 10),
+        new Fixed("Adj.sameLine", 10, 2, 1, 10),
+        new Fixed("Inner.inner", 14, 1, 1, 14),
+        new Fixed("Chars.letter", 18, 2, 1, 18));
 
     public static void main(String[] args) throws Exception {
         if (args.length == 2 && args[0].equals("write")) {
@@ -99,8 +113,12 @@ public final class DefinitionSpanTest {
                     f.name() + " is " + f.line() + "+" + f.lines() + " lines with " + f.code()
                         + " code lines but reports " + d.line() + "+" + d.lines() + " with "
                         + d.codeLines());
+                require(d.maxLineTokensLine() == f.dense(),
+                    f.name() + " is densest at line " + f.dense() + " but reports "
+                        + d.maxLineTokensLine());
             }
-            require(module(model, "Adj").lines() == 7 && module(model, "Inner").lines() == 1,
+            require(module(model, "Adj").lines() == 7 && module(model, "Inner").lines() == 1
+                    && module(model, "Chars").lines() == 2,
                 "a comment after a closing brace or a later token on the line is not module code");
 
             var module = model.modules().stream().filter(m -> m.name().equals("Span"))
