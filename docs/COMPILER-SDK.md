@@ -130,6 +130,11 @@ Flix 0.80.0 does not exist at the time of writing, so this is checked by
   compiler cache), because the outer phase never initialises compiler classes. A name without a
   version, such as `flix.jar`, gets the same single warning saying the version cannot be read. A jar
   renamed to claim another release is judged by that name; its contents are still judged by the gate.
+- A fork is judged by the same name. flixw drops a `+fork...` suffix when it names the cached jar,
+  so a fork whose canonical version equals a verified release counts as that release and gets no
+  warning. The digest in the file name is a claim, not a measurement, and the linkage gate checks
+  only bytecode contracts, not behaviour. Comparing the digest with the `fetch` digests is open
+  in wstein/flixw-metrics#24; it depends on flixw's file naming convention.
 - A compiler that satisfies none is refused before measurement with exit 2 and
   `metrics: the pinned compiler has no supported engine API`, followed by the jar path and the
   missing members of the closest contract. No warning and no version appear in that message.
