@@ -446,9 +446,17 @@ with exit 2 and a list of the missing members. [Other compilers](docs/COMPILER-S
 lists every case with its exit code and the exact warning text. A fork whose base version is
 verified is not warned about, and its behavior is not checked; detecting a fork is follow-up work in
 [#24](https://github.com/wstein/flixw-metrics/issues/24).
-Flix 0.79.0 moves the start line of a documented
-definition to its `def` line; `Flix0761Adapter` restores the earlier start, see
-[the Flix 0.79.0 record](docs/compiler-compatibility/flix-0.79.0.md).
+
+**Definition positions.** On every release served by `Flix0761Adapter` (0.76.1 through 0.79.0), a
+definition's `line` is the first line of its doc comment and its span ends after the comments that
+directly follow its last token. Flix 0.79.0 itself starts a documented definition at its `def` line
+and ends it at its last token; the adapter restores the earlier convention, see
+[the Flix 0.79.0 record](docs/compiler-compatibility/flix-0.79.0.md). The older adapter families use
+the location the compiler reports, and their positions were not compared across releases.
+SARIF regions use the same lines: a finding gets a region only when it has a line, `startLine` is
+that line, and `endLine` is the last line of the definition when that line is the definition's
+`line` (`definition-too-long`, for example), otherwise `startLine` again (`crammed-line` inside
+the body). A module-level finding has no location at all.
 
 ## Building it yourself
 
