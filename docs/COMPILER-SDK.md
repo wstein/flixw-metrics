@@ -381,8 +381,8 @@ finding—stable foundations are expected to have high fan-in—and the ranking 
 
 ### Lines are classified by the compiler's lexer, not by scanning for `//`
 
-`Lexer.lex(Source)` and `TokenKind.isComment` are present throughout both verified adapter families — an earlier note here
-claimed otherwise and was simply wrong. A line holding code and a trailing comment counts as
+`Lexer.lex(Source)` and `TokenKind.isComment` are present throughout every verified adapter family — an earlier
+note here claimed otherwise and was simply wrong. A line holding code and a trailing comment counts as
 code, because it is a line you have to read as code; a line inside a block comment counts as a
 comment though nothing on it says so, which is exactly where a text scan goes wrong.
 
@@ -391,8 +391,7 @@ Doc comments are counted separately from ordinary ones. "How much of this is exp
 
 Lexed rather than read from `Root.tokens`: by the time `check` returns, that map holds only
 what later phases still needed, so a file of any size arrives with a handful of tokens and
-every line after the first would be counted blank. That is the fork's finding, and the sort of
-thing only someone who tried the obvious way first would know.
+every line after the first would be counted blank.
 
 ### Four renderings, one cached run
 
@@ -556,17 +555,15 @@ definition has no dependency edge and depth zero. `deepest-datalog-dependency` r
 sorted recursive names, making direct and mutual recursion distinguishable from an unexplained
 count.
 
-### The AST walk is generic
+### The AST walk descends through `scala.Product`
 
-Every Flix AST node is a Scala case class, so the walk uses `productArity`/`productElement`
-and reaches all of them without naming a single AST type. An unfamiliar node is traversed
-rather than fatal, so a compiler that adds a construct still measures — it simply is not
-classified until this plugin learns the name.
-
-Node *simple names* are the classification handle because they are the most stable one
-reflection has. Being wrong about a name loses a count, not the run.
-
-The walk is done reflectively rather than against `scala.Product` directly, so that building
-this plugin does not require a Flix release on the class path. A metrics plugin that could
-only be compiled against the compiler it inspects would be awkward to keep working across
-several of them.
+Classification uses typed patterns compiled against the family's compiler, for example
+`case e: TypedAst.Expr.IfThenElse` and `case r: TypedAst.MatchRule`
+(`Flix0761Adapter.scala:501-514`); each adapter module has its family's oldest Flix jar on its compile
+class path (`build.mill:21-25`). Descent is generic: every Flix AST node is a Scala case class, so
+`case p: Product => p.productIterator...` (`Flix0761Adapter.scala:574,591,615`, three times in each
+of the seven adapters) reaches the children of a node the classifier does not name. Types and
+symbols are skipped (`:588-589`). An unfamiliar node is therefore traversed rather than fatal: a
+compiler that adds a construct still has its contents measured, and the construct itself is not
+classified until the adapter learns it. Nothing here is reflective; the reflective walk by simple
+class name described in [Why the engine is Scala](#why-the-engine-is-scala) is gone.
