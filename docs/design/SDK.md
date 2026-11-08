@@ -9,7 +9,7 @@ into this basis. Paths are relative to the
 repository root unless stated. `L<n>` is a line number in that revision.
 
 Decided by the owner (chartroom note "Plugins share one compiler SDK", 2026-11-08): one repo
-`flixw-compiler-sdk` with modules `kit` and `flix-bridge`; plugins embed a fixed SDK version; delivery
+`flixw-plugin-sdk` with modules `kit` and `flix-bridge`; plugins embed a fixed SDK version; delivery
 as release asset with SHA-256; the seven adapters and their compiler JARs move into the SDK; the
 solver-hook interface waits for the spike (wstein/flixw-mutate#1). This document does not reopen
 those decisions. It names the files that move and the interfaces that result.
@@ -24,7 +24,7 @@ expected. Everything runs against unchanged stock Flix compilers, so the per-cap
 
 Naming (owner, 2026-11-08): the second module is `flix-bridge`, not `compiler`, because `compiler` is
 mistaken for the Flix compiler. The module holds the adapters between the plugins and unchanged Flix
-compilers; it contains no compiler code. The repository keeps the name `flixw-compiler-sdk`. Packages
+compilers; it contains no compiler code. The repository is `flixw-plugin-sdk` (formerly `flixw-compiler-sdk`, renamed 2026-11-08 for the same reason). Packages
 are `dev.flixw.sdk.kit` and `dev.flixw.sdk.bridge` (section 8, Q1). Identifiers of the code
 (`CompilerModel`, `compilerJar`, `FLIXW_COMPILER_*`) name the Flix compiler or existing code and keep
 their names in this document.
@@ -135,7 +135,7 @@ the others.
 | Level | Owner of the number | Form | Where it lives |
 | --- | --- | --- | --- |
 | Flix | Compiler release | Data (`versions.json`) | `flix-bridge` |
-| SDK | `flixw-compiler-sdk` | Semver, embedded in the plugin jar; additive evolution, removal only in a major version | `flix-bridge` and `kit` released together; `CompilerModel.SDK_VERSION` (L50) is declared and unused today |
+| SDK | `flixw-plugin-sdk` | Semver, embedded in the plugin jar; additive evolution, removal only in a major version | `flix-bridge` and `kit` released together; `CompilerModel.SDK_VERSION` (L50) is declared and unused today |
 | Plugin | Each plugin | Free | `Implementation-Version` of the jar, read by `Main.version()` (L279-282) |
 
 Report header today (`Provenance.java` L18-19, `json()` L21-28): `commit`, `dirty`,
@@ -191,7 +191,7 @@ mechanically.
 | Step | Issue | Content | Gate |
 | --- | --- | --- | --- |
 | 0 | #20 | This document | Owner decisions recorded in section 8 |
-| 0a | owner | Repository `wstein/flixw-compiler-sdk` exists (done 2026-11-08, one empty first commit) | Owner |
+| 0a | owner | Repository `wstein/flixw-plugin-sdk` (formerly `flixw-compiler-sdk`) exists (done 2026-11-08, one empty first commit) | Owner |
 | 1 | #21 | Extract `kit` (section 1) without the ABI check driver and `StableInputs`, which depend on `flix-bridge` or plugin types (direction and couplings below). Metrics consumes `kit` as an embedded, pinned release asset | Existing tests unchanged. Reports on the calibration corpus equal before and after, compared as `jq -S 'del(.provenance)'` (the pattern of `scripts/test-compiler-compatibility.sh` L226; `provenance.measuredAt` differs on every run, so byte equality is not a gate) |
 | 2 | #22 | Move adapters, `DatalogGraph`, `AdapterAbi`, `Adapters`, `CompilerModel`, `CompilerCapabilities` (the ABI check driver), `fetch-flix.sh`, compatibility documents and verification CI into `flix-bridge`; introduce `versions.json` | Existing adapter tests green and unedited apart from package renames. The conformance suite (section 6) runs in the SDK repository for all seven families, with an example plugin for the packaged check (Q8) and a test of the shared exit codes (Q10). `scripts/test-compiler-compatibility.sh` is split (below); both halves are green against the same version list |
 | 3 | #23 | Capability-based selection and the new header fields | New tests first (failing against step 2), cache key change documented (explicit SDK version and family fields, Q6; `flixVersion` read from `FLIXW_COMPILER_VERSION`, Q7), schema version raised |
