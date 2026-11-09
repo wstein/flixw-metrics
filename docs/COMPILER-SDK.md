@@ -124,8 +124,7 @@ The list of verified releases has one source,
 `test-compiler-compatibility.sh` fails unless every entry has a `fetch` line and a packaged
 integration checkpoint and every checkpoint is listed. The evidence per release is the matrix in
 [compiler-compatibility](compiler-compatibility/README.md). Other documents link to these two for
-the complete list; this file names releases only for the adapter families above, and README.md
-only for the first plugin release that lists each one.
+the complete list.
 
 ### What a compiler jar gets
 
@@ -146,9 +145,10 @@ upper-case digest suffix); rows 4 and 6 are not in the suite.
 | Links to no adapter | refused before measurement | the message under exit 2 below | 2 |
 | Links at the gate, fails while the compiler loads | stops | the message under exit 2 below | 2 |
 
-Exit 1 instead of 0 applies to every row that measures, when the run passed `--fail-on` or `--fail-on-new` (see below).
-Every release that is not listed gets a warning, not only a newer one, and so does every name
-without a version.
+A run that measures can end with exit 1 instead of 0: with `--fail-on` when a finding reaches its
+level, with `--fail-on-new` when a finding is new or worsened (`Main.java:287-296`, see below).
+`CompilerVersions.java:56-63` warns for a name without a readable version and for a readable release
+that is not listed, not only a newer one.
 
 Both warnings, verbatim, as the plugin prints them (the version and the newest verified release
 come from the list and change with it):
@@ -184,7 +184,7 @@ These are the most common exit-2 messages. The table is not complete:
 |---|---|
 | `requires flixw ABI version 1` | `FLIXW_ABI_VERSION` is not `1`: the plugin was not started through flixw's plugin ABI |
 | `missing FLIXW_<name>` | a required variable is unset or blank (`PROJECT_ROOT`, `COMPILER_JAR`, `JAVA_HOME`) |
-| `FLIXW_COMPILER_JAR is not a regular file: <path>` | the compiler jar does not exist |
+| `FLIXW_COMPILER_JAR is not a regular file: <path>` | the compiler jar is missing or not a regular file |
 | `the pinned compiler has no supported engine API`, then `jar:` and `missing:` lines | no adapter's contract is satisfied; refused before measurement |
 | `no adapter links against the pinned compiler`, then the adapter class names this build supports | `Adapters.resolve()` found nothing in the second JVM |
 | `this compiler is not the one this build supports`, then the error and `run: ./flixw metrics capabilities` | a `LinkageError` while measuring |
@@ -206,13 +206,14 @@ not compile` (every adapter, such as `Flix0761Adapter.scala:76,79`),
 `unknown rule` and `unknown severity` (`PresentationFilter.java:15,20`), and `refusing to capture a
 baseline ...` and `refusing to overwrite ...` (`Initializer.java:49,85`). Configuration and baseline
 error texts are in the two parsers. The first two guards after the gate are not covered by
-`scripts/test-unknown-flix.sh`. The no-engine-API message names no version. The second JVM's exit
+`scripts/test-unknown-flix.sh`. The no-engine-API message does not state a version of its own. The second JVM's exit
 code is the plugin's (`Main.java:88`).
 
 Plugin error lines start with `metrics: `, the warnings above with `metrics: warning: ` (a run that
 prints one can still end with any exit code), and the `--diagnostics` line with `metrics diagnostics: `.
-Continuation lines are indented by seven spaces. The compiler writes its own progress lines to
-stderr as well, with ANSI colors, so stderr as a whole is not a machine interface.
+The plugin's own continuation lines are indented by seven spaces (`Main.java:65-66,111,137-138`); the
+compiler text after `the project does not compile` is not. The compiler writes its own progress lines
+to stderr as well, with ANSI colors. This document makes no stability promise for stderr text.
 
 An exception the plugin does not handle is not covered by this table. Observed: an unreadable source
 file (`chmod 000 src/Counter.flix`) raised an `IllegalArgumentException` from the compiler, and the run
@@ -224,9 +225,10 @@ behavior is not a contract.
 A fork whose base version is verified is not warned about, and its behavior is not checked. flixw
 pins a fork by repository and an optional build-metadata suffix (`0.77.0+fork.x`). It passes
 `FLIXW_COMPILER_VERSION` (with the suffix), `FLIXW_COMPILER_REPO` (which identifies a fork) and
-`FLIXW_COMPILER_SHA256` for every pin, but drops any `+...` suffix when it names the cached jar, so
-the plugin sees `flix-0.77.0-<sha256>.jar` and counts it as 0.77.0. The linkage gate checks only
-bytecode contracts, and flixw's own contract says a fork is not evidence of compatibility with the
+`FLIXW_COMPILER_SHA256` for every pin with a lock (`flixw.java:6321-6325`), but drops any `+...`
+suffix when it names the cached jar, so
+the plugin sees `flix-0.77.0-<sha256>.jar` and counts it as 0.77.0. The linkage gate checks bytecode
+contracts, not the compiler's identity, and flixw's own contract says a fork is not evidence of compatibility with the
 stock compiler. flixw ABI v1 passes the three variables, but this build reads only
 `FLIXW_COMPILER_JAR` from the compiler variables, so the file name is the one place it looks for a
 version. Detecting a fork is follow-up work in wstein/flixw-metrics#24. It needs no file-name
@@ -413,7 +415,8 @@ Doc comments are counted separately from ordinary ones. "How much of this is exp
 
 Lexed rather than read from `Root.tokens`: by the time `check` returns, that map holds only
 what later phases still needed, so a file of any size arrives with a handful of tokens and
-every line after the first would be counted blank.
+every line after the first would be counted blank
+(`Flix0761Adapter.scala:119-121`).
 
 ### Four renderings, one cached run
 
@@ -587,5 +590,5 @@ class path (`build.mill:21-25`). Descent is generic: every Flix AST node is a Sc
 of the seven adapters) reaches the children of a node the classifier does not name. Types and
 symbols are skipped (`:588-589`). An unfamiliar node is therefore traversed rather than fatal: a
 compiler that adds a construct still has its contents measured, and the construct itself is not
-classified until the adapter learns it. Nothing here is reflective; the reflective walk by simple
+classified until the adapter learns it. The walk uses no reflection; the reflective walk by simple
 class name described in [Why the engine is Scala](#why-the-engine-is-scala) is gone.
