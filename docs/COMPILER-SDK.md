@@ -200,8 +200,8 @@ These are the most common exit-2 messages. The table is not complete:
 Source: `Main.java:63-66,109-111,136-138,178-186,241-254,275,313-380,423-437`,
 `StableInputs.java:35`, `Metrics.java:631`, `Baseline.java`, `MetricsConfig.java`,
 `CompilerCapabilities.java:29`, and `cannot load the project` in every adapter. Other exit-2
-messages exist, for example `unknown command or option <x>` (`Main.java:332`), `the project does not compile` (every adapter, such
-as `Flix0761Adapter.scala:76,79`), `unknown format` and `unknown view` (`Metrics.java:28,44`),
+messages exist, for example `unknown command or option <x>` (`Main.java:332`), `the project does
+not compile` (every adapter, such as `Flix0761Adapter.scala:76,79`), `unknown format` and `unknown view` (`Metrics.java:28,44`),
 `unknown rule` and `unknown severity` (`PresentationFilter.java:15,20`), and `refusing to capture a
 baseline ...` and `refusing to overwrite ...` (`Initializer.java:49,85`). Configuration and baseline
 error texts are in the two parsers. The first two guards after the gate are not covered by
