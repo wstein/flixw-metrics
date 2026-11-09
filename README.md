@@ -124,7 +124,7 @@ than mysterious. Reporting alone never fails your build; CI can opt into a gate 
 The gate exits 1 when an unsuppressed finding meets or exceeds the selected registry severity
 (`note`, `warning`, or `error`), after still writing the complete report. Usage and analysis
 failures the plugin reports remain exit 2, so policy failure is distinguishable from them. An
-unhandled exception also ends with exit 1 and no report, see
+unhandled exception can also end with exit 1 and no report (observed), see
 [Exit codes and stderr](docs/COMPILER-SDK.md#exit-codes-and-stderr).
 
 For a new project, initialize the reviewed files and get the CI command in one step:
@@ -451,7 +451,7 @@ lists the cases with their exit codes and the exact warning text. A fork whose b
 verified is not warned about, and its behavior is not checked; detecting a fork is follow-up work in
 [#24](https://github.com/wstein/flixw-metrics/issues/24).
 
-**Definition positions.** On every release served by `Flix0761Adapter` (0.76.1 through 0.79.0), a
+**Definition positions.** On the releases served by `Flix0761Adapter` (0.76.1 through 0.79.0), a
 definition's `line` is the first line of its doc comment and its span ends after the comments that
 directly follow its last token. Flix 0.79.0 itself starts a documented definition at its `def` line
 and ends it at its last token; the adapter restores the earlier convention, see
