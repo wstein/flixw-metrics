@@ -1,6 +1,6 @@
 <!-- markdownlint-disable MD013 -->
 
-# Real-project calibration, updated 2026-09-13
+# Real-project calibration, updated 2026-11-09
 
 This is a dogfood run, not a claim that eight targets represent all Flix code. Its purpose is
 to test whether the defaults produce useful review leads on code the analyzer was not written
@@ -22,7 +22,7 @@ The interpretation follows three useful constraints from the background research
 ## Corpus and method
 
 The original analyzer baseline was commit `17de59e`; the final policy includes the calibrated
-threshold in `5f44ff9`. The current compatibility rerun used OpenJDK 21.0.12.1, Darwin arm64, and
+threshold in `5f44ff9`. The historical 0.77.0 compatibility rerun used OpenJDK 21.0.12.1, Darwin arm64, and
 the pinned Flix 0.77.0 artifact with SHA-256
 `20007d79f97b696ba388113e2a4235227691d33a00bfa669f2316b37a7b14201`.
 
@@ -139,7 +139,67 @@ fewer (`definition-too-long` on `canonEqConstr`, `src/Canonicalization.flix:115`
 ([record](compiler-compatibility/flix-0.79.0.md)), so the variant's expectations are the 0.77.0
 numbers with the 232-line Prelude: `qual-effect-system` keeps its 27 findings.
 
+## Flix 0.79.0 calibration snapshot (2026-11-09)
+
+The complete nine-target variant was rerun at analyzer source
+`d02ca1372196e9c0b5915af34a41cca7d701842e` (the slash-banner span fix), using Temurin 21.0.13+9 on Linux aarch64.
+The compiler artifact SHA-256 was
+`8fad2aa09567a7edabcc43f4101fa6199131df2c22929e001c87659d764f6dcf`; its source checkout
+was exactly `36d923ca325dc466b28c63419667e6026a80f920`. The existing
+`corpus-0.78.json` variant already pins that 0.79.0 source revision; the filename identifies
+the manifest/source rewrite boundary, not the compiler used for this snapshot.
+
+All nine expected summaries matched: 217 files, 2,650 definitions, 37,040 source lines,
+32 Datalog rules, 28 facts and 1,349 findings. Relative to the historical 0.77.0 corpus,
+only the newer Prelude source adds three lines (232 instead of 229). The four third-party
+projects retain their exact source commits and the documented copy-only rewrites above;
+no project, rule, threshold or performance budget was removed or relaxed.
+
+Each of the eight normal project/example targets also passed its fresh-cache report followed
+by a warm-cache, same-compiler baseline comparison with zero new, worsened or resolved findings
+and zero measurement deltas. A separate packaged comparison measured all eight targets with
+both 0.77.0 and 0.79.0: complete native JSON was identical after removing only provenance,
+including definition/effect positions, module lines, findings and rankings. The 0.77.0 baselines
+also passed the 0.79.0 warning gate with empty changes reports. The compensated
+`Canonicalization.canonEqConstr` remains at line 115 with 75 lines and the project retains
+27 findings. The full comparison additionally exposed a slash-banner gap in the earlier span
+compensation: `FordFulkerson.indexOf` had 8 instead of 12 lines on 0.79.0, reducing its module
+from 628 to 624 lines despite unchanged findings. Using the lexer's `isCommentDoc` restores
+the 12/628 values: exactly three slashes introduce documentation; four or more are ordinary
+line comments that belong in the trailing span. The new regression fails before the fix and
+passes with Flix 0.76.1, 0.77.0, 0.78.0 and 0.79.0. SARIF results were checked against
+the native finding identities and physical locations for every normal target. Prelude uses its dedicated compiler-embedded harness and
+has no normal-project cache, cross-release baseline or SARIF claim.
+
+The compact [snapshot](../calibration/results/flix-0.79.0.json) records per-target counts,
+module-line totals, comparison results and artifact/source provenance. Full reports and local
+verification logs remain outside the repository; the snapshot is evidence, not a replacement
+for rerunning the command above. `flix-basicdb` and `flix-parsec` remain the two historical
+upstream-incompatible inputs, with their pins, reasons and last results preserved; they were
+not remeasured in this run.
+
+The ordinary `flix.jar` test/calibration default and scheduled workflow remain on 0.77.0.
+This is an explicit 0.79.0 corpus snapshot, not a change to that default or to the 0.76.1
+adapter compilation floor. Report schema 35, wire format 14, SDK and capability JSON structure, CLI,
+historical support and performance budgets are unchanged. The adapter implementation changes
+only trailing spans before slash banners; its artifact digest changes, invalidating earlier
+measurement-cache entries as designed. The bytecode-derived ABI contract additionally references
+the existing `TokenKind.isCommentDoc` method; the family still compiles against 0.76.1.
+
+A separate existing classification issue remains
+([#33](https://github.com/wstein/flixw-metrics/issues/33)): every adapter uses a textual `///`
+prefix for source doc-comment line totals. A three-line probe containing one `////` banner, one actual
+`///` comment and one definition reports zero ordinary comment lines and two doc-comment lines
+on both 0.75.3 and 0.79.0, although the compiler classifies only the latter as documentation.
+This snapshot preserves those historical raw line-category totals; it does not establish that
+they are correct. A separate correction should use the compiler token kind for line categories,
+prove 1 ordinary/1 documentation line on each family and rerun calibration. The span fix here
+does not change those categories or their thresholds.
+
 ## Results after calibration
+
+This table is the historical threshold-calibration baseline. The 0.79.0 snapshot above adds
+three Prelude source lines, totaling 37,040 lines with the same 1,349 findings.
 
 | Target | Findings | Finding counts by rule |
 | --- | ---: | --- |
