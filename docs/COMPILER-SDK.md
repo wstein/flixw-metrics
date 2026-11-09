@@ -176,9 +176,9 @@ Source: `CompilerVersions.java:55-63`. Each warning is a single line.
 |---|---|---|
 | 0 | the report was written; also `capabilities`, `--version` and help | `Main.java:41-62,86` |
 | 1 | `--fail-on` found a finding at or above its level, or `--fail-on-new` found a new or worsened one; the report was written first | `Main.java:85,131,288-296` |
-| 2 | every error the plugin reports on stderr as `metrics: <message>`: usage errors, invalid configuration or baseline, a failed measurement or project load | `Main.java:89-96,140-147` |
+| 2 | the errors the plugin reports on stderr as `metrics: <message>`: usage errors, invalid configuration or baseline, a failed measurement or project load | `Main.java:89-96,140-147` |
 
-Exit 2 covers these messages:
+These are the most common exit-2 messages. The table is not complete:
 
 | Message after `metrics: ` | Cause |
 |---|---|
@@ -194,13 +194,17 @@ Exit 2 covers these messages:
 | `sources changed during measurement; retry when edits have settled` | the source digest differed before and after measuring |
 | `no .flix files under <root>/src or <root>/test` | the project has nothing to measure |
 | `unknown option <x>`, `<option> requires a value`, `repeated option <x>`, `unknown failure level <x> ...`, `--fail-on-new requires --baseline`, `--view requires --format json`, `--view changes requires --baseline`, `finding filters cannot be used with --view summary`, `unknown init option <x>` | invalid command line |
-| `<path>: <message>` | an invalid `.flixw-metrics.properties` or baseline file, or an output path that cannot be written (`output directory does not exist: ...`) |
+| `<path>: <message>` | an invalid `.flixw-metrics.properties` or baseline file |
+| `output directory does not exist: <dir>`, `output filesystem does not support atomic replacement: <path>` | the `--output` target cannot be written |
 
 Source: `Main.java:63-66,109-111,136-138,178-186,241-254,275,313-380,423-437`,
 `StableInputs.java:35`, `Metrics.java:631`, `Baseline.java`, `MetricsConfig.java`,
-`CompilerCapabilities.java:29`, and `cannot load the project` in every adapter. The list covers the
-messages thrown in these places; the exact text of configuration and baseline errors is in the two
-parsers. The first two guards after the gate are not covered by
+`CompilerCapabilities.java:29`, and `cannot load the project` in every adapter. Other exit-2
+messages exist, for example `unknown command or option <x>` (`Main.java:332`), `the project does not compile` (every adapter, such
+as `Flix0761Adapter.scala:76,79`), `unknown format` and `unknown view` (`Metrics.java:28,44`),
+`unknown rule` and `unknown severity` (`PresentationFilter.java:15,20`), and `refusing to capture a
+baseline ...` and `refusing to overwrite ...` (`Initializer.java:49,85`). Configuration and baseline
+error texts are in the two parsers. The first two guards after the gate are not covered by
 `scripts/test-unknown-flix.sh`. The no-engine-API message names no version. The second JVM's exit
 code is the plugin's (`Main.java:88`).
 

@@ -444,10 +444,10 @@ with every verified release.
 A release that is not verified may still link, but it is unsupported until its own compatibility
 investigation is recorded. If it links, it is loaded with one warning line on stderr saying it has no
 checkpoint, whether it is older or newer than the verified releases. A jar whose file name carries no
-version (a prerelease, `flix.jar`, or a `FLIX_JAR` override or local build named that way) gets the
+readable version (a prerelease, `flix.jar`, or a `FLIX_JAR` override or local build named that way) gets the
 warning that the version cannot be read; if it does not link, it is refused
 with exit 2 and a list of the missing members. [Other compilers](docs/COMPILER-SDK.md#other-compilers)
-lists every case with its exit code and the exact warning text. A fork whose base version is
+lists the cases with their exit codes and the exact warning text. A fork whose base version is
 verified is not warned about, and its behavior is not checked; detecting a fork is follow-up work in
 [#24](https://github.com/wstein/flixw-metrics/issues/24).
 
