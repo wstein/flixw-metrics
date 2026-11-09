@@ -123,8 +123,9 @@ The list of verified releases has one source,
 `plugin/resources/dev/flixw/metrics/verified-flix-versions.txt`. The packaged plugin reads it, and
 `test-compiler-compatibility.sh` fails unless every entry has a `fetch` line and a packaged
 integration checkpoint and every checkpoint is listed. The evidence per release is the matrix in
-[compiler-compatibility](compiler-compatibility/README.md). Other documents link to these two
-instead of repeating the list.
+[compiler-compatibility](compiler-compatibility/README.md). Other documents link to these two for
+the complete list; this file names releases only for the adapter families above, and README.md
+only for the first plugin release that lists each one.
 
 ### What a compiler jar gets
 
@@ -132,8 +133,9 @@ The plugin reads the release from the compiler jar's file name: `flix-<x.y.z>.ja
 `flix-<x.y.z>-<hex>.jar` with a lower-case hexadecimal suffix, which is flixw's cache name
 (`CompilerVersions.java:29`). A jar renamed to claim another release is judged by that name; its
 contents are still judged by the gate. `scripts/test-unknown-flix.sh` covers rows 1, 2 and 5 with
-the 0.79.0 jar under its own name, copied to `flix-0.80.0.jar`, and with a stub jar; rows 3, 4 and 6
-are not in the suite.
+the 0.79.0 jar under its own name, copied to `flix-0.80.0.jar`, and with a stub jar. Row 3 is covered
+only as a name check in `CompilerVersionsTest.java:42-51` (`flix.jar`, `flix-0.79.0-rc1.jar`, an
+upper-case digest suffix); rows 4 and 6 are not in the suite.
 
 | Compiler jar | Admission | stderr | Exit |
 |---|---|---|---|
@@ -187,9 +189,18 @@ Exit 2 covers these messages:
 | `no adapter links against the pinned compiler`, then the adapter class names this build supports | `Adapters.resolve()` found nothing in the second JVM |
 | `this compiler is not the one this build supports`, then the error and `run: ./flixw metrics capabilities` | a `LinkageError` while measuring |
 | `cannot load the project: <error>` | the compiler could not load the project |
+| `cannot open the compiler jar <path>: <error>` | the jar path cannot be turned into a URL |
+| `cannot start compiler bridge: <error>`, `interrupted while waiting for compiler bridge` | the second JVM could not be started or awaited |
+| `sources changed during measurement; retry when edits have settled` | the source digest differed before and after measuring |
+| `no .flix files under <root>/src or <root>/test` | the project has nothing to measure |
+| `unknown option <x>`, `<option> requires a value`, `repeated option <x>`, `unknown failure level <x> ...`, `--fail-on-new requires --baseline`, `--view requires --format json`, `--view changes requires --baseline`, `finding filters cannot be used with --view summary`, `unknown init option <x>` | invalid command line |
+| `<path>: <message>` | an invalid `.flixw-metrics.properties` or baseline file, or an output path that cannot be written (`output directory does not exist: ...`) |
 
-Source: `Main.java:63-66,109-111,136-138,423-437`, `CompilerCapabilities.java:29`, and
-`cannot load the project` in every adapter. The first two guards after the gate are not covered by
+Source: `Main.java:63-66,109-111,136-138,178-186,241-254,275,313-380,423-437`,
+`StableInputs.java:35`, `Metrics.java:631`, `Baseline.java`, `MetricsConfig.java`,
+`CompilerCapabilities.java:29`, and `cannot load the project` in every adapter. The list covers the
+messages thrown in these places; the exact text of configuration and baseline errors is in the two
+parsers. The first two guards after the gate are not covered by
 `scripts/test-unknown-flix.sh`. The no-engine-API message names no version. The second JVM's exit
 code is the plugin's (`Main.java:88`).
 
@@ -219,8 +230,8 @@ The text of #24 still proposes comparing the digest in the file name.
 
 A `FLIX_JAR` override and a local compiler selection are announced by flixw as unverified and not
 evidence of compatibility with the stock compiler. flixw selects that jar and passes it as the
-compiler jar (`src/stage0/flixw.java:6026-6046` in flixw; not run here), so the plugin judges it by its name like any
-other.
+compiler jar (`src/stage0/flixw.java:6026-6046` in flixw at main c83f924; not run here), so the
+plugin judges it by its name like any other.
 
 Whether flixw itself warns about an unrecorded compiler for a plugin is not established here.
 
