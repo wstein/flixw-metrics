@@ -122,8 +122,10 @@ than mysterious. Reporting alone never fails your build; CI can opt into a gate 
 ```
 
 The gate exits 1 when an unsuppressed finding meets or exceeds the selected registry severity
-(`note`, `warning`, or `error`), after still writing the complete report. Usage or analysis
-failures remain exit 2, so policy failure is distinguishable from a broken run.
+(`note`, `warning`, or `error`), after still writing the complete report. Usage and analysis
+failures the plugin reports remain exit 2, so policy failure is distinguishable from them. An
+unhandled exception also ends with exit 1 and no report, see
+[Exit codes and stderr](docs/COMPILER-SDK.md#exit-codes-and-stderr).
 
 For a new project, initialize the reviewed files and get the CI command in one step:
 
@@ -378,8 +380,9 @@ invocation, not only at install.
 
 This plugin reads your source through the compiler flixw already verified. It does not
 download a compiler or choose one. Measuring does run that compiler's own project bootstrap
-(`Bootstrap.bootstrap`, `Flix0761Adapter.scala:59`), which resolves the project's declared
-dependencies: on a project without dependencies it printed `Downloading Flix dependencies` and
+(`Bootstrap.bootstrap`, `Flix0761Adapter.scala:60`), which resolves the project's declared
+dependencies. Observed with Flix 0.77.0 on a project without dependencies: it printed
+`Downloading Flix dependencies` and
 `Running Maven dependency resolver` on stderr and created `lib/` and `packages.lock` in the project
 directory. With declared dependencies it may download them. Whether `./flixw check` does the same
 was not compared.
@@ -440,8 +443,9 @@ also locks the independently broken 0.66.0 Java-runtime artifact and runs packag
 with every verified release.
 A release that is not verified may still link, but it is unsupported until its own compatibility
 investigation is recorded. If it links, it is loaded with one warning line on stderr saying it has no
-checkpoint, whether it is older or newer than the verified releases and whether it is a prerelease, a
-`FLIX_JAR` override or a `flix.jar` with a name that carries no version; if it does not link, it is refused
+checkpoint, whether it is older or newer than the verified releases. A jar whose file name carries no
+version (a prerelease, `flix.jar`, or a `FLIX_JAR` override or local build named that way) gets the
+warning that the version cannot be read; if it does not link, it is refused
 with exit 2 and a list of the missing members. [Other compilers](docs/COMPILER-SDK.md#other-compilers)
 lists every case with its exit code and the exact warning text. A fork whose base version is
 verified is not warned about, and its behavior is not checked; detecting a fork is follow-up work in
