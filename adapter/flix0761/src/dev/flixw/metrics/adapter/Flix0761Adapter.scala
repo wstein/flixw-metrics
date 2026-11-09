@@ -136,6 +136,7 @@ final class Flix0761Adapter extends CompilerModel {
     val docLines = scala.collection.mutable.Set.empty[Int]
     // Last line of the non-doc comments that follow a code token directly, keyed by where that
     // token ends (line, column): a later token on the same line is a different key.
+    // Exactly three slashes make a doc comment; four or more are ordinary line comments.
     val trailing = scala.collection.mutable.Map.empty[(Int, Int), Int]
     var lastCodeEnd = (0, 0)
     var sawDoc = false
@@ -145,7 +146,7 @@ final class Flix0761Adapter extends CompilerModel {
         if (!t.kind.isComment) {
           lastCodeEnd = (t.end.lineOneIndexed, t.end.colOneIndexed.toInt)
           sawDoc = false
-        } else if (t.text.startsWith("///")) sawDoc = true
+        } else if (t.kind.isCommentDoc) sawDoc = true
         else if (!sawDoc && lastCodeEnd._1 > 0)
           trailing.update(lastCodeEnd, math.max(trailing.getOrElse(lastCodeEnd, 0),
             t.end.lineOneIndexed))
