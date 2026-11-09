@@ -1,0 +1,379 @@
+{
+  "snapshotVersion": 1,
+  "measuredOn": "2026-11-09",
+  "analyzer": {
+    "sourceCommit": "d02ca1372196e9c0b5915af34a41cca7d701842e",
+    "packageVersion": "0.0.0-calibration",
+    "packageSha256": "263287750edad8e82b0e4e3a2422a035e1b3b472b338471e79a5cb5d5b7a2329"
+  },
+  "compiler": {
+    "release": "0.79.0",
+    "sourceCommit": "36d923ca325dc466b28c63419667e6026a80f920",
+    "artifactSha256": "8fad2aa09567a7edabcc43f4101fa6199131df2c22929e001c87659d764f6dcf",
+    "adapterFamily": "Flix0761Adapter",
+    "compileFloor": "0.76.1"
+  },
+  "environment": {
+    "java": "Temurin 21.0.13+9-LTS",
+    "os": "Linux",
+    "architecture": "aarch64",
+    "umask": "022"
+  },
+  "manifest": {
+    "path": "calibration/corpus-0.78.json",
+    "sha256": "1cb2a8aa5834c254405f55e7a97bcc1e04102e81848497d7d461c0b857341f29",
+    "sourceRewrites": "exact existing manifest rules; third-party checkouts remain at their pinned commits with documented dirty source copies"
+  },
+  "compatibility": {
+    "nativeReportSchema": 35,
+    "wireFormat": 14,
+    "sdkChanged": false,
+    "capabilityJsonStructureChanged": false,
+    "cliChanged": false,
+    "defaultTestCompiler": "0.77.0",
+    "defaultCalibrationCompiler": "0.77.0",
+    "derivedAbiAdditionalMethod": "TokenKind.isCommentDoc",
+    "cache": "changed adapter artifact digest invalidates older measurements"
+  },
+  "totals": {
+    "files": 217,
+    "definitions": 2650,
+    "lines": 37040,
+    "datalogRules": 32,
+    "datalogFacts": 28,
+    "findings": 1349
+  },
+  "checks": {
+    "corpusTargetsMatched": 9,
+    "sameCompilerWarmCacheBaselines": 8,
+    "fullNativeCrossReleaseComparisons": 8,
+    "crossReleaseWarningBaselines": 8,
+    "sarifTargets": 8,
+    "sarifResults": 1344,
+    "definitionSpanRegressionReleases": [
+      "0.76.1",
+      "0.77.0",
+      "0.78.0",
+      "0.79.0"
+    ],
+    "requiredSourceChecks": [
+      "make format",
+      "make lint",
+      "make test"
+    ],
+    "mutations": "old slash-prefix implementation rejected by new banner assertion; inverted token-kind mutant rejected by real-doc boundary assertion; full mutation sweep not run by owner decision"
+  },
+  "spanRegression": {
+    "definition": "FordFulkerson.indexOf",
+    "line": 189,
+    "beforeFix079Lines": 8,
+    "verified077AndFixed079Lines": 12,
+    "module": "FordFulkerson",
+    "beforeFix079ModuleLines": 624,
+    "verified077AndFixed079ModuleLines": 628
+  },
+  "historicalIncompatibleProjects": {
+    "status": "not remeasured; pins, reasons and last results retained unchanged",
+    "ids": [
+      "flix-basicdb",
+      "flix-parsec"
+    ]
+  },
+  "knownLimitations": [
+    {
+      "issue": "https://github.com/wstein/flixw-metrics/issues/33",
+      "description": "existing source-line categories classify ordinary four-or-more-slash banners as documentation; preserved in this snapshot; observed on 0.75.3 and 0.79.0"
+    }
+  ],
+  "targets": {
+    "datalog-compiler-puzzle": {
+      "sourceCommit": "36d923ca325dc466b28c63419667e6026a80f920",
+      "summary": {
+        "datalogFacts": 4,
+        "datalogRules": 3,
+        "definitions": 1,
+        "files": 1,
+        "findings": 0,
+        "lines": 31,
+        "rules": {}
+      },
+      "moduleSpanLines": 31,
+      "nativeReportPayloadSha256": "6e73ca4f414821fb5dbe95f385eaf699a60a95e808921d03a3dbb8f4d7144acb",
+      "nativeComparison": "identical to 0.77.0 after removing only provenance",
+      "sameCompilerWarmCacheChanges": {
+        "new": 0,
+        "worsened": 0,
+        "resolved": 0,
+        "measurementDeltas": 0
+      },
+      "crossReleaseChanges": {
+        "new": 0,
+        "worsened": 0,
+        "resolved": 0,
+        "measurementDeltas": 0
+      },
+      "sarifResultsChecked": 0,
+      "reportInputDigest": "642467fae79040754d2f9d6042345e4c15dac03bcb3d865e27a4cbf53e30fb4d",
+      "reportedSourceDirty": false
+    },
+    "datalog-dependency-resolution": {
+      "sourceCommit": "36d923ca325dc466b28c63419667e6026a80f920",
+      "summary": {
+        "datalogFacts": 23,
+        "datalogRules": 4,
+        "definitions": 2,
+        "files": 1,
+        "findings": 2,
+        "lines": 107,
+        "rules": {
+          "line-too-long": 2
+        }
+      },
+      "moduleSpanLines": 92,
+      "nativeReportPayloadSha256": "9088948088dca468596e3926cea1fc23e0b9ddc61478d8d9a6aa321184037431",
+      "nativeComparison": "identical to 0.77.0 after removing only provenance",
+      "sameCompilerWarmCacheChanges": {
+        "new": 0,
+        "worsened": 0,
+        "resolved": 0,
+        "measurementDeltas": 0
+      },
+      "crossReleaseChanges": {
+        "new": 0,
+        "worsened": 0,
+        "resolved": 0,
+        "measurementDeltas": 0
+      },
+      "sarifResultsChecked": 2,
+      "reportInputDigest": "b18cbc83a090faf1c83c81982637c392e046758a33f185da78169a3776f4861a",
+      "reportedSourceDirty": false
+    },
+    "datalog-ford-fulkerson": {
+      "sourceCommit": "36d923ca325dc466b28c63419667e6026a80f920",
+      "summary": {
+        "datalogFacts": 0,
+        "datalogRules": 5,
+        "definitions": 42,
+        "files": 1,
+        "findings": 45,
+        "lines": 740,
+        "rules": {
+          "crammed-line": 16,
+          "line-too-long": 29
+        }
+      },
+      "moduleSpanLines": 642,
+      "nativeReportPayloadSha256": "27ff5cccd7ffb031c70d0165563788a5628e6f1becd9244ee7759506d6a7b4b8",
+      "nativeComparison": "identical to 0.77.0 after removing only provenance",
+      "sameCompilerWarmCacheChanges": {
+        "new": 0,
+        "worsened": 0,
+        "resolved": 0,
+        "measurementDeltas": 0
+      },
+      "crossReleaseChanges": {
+        "new": 0,
+        "worsened": 0,
+        "resolved": 0,
+        "measurementDeltas": 0
+      },
+      "sarifResultsChecked": 45,
+      "reportInputDigest": "716f0eafec0c37cd3b7d2947f1da7494977628f101effc70bc37a296f83820da",
+      "reportedSourceDirty": false
+    },
+    "datalog-railroad-network": {
+      "sourceCommit": "36d923ca325dc466b28c63419667e6026a80f920",
+      "summary": {
+        "datalogFacts": 1,
+        "datalogRules": 13,
+        "definitions": 3,
+        "files": 1,
+        "findings": 3,
+        "lines": 93,
+        "rules": {
+          "crammed-line": 1,
+          "line-too-long": 2
+        }
+      },
+      "moduleSpanLines": 89,
+      "nativeReportPayloadSha256": "ac1661b8eacced49c89363bd77bfdcef30efe7f4c9d024bc6a7c5ce54e5dd2a9",
+      "nativeComparison": "identical to 0.77.0 after removing only provenance",
+      "sameCompilerWarmCacheChanges": {
+        "new": 0,
+        "worsened": 0,
+        "resolved": 0,
+        "measurementDeltas": 0
+      },
+      "crossReleaseChanges": {
+        "new": 0,
+        "worsened": 0,
+        "resolved": 0,
+        "measurementDeltas": 0
+      },
+      "sarifResultsChecked": 3,
+      "reportInputDigest": "61ec90aca3e1069c288d5e920221ca207793f8d89bf9057dc070ec8f16ec770b",
+      "reportedSourceDirty": false
+    },
+    "flix-game-engine": {
+      "sourceCommit": "a44ad70e479082bc506b2d741efe95dc7531e3b9",
+      "summary": {
+        "datalogFacts": 0,
+        "datalogRules": 0,
+        "definitions": 2396,
+        "files": 176,
+        "findings": 1200,
+        "lines": 33171,
+        "rules": {
+          "crammed-line": 109,
+          "deeply-nested": 15,
+          "definition-too-long": 23,
+          "dense": 72,
+          "line-too-long": 725,
+          "noisy-flixdoc-parameters": 28,
+          "too-many-parameters": 89,
+          "undocumented-public": 122,
+          "wide-coupling": 16,
+          "wide-return": 1
+        }
+      },
+      "moduleSpanLines": 25073,
+      "nativeReportPayloadSha256": "24dd732f01729366c671bed071541fde38a89eacf9cec6e4b5410f0e0a3a0e6f",
+      "nativeComparison": "identical to 0.77.0 after removing only provenance",
+      "sameCompilerWarmCacheChanges": {
+        "new": 0,
+        "worsened": 0,
+        "resolved": 0,
+        "measurementDeltas": 0
+      },
+      "crossReleaseChanges": {
+        "new": 0,
+        "worsened": 0,
+        "resolved": 0,
+        "measurementDeltas": 0
+      },
+      "sarifResultsChecked": 1200,
+      "reportInputDigest": "867085bac12edfe56843b46c8defee050326eaff7a7eb2f5e1eae9aa354ec9c1",
+      "reportedSourceDirty": true
+    },
+    "flix-json": {
+      "sourceCommit": "ac9d50c40d1f3fcf5a5317735ab58116e9eaf2ee",
+      "summary": {
+        "datalogFacts": 0,
+        "datalogRules": 0,
+        "definitions": 113,
+        "files": 15,
+        "findings": 60,
+        "lines": 1478,
+        "rules": {
+          "crammed-line": 8,
+          "dense": 2,
+          "line-too-long": 49,
+          "undocumented-public": 1
+        }
+      },
+      "moduleSpanLines": 698,
+      "nativeReportPayloadSha256": "c98bec680cd2c5114b2e8f73685434c45b9d9619bac5a8271f6821661a15d3dd",
+      "nativeComparison": "identical to 0.77.0 after removing only provenance",
+      "sameCompilerWarmCacheChanges": {
+        "new": 0,
+        "worsened": 0,
+        "resolved": 0,
+        "measurementDeltas": 0
+      },
+      "crossReleaseChanges": {
+        "new": 0,
+        "worsened": 0,
+        "resolved": 0,
+        "measurementDeltas": 0
+      },
+      "sarifResultsChecked": 60,
+      "reportInputDigest": "f13d5cc79f5044c0f11c9b65aaf29cc4a6d036341aaae145a59e63caf077d4a1",
+      "reportedSourceDirty": true
+    },
+    "flix-semver2": {
+      "sourceCommit": "4473950e945e61717000a87d83b94320d0e7e78b",
+      "summary": {
+        "datalogFacts": 0,
+        "datalogRules": 0,
+        "definitions": 36,
+        "files": 2,
+        "findings": 7,
+        "lines": 299,
+        "rules": {
+          "dense": 1,
+          "undocumented-public": 6
+        }
+      },
+      "moduleSpanLines": 232,
+      "nativeReportPayloadSha256": "8cb427374561956bc40955823d599b0c93792cb9e4e95c2087eeedfec3cabc92",
+      "nativeComparison": "identical to 0.77.0 after removing only provenance",
+      "sameCompilerWarmCacheChanges": {
+        "new": 0,
+        "worsened": 0,
+        "resolved": 0,
+        "measurementDeltas": 0
+      },
+      "crossReleaseChanges": {
+        "new": 0,
+        "worsened": 0,
+        "resolved": 0,
+        "measurementDeltas": 0
+      },
+      "sarifResultsChecked": 7,
+      "reportInputDigest": "f2a5cf6e750110b6badcf7ee13dbaccb40673b8a13eb7761655b628bd06fed20",
+      "reportedSourceDirty": true
+    },
+    "prelude": {
+      "sourceCommit": "36d923ca325dc466b28c63419667e6026a80f920",
+      "summary": {
+        "datalogFacts": 0,
+        "datalogRules": 0,
+        "definitions": 21,
+        "files": 1,
+        "findings": 5,
+        "lines": 232,
+        "rules": {
+          "crammed-line": 4,
+          "line-too-long": 1
+        }
+      },
+      "moduleSpanLines": 133,
+      "normalProjectCacheBaselineSarif": "not applicable: compiler-embedded Prelude harness"
+    },
+    "qual-effect-system": {
+      "sourceCommit": "5632eaf6f2a0c4d65cdf75ce3d62ea032a61d3be",
+      "summary": {
+        "datalogFacts": 0,
+        "datalogRules": 7,
+        "definitions": 36,
+        "files": 19,
+        "findings": 27,
+        "lines": 889,
+        "rules": {
+          "deeply-nested": 1,
+          "definition-too-long": 1,
+          "line-too-long": 4,
+          "undocumented-public": 21
+        }
+      },
+      "moduleSpanLines": 572,
+      "nativeReportPayloadSha256": "dd82b6f27511970225f29d87141e0284f2b41c768ecb4848de2fd5dca4c4ccd8",
+      "nativeComparison": "identical to 0.77.0 after removing only provenance",
+      "sameCompilerWarmCacheChanges": {
+        "new": 0,
+        "worsened": 0,
+        "resolved": 0,
+        "measurementDeltas": 0
+      },
+      "crossReleaseChanges": {
+        "new": 0,
+        "worsened": 0,
+        "resolved": 0,
+        "measurementDeltas": 0
+      },
+      "sarifResultsChecked": 27,
+      "reportInputDigest": "a28a15ccc15664cae8c810018ac3c84cc91eaad26e5ae37d2140f0a0edb6c4a1",
+      "reportedSourceDirty": true
+    }
+  }
+}

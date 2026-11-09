@@ -7,7 +7,8 @@
 - Compiler artifact SHA-256: `8fad2aa09567a7edabcc43f4101fa6199131df2c22929e001c87659d764f6dcf`
 - Compared with: [`v0.78.0...v0.79.0`](https://github.com/flix/flix/compare/v0.78.0...v0.79.0)
 - Analyzer implementation under test: `Flix0761Adapter` with the doc-comment start of a declaration restored (see below)
-- Environment: OpenJDK 21.0.13, Darwin arm64
+- Original environment: OpenJDK 21.0.13, Darwin arm64
+- Complete corpus rerun (2026-11-09): Temurin 21.0.13+9, Linux aarch64; analyzer source `d02ca1372196e9c0b5915af34a41cca7d701842e` (slash-banner span fix)
 
 ## Upstream changes reviewed
 
@@ -45,6 +46,14 @@ and 0.76.1, 0.77.0, 0.78.0 and 0.79.0 agree on the probes. `Doc.loc` keeps the c
 all releases. Not checked: enum and trait positions (they are only counted, without a line) and
 adapters older than `Flix0761Adapter`.
 
+The complete 2026-11-09 corpus comparison exposed a further trailing-span case: slash banners
+(`////` or longer) are ordinary comments, not documentation. The old text-prefix check
+stopped `endOf` at the banner after `FordFulkerson.indexOf`, giving 8 instead of 12 definition
+lines and 624 instead of 628 module lines on 0.79.0. `endOf` now uses the lexer token kind
+(`isCommentDoc`), restoring both values. The corpus-derived banner/real-doc regression passes
+on 0.76.1, 0.77.0, 0.78.0 and 0.79.0; no new adapter is needed. The separate pre-existing
+source-line category issue is disclosed in the [snapshot](../CALIBRATION.md#flix-0790-calibration-snapshot-2026-11-09).
+
 ## Verification
 
 | Check | Command or method | Result |
@@ -55,7 +64,7 @@ adapters older than `Flix0761Adapter`.
 | Semantic fixture | `scripts/test.sh` with `plugin/lib/flix.jar` temporarily set to 0.79.0 | passed, 473 checks (before the position change) |
 | Definition and effect spans | `DefinitionSpanTest` on 0.76.1, 0.77.0, 0.78.0, 0.79.0 | same `line` and `lines` on every release |
 | Cross-release report | `scripts/test-compiler-compatibility.sh` | 0.77.0, 0.78.0 and 0.79.0 reports of one project agree; a 0.77.0 baseline gates a 0.79.0 run with 0 new, 0 resolved |
-| Corpus calibration | `scripts/calibrate-corpus.sh` | measured on the `corpus-0.78.json` variant with the `startOf`/`endOf` compensation: parity with 0.77.0 except the Prelude (232 lines); see [CALIBRATION.md](../CALIBRATION.md#corpus-variant-for-flix-078-and-later) |
+| Complete corpus rerun | `CALIBRATION_MANIFEST=calibration/corpus-0.78.json CALIBRATION_COMPILER_JAR=/path/to/flix-0.79.0.jar sh scripts/calibrate-corpus.sh /tmp/flixw-calibration-0.79.0` | 9/9 targets match, 1,349 findings, eight empty warm-cache baseline comparisons; eight full native JSON comparisons with 0.77.0 match without provenance, including module lines and positions; eight cross-release baselines and SARIF/native location comparisons pass; [snapshot](../CALIBRATION.md#flix-0790-calibration-snapshot-2026-11-09) |
 
 ## Decision and compatibility impact
 
@@ -71,7 +80,8 @@ adapters older than `Flix0761Adapter`.
   0.78.0, and 57/58/59/60 `lines` and none on 0.79.0; `line` values and the `longest` ranking
   shift the same way. With `startOf` and `endOf` the 0.77.0 measurements are reproduced on
   0.79.0.
-- Report schema, wire format, SDK and capability JSON, CLI: unchanged. The packaged adapter
+- Report schema, wire format, SDK and capability JSON structure, CLI: unchanged. The derived ABI
+  contract additionally references the existing `TokenKind.isCommentDoc` method. The packaged adapter
   changed, so the plugin digest in the cache key invalidates existing cache entries.
 - Baselines: finding identity (rule, subject, file) has no line, so existing baselines keep
   matching; measured values change only in 0.79.0 runs, and only back to the 0.77.0 values.
@@ -79,4 +89,5 @@ adapters older than `Flix0761Adapter`.
   `authors`, which Flix 0.78.0 and later refuse to load. A variant (`calibration/corpus-0.78.json`)
   rewrites a fresh checkout of four projects before measuring and measures 0.78.0 and 0.79.0; see
   [CALIBRATION.md](../CALIBRATION.md#corpus-variant-for-flix-078-and-later).
-- Follow-up work: decide whether to move the `flix.jar` pin forward.
+- Full corpus evidence: [2026-11-09 snapshot](../../calibration/results/flix-0.79.0.json), with exact compiler/source pins and per-target results. A trailing-span correction was needed; no new adapter or policy adjustment was needed.
+- Follow-up work: decide whether to move the ordinary `flix.jar` test/calibration pin forward; this snapshot leaves it at 0.77.0.
