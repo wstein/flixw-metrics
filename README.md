@@ -381,8 +381,8 @@ invocation, not only at install.
 This plugin reads your source through the compiler flixw already verified. It does not
 download a compiler or choose one. Measuring does run that compiler's own project bootstrap
 (`Bootstrap.bootstrap`, `Flix0761Adapter.scala:60`), which resolves the project's declared
-dependencies. Observed with Flix 0.77.0 on a project without dependencies: it printed
-`Downloading Flix dependencies` and
+dependencies. Observed with Flix 0.77.0 through the plugin, on a project without dependencies:
+it printed `Downloading Flix dependencies` and
 `Running Maven dependency resolver` on stderr and created `lib/` and `packages.lock` in the project
 directory. With declared dependencies it may download them. Whether `./flixw check` does the same
 was not compared.
