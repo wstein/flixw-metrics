@@ -478,7 +478,8 @@ also accepts the earlier location-sensitive fingerprint during migration.
 `Thresholds` is the single place a measurement becomes a finding. The default command only
 reports: the project that needs a 200-line definition exists and its author knows why. A caller
 may explicitly choose `--fail-on note|warning|error`; the full report is still written and exit
-status 1 then means policy failure, distinct from usage or analysis failure at status 2.
+status 1 then means policy failure. Handled usage or analysis failures exit 2; unhandled
+exceptions can also exit 1 without a report (see [Exit codes and stderr](#exit-codes-and-stderr)).
 
 `--baseline report.json --fail-on-new warning` narrows that policy failure to new warning/error
 observations and stable observations whose reported `overBy` increased. The baseline reader runs
