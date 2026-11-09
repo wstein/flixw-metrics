@@ -237,8 +237,9 @@ The text of #24 still proposes comparing the digest in the file name.
 
 A `FLIX_JAR` override and a local compiler selection are announced by flixw as unverified and not
 evidence of compatibility with the stock compiler. flixw selects that jar and passes it as the
-compiler jar (`src/stage0/flixw.java:6026-6046` in flixw at main c83f924; not run here), so the
-plugin judges it by its name like any other.
+compiler jar ([`src/stage0/flixw.java:6026-6046`](https://github.com/wstein/flixw/blob/c83f924e1223db980985d2cee07dd3b9650adce2/src/stage0/flixw.java#L6026-L6046)
+at flixw commit `c83f924e1223db980985d2cee07dd3b9650adce2`; not run here), so the plugin judges it by its name like any
+other.
 
 Whether flixw itself warns about an unrecorded compiler for a plugin is not established here.
 
