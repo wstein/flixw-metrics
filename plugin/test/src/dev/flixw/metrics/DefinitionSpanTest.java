@@ -37,7 +37,9 @@ public final class DefinitionSpanTest {
      * the same line, a comment before the next definition on its line, and a {@code //} inside a
      * string literal are all told apart by position. {@code first} sits on line 1 of the file,
      * {@code letter} ends in a character literal, and {@code sameLine} has more tokens than the
-     * line of {@code adjacent}, which owns the comment before it.
+     * line of {@code adjacent}, which owns the comment before it. Slash banners follow the
+     * corpus FordFulkerson.indexOf case: four or more slashes are ordinary comments, while
+     * exactly three begin documentation for the next declaration.
      */
     private static final String ADJACENT = """
         pub def first(): Int32 = 1
@@ -60,6 +62,15 @@ public final class DefinitionSpanTest {
             pub def letter(): Char = 'x'
             // after char
         }
+        mod Banners {
+            pub def four(): Int32 = 1
+            //// Four slashes are an ordinary comment.
+            // Tests
+            //////////////////////////////////////////
+            /// A real doc comment stops the trailing span.
+            // Between doc and declaration.
+            pub def documented(): Int32 = 2
+        }
         """;
 
     private static final List<Fixed> ADJACENT_DEFS = List.of(
@@ -68,7 +79,9 @@ public final class DefinitionSpanTest {
         new Fixed("Adj.adjacent", 9, 2, 2, 10),
         new Fixed("Adj.sameLine", 10, 2, 1, 10),
         new Fixed("Inner.inner", 14, 1, 1, 14),
-        new Fixed("Chars.letter", 18, 2, 1, 18));
+        new Fixed("Chars.letter", 18, 2, 1, 18),
+        new Fixed("Banners.four", 22, 4, 1, 22),
+        new Fixed("Banners.documented", 26, 3, 1, 28));
 
     public static void main(String[] args) throws Exception {
         if (args.length == 2 && args[0].equals("write")) {
@@ -118,7 +131,8 @@ public final class DefinitionSpanTest {
                         + d.maxLineTokensLine());
             }
             require(module(model, "Adj").lines() == 7 && module(model, "Inner").lines() == 1
-                    && module(model, "Chars").lines() == 2,
+                    && module(model, "Chars").lines() == 2
+                    && module(model, "Banners").lines() == 7,
                 "a comment after a closing brace or a later token on the line is not module code");
 
             var module = model.modules().stream().filter(m -> m.name().equals("Span"))
