@@ -33,6 +33,13 @@ accept
 mkdir -p "$work/sdk/out"
 printf 'ignored build output\n' > "$work/sdk/out/classes"
 accept
+mkdir -p "$work/sdk/kit/src/out" "$work/sdk/kit/resources/out"
+printf 'ignored source injection\n' > "$work/sdk/kit/src/out/Injected.java"
+reject 'ignored source injection' 'ignored'
+rm "$work/sdk/kit/src/out/Injected.java"
+printf 'ignored resource injection\n' > "$work/sdk/kit/resources/out/injected.txt"
+reject 'ignored resource injection' 'ignored'
+rm "$work/sdk/kit/resources/out/injected.txt"
 write_pin 0000000000000000000000000000000000000000
 reject 'wrong revision' 'HEAD'
 write_pin abc123
@@ -43,6 +50,16 @@ reject 'tracked source edit' 'changed'
 git -C "$work/sdk" add kit/src/Example.java
 reject 'staged source edit' 'changed'
 git -C "$work/sdk" restore --staged kit/src/Example.java
+git -C "$work/sdk" restore kit/src/Example.java
+git -C "$work/sdk" update-index --assume-unchanged kit/src/Example.java
+printf 'hidden tracked edit\n' >> "$work/sdk/kit/src/Example.java"
+reject 'assume-unchanged source edit' 'changed'
+git -C "$work/sdk" update-index --no-assume-unchanged kit/src/Example.java
+git -C "$work/sdk" restore kit/src/Example.java
+git -C "$work/sdk" update-index --skip-worktree kit/src/Example.java
+printf 'hidden tracked edit\n' >> "$work/sdk/kit/src/Example.java"
+reject 'skip-worktree source edit' 'changed'
+git -C "$work/sdk" update-index --no-skip-worktree kit/src/Example.java
 git -C "$work/sdk" restore kit/src/Example.java
 printf 'untracked\n' > "$work/sdk/kit/src/Unexpected.java"
 reject 'untracked source' 'changed'
