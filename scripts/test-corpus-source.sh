@@ -1,6 +1,7 @@
 #!/bin/sh
-# Offline contract test for scripts/copy-corpus-source.sh: its guards and its refusal of links that
-# leave the copy.
+# Offline contract test for the local calibration source: scripts/copy-corpus-source.sh (its guards
+# and its refusal of links that leave the copy) and its use by scripts/calibrate-corpus.sh, where a
+# rewritten project must be measured from a copy and never from a link to the original checkout.
 set -eu
 
 # shellcheck disable=SC1007  # Empty CDPATH is scoped to cd, not assigned to root.
@@ -57,5 +58,69 @@ expect_exit 2 'leaves the checkout' "a relative link out of the tree" -- sh "$co
 mkdir -p "$work/dangling"
 ln -s /no/such/place "$work/dangling/gone"
 expect_exit 2 'leaves the checkout' "an absolute dangling link" -- sh "$copy" "$work/dangling" "$work/t4"
+
+# calibrate-corpus.sh in a scratch tree of its own scripts, with stubs for everything that needs a
+# compiler: the java stub records how each project was presented and writes the report files.
+tree=$work/tree
+mkdir -p "$tree/scripts" "$tree/calibration" "$tree/dist" "$work/jh/bin"
+for script in calibrate-corpus copy-corpus-source rewrite-corpus-copy check-changes-view; do
+  cp "$root/scripts/$script.sh" "$tree/scripts/"
+done
+for stub in package calibrate-prelude check-calibration; do
+  printf '%s\n' '#!/bin/sh' 'exit 0' > "$tree/scripts/$stub.sh"
+done
+cat > "$work/jh/bin/java" <<'STUB'
+#!/bin/sh
+out=
+while [ $# -gt 0 ]; do
+  [ "$1" != --output ] || out=$2
+  shift
+done
+if [ -L "$FLIXW_PROJECT_ROOT" ]; then kind=link; else kind=directory; fi
+if grep -q '^name' "$FLIXW_PROJECT_ROOT/flix.toml"; then named=name; else named=no-name; fi
+printf '%s %s %s\n' "$(basename "$FLIXW_PROJECT_ROOT")" "$kind" "$named" >> "$STUB_LOG"
+printf '%s\n' '{"baseline":{"newCount":0,"worsenedCount":0,"resolvedCount":0,"measurementDeltas":[]},"smells":[]}' > "$out"
+STUB
+chmod 755 "$work/jh/bin/java"
+: > "$work/jar"
+: > "$tree/dist/plugin.jar"
+
+sources=$work/sources
+commit_of() { git -C "$1" rev-parse HEAD; }
+for id in flix rewritten plain; do
+  mkdir -p "$sources/$id/src"
+  git -C "$sources/$id" init -q
+  printf '%s\n' '[package]' 'name = "old"' 'version = "1.0.0"' 'flix = "0.79.0"' > "$sources/$id/flix.toml"
+  printf '%s\n' 'mod Alpha {' '}' > "$sources/$id/src/Alpha.flix"
+  git -C "$sources/$id" add -A
+  GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@example.invalid GIT_COMMITTER_NAME=t \
+    GIT_COMMITTER_EMAIL=t@example.invalid git -C "$sources/$id" commit -q -m pin
+done
+# The project directories are links to the checkouts, as an owner may keep them.
+mkdir -p "$work/checkouts"
+for id in flix rewritten plain; do ln -s "$sources/$id" "$work/checkouts/$id"; done
+jq -n --arg f "$(commit_of "$sources/flix")" --arg r "$(commit_of "$sources/rewritten")" \
+    --arg p "$(commit_of "$sources/plain")" '{
+  compilerSource: {repository: "https://example.invalid/flix", commit: $f, prelude: "flix.toml"},
+  projects: [
+    {id: "rewritten", repository: "https://example.invalid/r", commit: $r,
+     rewrite: {publicModules: [{file: "src/Alpha.flix", module: "Alpha"}]}},
+    {id: "plain", repository: "https://example.invalid/p", commit: $p}],
+  incompatibleProjects: [], datalogExamples: []}' > "$tree/calibration/corpus.json"
+
+STUB_LOG=$work/log
+export STUB_LOG
+: > "$STUB_LOG"
+CALIBRATION_SOURCE_ROOT=$work/checkouts CALIBRATION_JAVA_HOME=$work/jh \
+  CALIBRATION_COMPILER_JAR=$work/jar PATH="$work/jh/bin:$PATH" \
+  sh "$tree/scripts/calibrate-corpus.sh" "$work/output" > /dev/null 2> "$work/cal-err" \
+  || fail "calibrate-corpus.sh failed offline ($(cat "$work/cal-err"))"
+grep -qx 'rewritten directory no-name' "$STUB_LOG" \
+  || fail "a rewritten project was not measured from a rewritten copy ($(tr '\n' ';' < "$STUB_LOG"))"
+grep -qx 'plain link name' "$STUB_LOG" \
+  || fail "a project without a rewrite is not linked to its checkout ($(tr '\n' ';' < "$STUB_LOG"))"
+grep -q '^name = "old"$' "$sources/rewritten/flix.toml" || fail "the original checkout was rewritten"
+grep -q '^mod Alpha {$' "$sources/rewritten/src/Alpha.flix" || fail "the original source was rewritten"
+[ -z "$(git -C "$sources/rewritten" status --porcelain)" ] || fail "the original checkout is dirty"
 
 echo "test-corpus-source: ok"
