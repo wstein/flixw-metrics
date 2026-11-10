@@ -9,6 +9,8 @@ trap 'rm -rf "$work"' EXIT INT TERM
 git clone -q --shared --no-checkout "$source" "$work/sdk"
 revision=$(git -C "$source" rev-parse HEAD)
 git -C "$work/sdk" checkout -q --detach "$revision"
+# The adapter module compiles against its floor jar in plugin/lib; a fresh checkout has none.
+sh "$root/scripts/fetch-flix.sh"
 mill=$root/mill
 [ -x "$mill" ] || mill=mill
 (cd "$root" && FLIXW_SDK_SOURCE="$work/sdk" "$mill" --no-server plugin.compile + plugin.resources + adapter.flix0600.compile)
