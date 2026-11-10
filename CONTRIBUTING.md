@@ -20,6 +20,21 @@ bootstraps the build tool, and `scripts/fetch-flix.sh` downloads digest-verified
 On its first run Mill downloads Temurin 21 itself (`mill-jvm-version` in `build.mill`; the default would be `zulu:25`).
 Generated `out/`, `dist/`, and `plugin/lib/flix*.jar` files must not be committed.
 
+The plugin embeds `kit` from the exact source revision in `sdk-source.properties`.
+Clone the repository named there, check out its full `revision`, and set
+`FLIXW_SDK_SOURCE` to that checkout's absolute root before invoking Mill or the
+source checks. The checkout must have that exact HEAD and no tracked or untracked
+changes; ignored build outputs outside `kit/src` and `kit/resources` are allowed.
+Consumed files must match their pinned Git blobs even when index flags hide edits.
+A missing path, wrong revision, or
+changed source fails before plugin compilation. There is no download or sibling
+checkout fallback. CI checks out the same revision explicitly.
+
+Only `kit/src` and `kit/resources` enter the plugin artifact. The kit classes and
+`META-INF/LICENSE-flixw-plugin-sdk` are embedded in `plugin.jar`; no SDK JAR or
+plugin dependency is required at runtime. The source pin is an interim development
+contract; publishing and consuming a versioned release asset is a separate step.
+
 Useful commands:
 
 ```console

@@ -1,12 +1,14 @@
 #!/bin/sh
 set -eu
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd -P)
+sh "$root/scripts/test-sdk-source.sh"
 sh "$root/scripts/check-mill-jdk.sh"
 sh "$root/scripts/check-lint-adapters.sh"
 sh "$root/scripts/lint.sh"
 sh "$root/scripts/test-calibration.sh"
 sh "$root/scripts/test-performance-budget.sh"
 sh "$root/scripts/package.sh" 0.0.0-test >/dev/null
+sh "$root/scripts/check-sdk-package.sh" "$root/dist/plugin.jar"
 first_package=$(shasum -a 256 "$root/dist/plugin.jar" | awk '{print $1}')
 # ZIP timestamps have two-second precision; cross that boundary so timestamped packaging cannot
 # accidentally satisfy the reproducibility contract on a fast machine.
