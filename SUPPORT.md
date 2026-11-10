@@ -12,7 +12,7 @@ Before reporting an unsupported compiler, run:
 
 Include that JSON output after removing local paths. The verified compiler matrix and known
 rejection boundaries are documented in
-[`docs/compiler-compatibility/`](docs/compiler-compatibility/README.md).
+the SDK's [`flix-bridge/docs/compatibility/`](https://github.com/wstein/flixw-plugin-sdk/blob/515b8080336bf9f2ab6bc8ec2e87b29858c69eb7/flix-bridge/docs/compatibility/README.md).
 
 This project does not currently operate a discussion forum or provide guaranteed response times.
 Security vulnerabilities must be reported privately as described in [SECURITY.md](SECURITY.md).

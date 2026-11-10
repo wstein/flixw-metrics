@@ -53,13 +53,14 @@ performance contracts, and proves package reproducibility.
 ## Architecture constraints
 
 Compiler-neutral Java code lives under `plugin/src/dev/flixw/metrics/`. Flix compiler types may
-appear only in the Scala adapter source under a versioned `adapter.flixNNNN` module. Values crossing
-`sdk.CompilerModel` must remain compiler-neutral strings, numbers, booleans, paths, and
+appear only in the Scala adapter source of the SDK's `flix-bridge`, one family per `adapter.flixNNNN`
+module. Values crossing `dev.flixw.sdk.bridge.CompilerModel` must remain compiler-neutral strings, numbers, booleans, paths, and
 collections.
 
 Adapters are selected by their bytecode-derived linkage requirements, not version strings. A new
-compiler family therefore requires an isolated adapter module, an `Adapters.KNOWN` entry, semantic
-and packaged integration tests, and a record under `docs/compiler-compatibility/`. Do not replace
+compiler family therefore requires a change in `wstein/flixw-plugin-sdk` (an isolated adapter module,
+a family and release entries in `versions.json`, conformance tests and a compatibility record) and a
+new `sdk-source.properties` pin here, with the packaged integration checkpoint. Do not replace
 the derived ABI contract with a handwritten capability list.
 
 Changes to measurement behavior or default thresholds require corpus calibration evidence. Keep
@@ -78,6 +79,7 @@ A pull request should:
 - list the verification commands run;
 - state compatibility impacts for the report schema, wire/cache format, SDK, capability JSON,
   CLI, and packaged adapter classes; and
-- link the relevant issue and compiler-compatibility investigation.
+- link the relevant issue and, for a new compiler release, the SDK pull request with its compatibility
+  record.
 
 By participating, you agree to follow the [Code of Conduct](CODE_OF_CONDUCT.md).

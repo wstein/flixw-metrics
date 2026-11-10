@@ -46,7 +46,7 @@ Complete this section for compiler-facing changes; otherwise mark it not applica
 - [ ] The adapter compiles against the oldest verified release in its family.
 - [ ] The bytecode-derived capability gate passes or rejects at the intended boundary.
 - [ ] Semantic and packaged integration fixtures cover the changed compiler representation.
-- [ ] `docs/compiler-compatibility/` records the release evidence and metric parity.
+- [ ] The SDK's `flix-bridge/docs/compatibility/` records the release evidence (linked SDK pull request), and the packaged checkpoint for the release is in `scripts/test-compiler-compatibility.sh`.
 - [ ] Compiler jars and generated `out/` or `dist/` files are not committed.
 
 ## Checklist

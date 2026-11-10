@@ -11,7 +11,7 @@ reorganised between releases. A plugin that spread knowledge of those types thro
 code would inherit that instability everywhere, and every new Flix would be an edit in a dozen
 places.
 
-So it is confined to one file per compatibility family. `dev.flixw.metrics.sdk.CompilerModel` is the only thing the
+So it is confined to one file per compatibility family. `dev.flixw.sdk.bridge.CompilerModel` is the only thing the
 rest of the plugin knows about a compiler, it is plain Java, and it returns **counts and
 strings, not compiler types** — a richer interface handing back declarations or an AST cursor
 would put compiler concepts straight back into the callers it exists to protect.
@@ -19,24 +19,28 @@ would put compiler concepts straight back into the callers it exists to protect.
 | layer | knows about Flix | language |
 |---|---|---|
 | `Main`, `Metrics`, `ResultCache`, `SourceMetrics` | nothing | Java |
-| `sdk.CompilerModel`, `sdk.Adapters` | nothing | Java |
-| `adapter.flix0600`: `dev.flixw.metrics.adapter.Flix0600Adapter` | everything | Scala |
-| `adapter.flix0610`: `dev.flixw.metrics.adapter.Flix0610Adapter` | everything | Scala |
-| `adapter.flix0661`: `dev.flixw.metrics.adapter.Flix0661Adapter` | everything | Scala |
-| `adapter.flix0672`: `dev.flixw.metrics.adapter.Flix0672Adapter` | everything | Scala |
-| `adapter.flix0680`: `dev.flixw.metrics.adapter.Flix0680Adapter` | everything | Scala |
-| `adapter.flix0753`: `dev.flixw.metrics.adapter.Flix0753Adapter` | everything | Scala |
-| `adapter.flix0761`: `dev.flixw.metrics.adapter.Flix0761Adapter` | everything | Scala |
+| `CompilerFacade` (plugin side of the bridge: native-`Metrics` probe, `capabilities` JSON, notice) | the names of two compiler classes | Java |
+| `bridge.CompilerModel`, `bridge.Adapters`, `bridge.AdapterAbi`, `bridge.VersionData` (SDK `flix-bridge`) | nothing | Java |
+| `adapter.flix0600`: `dev.flixw.sdk.bridge.adapter.Flix0600Adapter` (SDK `flix-bridge`) | everything | Scala |
+| `adapter.flix0610`: `dev.flixw.sdk.bridge.adapter.Flix0610Adapter` (SDK `flix-bridge`) | everything | Scala |
+| `adapter.flix0661`: `dev.flixw.sdk.bridge.adapter.Flix0661Adapter` (SDK `flix-bridge`) | everything | Scala |
+| `adapter.flix0672`: `dev.flixw.sdk.bridge.adapter.Flix0672Adapter` (SDK `flix-bridge`) | everything | Scala |
+| `adapter.flix0680`: `dev.flixw.sdk.bridge.adapter.Flix0680Adapter` (SDK `flix-bridge`) | everything | Scala |
+| `adapter.flix0753`: `dev.flixw.sdk.bridge.adapter.Flix0753Adapter` (SDK `flix-bridge`) | everything | Scala |
+| `adapter.flix0761`: `dev.flixw.sdk.bridge.adapter.Flix0761Adapter` (SDK `flix-bridge`) | everything | Scala |
 
-Every adapter, including the newest family, is an isolated child of the `adapter` module and is
-compiled against only its own compiler generation. Supporting another Flix generation is an
-isolated adapter module and a line in `Adapters.KNOWN`.
-It is explicitly *not* an edit to the report, the smells, the formats, the cache or the CLI. Each
-module compiles against the oldest verified compiler in its family; none of those compilers is packaged.
+The bridge, the adapters and the version data are the SDK repository's `flix-bridge` module
+(`wstein/flixw-plugin-sdk`), embedded from the exact commit in `sdk-source.properties`. This build
+compiles each adapter family in an isolated `adapter.flixNNNN` module against only its own compiler
+generation and packages all of them in the one `plugin.jar`. Supporting another Flix generation is an
+adapter class and a family entry in the SDK's `versions.json`, then a new pin here. It is explicitly
+*not* an edit to the report, the smells, the formats, the cache or the CLI. Each module compiles
+against the oldest verified compiler in its family; none of those compilers is packaged.
 
-`SDK_VERSION` is declared and unused. The moment an adapter ships separately from this jar,
-the two need a way to say whether they agree; while every adapter is compiled by this build and
-packaged in the same jar, they cannot disagree, so nothing checks it. Today's verified scope is
+The SDK version (`CompilerModel.SDK_VERSION`) and the adapter family that linked are explicit fields
+of the measurement-cache key: `Adapters.select()` returns them as `cacheFields()`, and the outer phase,
+which keys the cache before any adapter is loaded, derives the same family from the contracts with
+`CompilerFacade.cacheFields`. Today's verified scope is
 **Flix 0.60.0 via
 `Flix0600Adapter`; Flix 0.61.0 and 0.65.0 via `Flix0610Adapter`; Flix 0.66.1 and 0.67.1 via
 `Flix0661Adapter`; Flix 0.67.2 via
@@ -44,11 +48,11 @@ packaged in the same jar, they cannot disagree, so nothing checks it. Today's ve
 `Flix0680Adapter`; Flix 0.75.3 and 0.76.0 via `Flix0753Adapter`; and Flix 0.76.1 through 0.79.0 via
 `Flix0761Adapter`.** Each suffix names the oldest
 verified release in its family, not a closed range or the current compiler pin. The investigation supporting each release
-is recorded under [`docs/compiler-compatibility`](compiler-compatibility/README.md).
+is recorded in the SDK under [`flix-bridge/docs/compatibility`](https://github.com/wstein/flixw-plugin-sdk/blob/515b8080336bf9f2ab6bc8ec2e87b29858c69eb7/flix-bridge/docs/compatibility/README.md).
 
 ### Adapters are selected by linkage, not by version string
 
-`Adapters.resolve()` checks each known adapter's bytecode-derived ABI contract, newest first, and
+`Adapters.select()` checks each adapter family's bytecode-derived ABI contract, newest first, and
 instantiates the first compatible one. The explicit check matters because the JVM may resolve a
 method reference only when that code path first executes; construction alone does not prove the
 whole adapter links. A fork reporting an unfamiliar version may still link; a compiler reporting a
@@ -119,46 +123,51 @@ Admission is linkage, never a version. A compiler jar that satisfies one adapter
 is measured with the newest such adapter, whatever it is called; the version decides only whether a
 warning is printed.
 
-The list of verified releases has one source,
-`plugin/resources/dev/flixw/metrics/verified-flix-versions.txt`. The packaged plugin reads it, and
-`test-compiler-compatibility.sh` fails unless every entry has a `fetch` line and a packaged
-integration checkpoint and every checkpoint is listed. The evidence per release is the matrix in
-[compiler-compatibility](compiler-compatibility/README.md). Other documents link to these two for
+The list of verified releases has one source, `versions.json` in the SDK's `flix-bridge`
+(`flix-bridge/resources/dev/flixw/sdk/bridge/versions.json`), with the SHA-256 of each compiler jar and
+the two rejected releases, 0.59.0 and 0.66.0. The packaged plugin reads it, `scripts/fetch-flix.sh`
+fetches and checks the jars from it, and `test-compiler-compatibility.sh` fails unless every verified
+release has a packaged integration checkpoint and every checkpoint is verified. The evidence per
+release is the matrix in the SDK's [compatibility records](https://github.com/wstein/flixw-plugin-sdk/blob/515b8080336bf9f2ab6bc8ec2e87b29858c69eb7/flix-bridge/docs/compatibility/README.md). Other documents link to these two for
 the complete list.
 
 ### What a compiler jar gets
 
-The plugin reads the release from the compiler jar's file name: `flix-<x.y.z>.jar`, or
+The plugin takes the release from `FLIXW_COMPILER_VERSION`, which flixw sets from its lock; when
+that is unset or not a release number it reads the compiler jar's file name: `flix-<x.y.z>.jar`, or
 `flix-<x.y.z>-<hex>.jar` with a lower-case hexadecimal suffix, which is flixw's cache name
-(`CompilerVersions.java:29`). A jar renamed to claim another release is judged by that name; its
-contents are still judged by the gate. `scripts/test-unknown-flix.sh` covers rows 1, 2 and 5 with
+(`VersionData.flixVersion` in the SDK). A jar renamed to claim another release, or a
+`FLIXW_COMPILER_VERSION` that claims one, is judged by that claim; the contents are still judged by
+the gate. `scripts/test-unknown-flix.sh` covers rows 1, 2 and 5 with
 the 0.79.0 jar under its own name, copied to `flix-0.80.0.jar`, and with a stub jar. Row 3 is covered
-only as a name check in `CompilerVersionsTest.java:42-51` (`flix.jar`, `flix-0.79.0-rc1.jar`, an
-upper-case digest suffix); rows 4 and 6 are not in the suite.
+as a name check in `CompilerVersionsTest.java` (`flix.jar`, `flix-0.79.0-rc1.jar`, an upper-case
+digest suffix) and, for `flix.jar` with and without an announced version, by
+`scripts/test-unknown-flix.sh`; rows 4 and 6 are not in the suite.
 
 | Compiler jar | Admission | stderr | Exit |
 |---|---|---|---|
 | Verified release: `flix-0.77.0-<sha256>.jar`, `flix-0.77.0.jar` | measured if it links | nothing | 0 |
 | Release not in the list that links: any other `flix-<x.y.z>...` name, older or newer than the verified ones | measured with the newest adapter that links | warning 1 | 0 |
-| Name without a readable version: a prerelease (`flix-0.80.0-rc.1-<hex>.jar`), `flix.jar`, a local build, a `FLIX_JAR` override with such a name | measured if it links | warning 2 | 0 |
+| Name without a readable version and no `FLIXW_COMPILER_VERSION`: a prerelease (`flix-0.80.0-rc.1-<hex>.jar`), `flix.jar`, a local build, a `FLIX_JAR` override with such a name | measured if it links | warning 2 | 0 |
 | Fork whose base version is listed (flixw drops `+...` from the name) | measured as the base version | nothing | 0 |
 | Links to no adapter | refused before measurement | the message under exit 2 below | 2 |
 | Links at the gate, fails while the compiler loads | stops | the message under exit 2 below | 2 |
 
 A run that measures can end with exit 1 instead of 0: with `--fail-on` when a finding reaches its
 level, with `--fail-on-new` when a finding is new or worsened (`Main.java:287-296`, see below).
-`CompilerVersions.java:56-63` warns for a name without a readable version and for a readable release
-that is not listed, not only a newer one.
+`VersionData.warning` and `VersionData.warningFor` (SDK) warn for a name without a readable version
+and for a readable release that is not listed, not only a newer one; a `flix.jar` run under flixw,
+which announces its version, is judged as that release.
 
 Both warnings, verbatim, as the plugin prints them (the version and the newest verified release
 come from the list and change with it):
 
 ```text
-metrics: warning: Flix 0.80.0 has no compatibility checkpoint (newest verified: 0.79.0); results are not verified for it, see scripts/test-compiler-compatibility.sh and docs/compiler-compatibility
-metrics: warning: cannot read the Flix version from the compiler jar name flix.jar; this release has no compatibility checkpoint (newest verified: 0.79.0), see scripts/test-compiler-compatibility.sh and docs/compiler-compatibility
+metrics: warning: Flix 0.80.0 has no compatibility checkpoint (newest verified: 0.79.0); results are not verified for it, see flix-bridge/docs/compatibility
+metrics: warning: cannot read the Flix version from the compiler jar name flix.jar; this release has no compatibility checkpoint (newest verified: 0.79.0), see flix-bridge/docs/compatibility
 ```
 
-Source: `CompilerVersions.java:55-63`. Each warning is a single line.
+Source: `VersionData.java` in the SDK, called by `CompilerFacade.warning`. Each warning is a single line.
 
 - It is printed once per measuring run, after the gate accepted the compiler and before the options
   are parsed (`Main.java:68`). Cache hits print it again, and so does a run that then fails on an
@@ -186,7 +195,7 @@ These are the most common exit-2 messages. The table is not complete:
 | `missing FLIXW_<name>` | a required variable is unset or blank (`PROJECT_ROOT`, `COMPILER_JAR`, `JAVA_HOME`) |
 | `FLIXW_COMPILER_JAR is not a regular file: <path>` | the compiler jar is missing or not a regular file |
 | `the pinned compiler has no supported engine API`, then `jar:` and `missing:` lines | no adapter's contract is satisfied; refused before measurement |
-| `no adapter links against the pinned compiler`, then the adapter class names this build supports | `Adapters.resolve()` found nothing in the second JVM |
+| `no adapter links against the pinned compiler`, then the adapter class names this build supports | `Adapters.select()` found nothing in the second JVM |
 | `this compiler is not the one this build supports`, then the error and `run: ./flixw metrics capabilities` | a `LinkageError` while measuring |
 | `cannot load the project: <error>` | the compiler could not load the project |
 | `cannot open the compiler jar <path>: <error>` | the jar path cannot be turned into a URL |
@@ -199,9 +208,9 @@ These are the most common exit-2 messages. The table is not complete:
 
 Source: `Main.java:63-66,109-111,136-138,178-186,241-254,275,313-380,423-437`,
 `StableInputs.java:35`, `Metrics.java:631`, `Baseline.java`, `MetricsConfig.java`,
-`CompilerCapabilities.java:29`, and `cannot load the project` in every adapter. Other exit-2
+`CompilerCapabilities.java` of the SDK, and `cannot load the project` in every adapter. Other exit-2
 messages exist, for example `unknown command or option <x>` (`Main.java:332`), `the project does
-not compile` (every adapter, such as `Flix0761Adapter.scala:76,79`),
+not compile` (every adapter, such as the SDK's `Flix0761Adapter.scala`),
 `unknown format` and `unknown view` (`Metrics.java:28,44`),
 `unknown rule` and `unknown severity` (`PresentationFilter.java:15,20`), and `refusing to capture a
 baseline ...` and `refusing to overwrite ...` (`Initializer.java:49,85`). Configuration and baseline

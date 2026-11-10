@@ -3,9 +3,14 @@
 ## Project Structure & Module Organization
 
 The analyzer is a mixed Java/Scala Mill build. Compiler-neutral code lives in
-`plugin/src/dev/flixw/metrics/`; every Flix adapter is compiled in isolation under `adapter/`, in
-`adapter/flix0761/src/` through `adapter/flix0600/src/`. The stable boundary is under
-`plugin/src/dev/flixw/metrics/sdk/`. Tests live in `plugin/test/src/` and use the Flix fixture in
+`plugin/src/dev/flixw/metrics/`. The Flix adapters, the stable `CompilerModel`/`Adapters` boundary,
+the bytecode-derived ABI check and the version data are not in this repository: they are `flix-bridge`
+(package `dev.flixw.sdk.bridge`) of the SDK repository `wstein/flixw-plugin-sdk`, embedded from the
+exact commit named in `sdk-source.properties` (with the `kit` module). `build.mill` compiles each
+adapter family in isolation, as `adapter.flix0761` through `adapter.flix0600`, from the pinned
+`flix-bridge/adapter/<family>/src` and embeds everything in the one `plugin.jar`;
+`scripts/check-sdk-source.sh` refuses a checkout whose HEAD or consumed bytes differ from the pin.
+Changing an adapter, `CompilerModel` or `versions.json` is an SDK change followed by a new pin. Tests live in `plugin/test/src/` and use the Flix fixture in
 `plugin/test/fixtures/semantic/`. Calibration inputs and budgets live in `calibration/`, project
 documentation in `docs/`, automation in `scripts/`, and CI workflows in `.github/workflows/`.
 Do not commit generated `out/`, `dist/`, or downloaded `plugin/lib/flix*.jar` files.
@@ -14,10 +19,9 @@ Do not commit generated `out/`, `dist/`, or downloaded `plugin/lib/flix*.jar` fi
 
 The Java/Scala split is load-bearing, not incidental. `Bootstrap`/`TypedAst`/etc. in `flix.jar` carry no
 ABI compatibility promise between releases. All knowledge of those types is confined to one file
-per family under `adapter/flixNNNN/src/dev/flixw/metrics/adapter/`, for example
-`adapter/flix0753/src/dev/flixw/metrics/adapter/Flix0753Adapter.scala`. Everything else — `Main`,
-`Metrics`, `ResultCache`, `SourceMetrics`, and
-the stable `sdk.CompilerModel`/`sdk.Adapters` boundary — stays plain Java that knows nothing about Flix.
+per family in the SDK's `flix-bridge/adapter/flixNNNN/src/dev/flixw/sdk/bridge/adapter/`, for example
+`Flix0753Adapter.scala`. Everything else — `Main`, `Metrics`, `ResultCache`, `SourceMetrics`, and
+the stable `CompilerModel`/`Adapters` boundary of `flix-bridge` — stays plain Java that knows nothing about Flix.
 `CompilerModel` returns counts and strings only, deliberately, never compiler types or an AST cursor.
 
 The engine is Scala specifically because Flix's AST is a sealed hierarchy: typed patterns make removed
@@ -26,22 +30,24 @@ or misspelled nodes build failures. The metric classifier deliberately has a cat
 reflective predecessor classified nodes by simple class name and silently ignored unrecognized ones — a
 `TypeMatchRule` that didn't exist was counted and the real `ExtMatchRule` was missed, with no error
 anywhere. That failure mode is why the AST-facing half of the plugin is Scala at all; see
-`docs/COMPILER-SDK.md` and `docs/compiler-compatibility/` for the full contract and release evidence.
+`docs/COMPILER-SDK.md` and the SDK's `flix-bridge/docs/compatibility/` for the full contract and release evidence.
 
 Which releases each adapter serves is listed in `docs/COMPILER-SDK.md`; the verified list itself is
-`plugin/resources/dev/flixw/metrics/verified-flix-versions.txt`. Each adapter name records the oldest
-verified release in its linkage family.
-Supporting an incompatible Flix generation means
-adding one adapter class plus a line in `Adapters.KNOWN` — never
-touching the report, findings, formats, cache, or CLI. Adapters are selected by **linkage, not version
-string**: `Adapters.resolve()` checks each adapter's bytecode-derived contract before instantiation
-and keeps the first compatible adapter, so lazy JVM resolution cannot defer an incompatible AST
-failure until mid-measurement.
+`flix-bridge/resources/dev/flixw/sdk/bridge/versions.json` of the pinned SDK (read here with
+`scripts/sdk-versions.sh`; `scripts/fetch-flix.sh` takes the releases and their digests from it). Each
+adapter name records the oldest verified release in its linkage family.
+Supporting an incompatible Flix generation means adding one adapter class and a family entry in the
+SDK's `versions.json` — never touching the report, findings, formats, cache, or CLI. Adapters are
+selected by **linkage, not version string**: `Adapters.select()` checks each adapter's
+bytecode-derived contract before instantiation and keeps the first compatible adapter, so lazy JVM
+resolution cannot defer an incompatible AST failure until mid-measurement.
 
-`CompilerCapabilities` inspects the pinned compiler jar via `Class.forName(name, false, loader)` (never
-initializing/running compiler code). `AdapterAbi` derives its exact class, field, constructor, and method
-requirements from every compiled adapter's bytecode, including generated nested classes. A regression
-checks each pinned compiler against these structural contracts; do not replace them with handwritten lists.
+`CompilerFacade` is the plugin's side of the SDK's `CompilerCapabilities`: the bridge inspects the
+pinned compiler jar via `Class.forName(name, false, loader)` (never initializing/running compiler
+code) and `AdapterAbi` derives its exact class, field, constructor, and method requirements from
+every compiled adapter's bytecode, including generated nested classes; the facade adds the
+native-`Metrics` probe, the `capabilities` JSON and the unverified-release notice. A regression checks
+each pinned compiler against these structural contracts; do not replace them with handwritten lists.
 
 The compiler loads on the **application class path** of a second ("bridge") JVM (spawned by `Main`
 via `--bridge` with `-cp plugin.jar:flix.jar`) launched with a 64 MiB thread stack (`-Xss64m`; Flix's
@@ -52,14 +58,16 @@ loader defined the compiler classes. Consequence: `flix.jar` bundles ASM, JLine,
 0.76 Byte Buddy and jsr305, **unshaded** on that flat class path, so any dependency this plugin adds
 must be shaded or classpath order decides which copy wins.
 
-Each adapter's floor jar (`flix-<version>.jar` in `plugin/lib`) is wired into that adapter module
+Each adapter's floor jar (`flix-<version>.jar` in `plugin/lib`, named by `versions.json`) is wired into that adapter module
 via `compileClasspath` in `build.mill`, not `unmanagedClasspath` — it must stay compile-time only.
 The compiler-neutral `plugin` module has no Flix jar on its compile class path. At runtime the
 compiler is whatever flixw pinned for the target
 project; bundling a copy would mean measuring one compiler while claiming to measure another.
 
 Only **measurements** are cached (`ResultCache`/`Wire`), keyed on sources, `flix.toml`, the pinned
-compiler, this plugin's version, and its own artifact bytes. Findings and formatting are recomputed on
+compiler, this plugin's version, its own artifact bytes, and the bridge's `sdkVersion` and
+`adapterFamily` as explicit fields (`Adapters.Selection.cacheFields()` in the measuring phase,
+`CompilerFacade.cacheFields` in the outer phase, which must agree). Findings and formatting are recomputed on
 every run — including cache hits — so an edited `.flixw-metrics.properties` policy or a fresh git
 provenance snapshot takes effect immediately without invalidating the cache. Every cache failure is
 treated as a miss, never a stale answer.
@@ -79,7 +87,8 @@ independently, so the two can't drift apart.
   totals and one definition position of a sample project on the 0.78.0 and 0.79.0 jars with
   golden files, and `scripts/test-unknown-flix.sh` pins the warning for a Flix release without
   a checkpoint. A compiler jar named `flix.jar`, such as the pin in `plugin/lib`, has no readable
-  version, so a measuring run against it prints the `cannot read the Flix version` warning on stderr.
+  version in its name; the plugin takes the version from `FLIXW_COMPILER_VERSION`, which flixw sets,
+  and only a run without it prints the `cannot read the Flix version` warning on stderr.
   Historical compiler jars are downloaded into ignored `out/` storage when absent.
   Its packaging
   check deliberately builds twice with a two-second gap to prove reproducibility; that pause is expected.
