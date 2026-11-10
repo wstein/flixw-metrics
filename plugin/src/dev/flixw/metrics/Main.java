@@ -14,6 +14,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -51,6 +52,7 @@ public final class Main {
             // The gate inspects without initialising, so an isolated loader is right *here* --
             // nothing is executed through it. It is deliberately not the loader the engine
             // measures with, which cannot be isolated at all.
+            Map<String, String> cacheFields;
             try (URLClassLoader inspector = inspectionLoader(context.compilerJar())) {
                 CompilerFacade.Capabilities capabilities = CompilerFacade.inspect(inspector,
                     context.compilerJar());
@@ -62,14 +64,17 @@ public final class Main {
                     throw new Usage("the pinned compiler has no supported engine API\n"
                         + "       jar: " + context.compilerJar() + "\n"
                         + "       missing: " + String.join(", ", capabilities.missing()));
+                cacheFields = CompilerFacade.cacheFields(inspector);
                 // Linkage is the admission test; a release without a checkpoint is still loaded.
-                CompilerFacade.warning(System.getenv(), context.compilerJar()).ifPresent(System.err::println);
+                CompilerFacade.warning(System.getenv(), context.compilerJar())
+                    .ifPresent(System.err::println);
             }
             Options options = parseOptions(args);
             if (options.init()) Initializer.preflight(context.projectRoot(), options.allowDirty());
             MetricsConfig config = MetricsConfig.read(context.projectRoot());
             StableInputs.Result<Optional<Metrics.Report>> cached = StableInputs.run(context,
-                version(), ResultCache::key, (sources, digest) -> {
+                version(), (c, files, v) -> ResultCache.key(c, files, v, cacheFields),
+                (sources, digest) -> {
                     CompilerModel.Model hit = cached(context, digest);
                     if (hit == null) return Optional.empty();
                     return Optional.of(Metrics.of(sources.size(), hit,
@@ -103,12 +108,14 @@ public final class Main {
             if (options.init()) Initializer.preflight(context.projectRoot(), options.allowDirty());
             // Resolved here, in the only JVM that has a compiler on its class path. The
             // adapter is what knows Flix's internals; nothing else in this plugin does.
-            CompilerModel model = Adapters.resolve();
-            if (model == null)
+            Adapters.Selection selection = Adapters.select();
+            if (selection == null)
                 throw new Usage("no adapter links against the pinned compiler\n"
                     + "       this build supports: " + String.join(", ", Adapters.known()));
+            CompilerModel model = selection.model();
             StableInputs.Result<Measured> stable = StableInputs.run(context, version(),
-                ResultCache::key, (sources, digest) -> {
+                (c, files, v) -> ResultCache.key(c, files, v, selection.cacheFields()),
+                (sources, digest) -> {
                     CompilerModel.Model measured = model.measure(context.projectRoot());
                     MetricsConfig config = MetricsConfig.read(context.projectRoot());
                     SourceMetrics text = SourceMetrics.measure(context.projectRoot(), sources, config);

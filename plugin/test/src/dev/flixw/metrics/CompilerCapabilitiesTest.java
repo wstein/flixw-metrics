@@ -103,6 +103,18 @@ public final class CompilerCapabilitiesTest {
                 require(stock.hasEngineApi() && stock.missing().isEmpty(),
                     "the pinned compiler satisfies every bytecode-derived adapter requirement");
             }
+            // The outer phase keys the cache before any adapter is selected; its fields must be the
+            // ones the measuring phase takes from Adapters.select(): the first linking family, newest
+            // first, with the SDK version.
+            require(fields(empty).isEmpty(), "a compiler that links no adapter yields no cache fields");
+            String[] families = {"flix0761", "flix0753", "flix0680", "flix0672", "flix0661", "flix0610",
+                "flix0600"};
+            for (int i = 0; i < args.length && i < families.length; i++) {
+                require(fields(Path.of(args[i])).equals(java.util.Map.of("sdkVersion",
+                        Integer.toString(dev.flixw.sdk.bridge.CompilerModel.SDK_VERSION),
+                        "adapterFamily", families[i])),
+                    "the compiler " + args[i] + " keys the cache with the " + families[i] + " family");
+            }
             if (args.length >= 2) {
                 Path older = Path.of(args[1]);
                 CompilerFacade.Capabilities stock = inspect(older);
@@ -173,6 +185,13 @@ public final class CompilerCapabilitiesTest {
         try (java.net.URLClassLoader loader = new java.net.URLClassLoader(
                 new java.net.URL[] {jar.toUri().toURL()}, ClassLoader.getPlatformClassLoader())) {
             return CompilerFacade.inspect(loader, jar);
+        }
+    }
+
+    private static java.util.Map<String, String> fields(Path jar) throws IOException {
+        try (java.net.URLClassLoader loader = new java.net.URLClassLoader(
+                new java.net.URL[] {jar.toUri().toURL()}, ClassLoader.getPlatformClassLoader())) {
+            return CompilerFacade.cacheFields(loader);
         }
     }
 

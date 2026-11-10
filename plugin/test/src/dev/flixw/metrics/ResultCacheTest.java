@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Checks the one property a cache has to have: it may make the plugin faster, and it may never
@@ -16,6 +17,9 @@ import java.util.List;
  */
 public final class ResultCacheTest {
     private ResultCacheTest() { }
+
+    /** What the bridge hands the plugin for a selected adapter: SDK version and adapter family. */
+    private static final Map<String, String> FIELDS = Map.of("sdkVersion", "1", "adapterFamily", "flix0761");
 
     public static void main(String[] args) throws Exception {
         Path work = Files.createTempDirectory("flixw-metrics-cache-");
@@ -30,44 +34,64 @@ public final class ResultCacheTest {
             Path pluginCache = work.resolve("plugin-cache");
             Main.Context context = new Main.Context(project, jar, Path.of("java"), pluginCache);
             List<Path> sources = List.of(src.resolve("A.flix"));
-            String base = ResultCache.key(context, sources, "1.0.0");
+            String base = ResultCache.key(context, sources, "1.0.0", FIELDS);
             require(base != null, "a key can be computed");
 
             // Same inputs, same key -- otherwise nothing is ever a hit.
-            require(base.equals(ResultCache.key(context, sources, "1.0.0")), "the key is stable");
+            require(base.equals(ResultCache.key(context, sources, "1.0.0", FIELDS)), "the key is stable");
 
             // A source edit changes the report, so it must change the key.
             Files.writeString(src.resolve("A.flix"), "def a(): Int32 = 2\n");
-            require(!base.equals(ResultCache.key(context, sources, "1.0.0")),
+            require(!base.equals(ResultCache.key(context, sources, "1.0.0", FIELDS)),
                 "editing a source changes the key");
             Files.writeString(src.resolve("A.flix"), "def a(): Int32 = 1\n");
 
             // A new file changes `files` and probably `definitions`.
             Files.writeString(src.resolve("B.flix"), "def b(): Int32 = 2\n");
             List<Path> two = List.of(src.resolve("A.flix"), src.resolve("B.flix"));
-            require(!base.equals(ResultCache.key(context, two, "1.0.0")),
+            require(!base.equals(ResultCache.key(context, two, "1.0.0", FIELDS)),
                 "adding a file changes the key");
 
             // The compiler carries the standard library, so its bytes are part of the answer.
             Files.writeString(jar, "a different compiler\n");
-            require(!base.equals(ResultCache.key(context, sources, "1.0.0")),
+            require(!base.equals(ResultCache.key(context, sources, "1.0.0", FIELDS)),
                 "a different compiler changes the key");
             Files.writeString(jar, "pretend compiler\n");
 
             // A new plugin may count the same root differently.
-            require(!base.equals(ResultCache.key(context, sources, "1.0.1")),
+            require(!base.equals(ResultCache.key(context, sources, "1.0.1", FIELDS)),
                 "a plugin version change changes the key");
 
             Path plugin = work.resolve("plugin.jar");
             Files.writeString(plugin, "first plugin build\n");
-            String firstBuild = ResultCache.key(context, sources, "development", plugin);
+            String firstBuild = ResultCache.key(context, sources, "development", plugin, FIELDS);
             Files.writeString(plugin, "second plugin build\n");
-            require(!firstBuild.equals(ResultCache.key(context, sources, "development", plugin)),
+            require(!firstBuild.equals(ResultCache.key(context, sources, "development", plugin, FIELDS)),
                 "changing development plugin bytes changes the cache key");
+
+            // The SDK version and the adapter family are explicit fields: a change of either one
+            // misses the cache even when every other input is byte-identical.
+            require(!base.equals(ResultCache.key(context, sources, "1.0.0",
+                    Map.of("sdkVersion", "2", "adapterFamily", "flix0761"))),
+                "a different SDK version changes the key");
+            require(!base.equals(ResultCache.key(context, sources, "1.0.0",
+                    Map.of("sdkVersion", "1", "adapterFamily", "flix0753"))),
+                "a different adapter family changes the key");
+            require(!base.equals(ResultCache.key(context, sources, "1.0.0", Map.of())),
+                "a key without the fields differs from one with them");
+            require(base.equals(ResultCache.key(context, sources, "1.0.0",
+                    Map.of("adapterFamily", "flix0761", "sdkVersion", "1"))),
+                "the order of the fields does not matter");
+            // A value cannot pose as another field.
+            require(!ResultCache.key(context, sources, "1.0.0",
+                    Map.of("sdkVersion", "1", "adapterFamily", "flix0761\nx y"))
+                .equals(ResultCache.key(context, sources, "1.0.0",
+                    Map.of("sdkVersion", "1", "adapterFamily", "flix0761", "x", "y"))),
+                "a field value cannot mimic another field");
 
             // The manifest selects dependencies that participate in typing.
             Files.writeString(project.resolve("flix.toml"), "[package]\n");
-            require(!base.equals(ResultCache.key(context, sources, "1.0.0")),
+            require(!base.equals(ResultCache.key(context, sources, "1.0.0", FIELDS)),
                 "adding flix.toml changes the key");
             Files.delete(project.resolve("flix.toml"));
 
