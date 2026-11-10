@@ -1,5 +1,8 @@
 # Shared compiler SDK: boundaries
 
+> This plan record describes the state before the move of the adapters into `flix-bridge` (SDK PR #5 and
+> the Metrics embedding PR #39). Paths, line numbers and file names below are those of that earlier state.
+
 Status: owner decisions on the design questions recorded (section 8); remaining open points are marked UNKNOWN. Refs wstein/flixw-metrics#20.
 Basis: `origin/main` at 419c9247687ef16d2a67c7b576ba76b9d06fd534. Line numbers were taken at 614c4a53bc07081217f1f260ff5feb6e1554107b and shifted
 to this basis. Each shifted range holds the same text at both revisions, except `Main.java` L33-97,

@@ -89,7 +89,7 @@ independently, so the two can't drift apart.
   a checkpoint. A compiler jar named `flix.jar`, such as the pin in `plugin/lib`, has no readable
   version in its name; the plugin takes the version from `FLIXW_COMPILER_VERSION`, which flixw sets,
   and only a run without it prints the `cannot read the Flix version` warning on stderr.
-  Historical compiler jars are downloaded into ignored `out/` storage when absent.
+  Compiler jars (every release in `versions.json`) are downloaded into the ignored `plugin/lib` when absent.
   Its packaging
   check deliberately builds twice with a two-second gap to prove reproducibility; that pause is expected.
 - `sh scripts/test-one.sh MetricsTest` compiles as needed and runs one test main. The wrapper also supplies
