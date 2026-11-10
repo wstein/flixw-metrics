@@ -6,6 +6,9 @@ work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT INT TERM
 mkdir -p "$work/sdk/kit/src" "$work/sdk/kit/resources"
 git -C "$work/sdk" init -q
+# The owner permits fixed identity only inside temporary test fixtures.
+git -C "$work/sdk" config user.email 'metrics@example.invalid'
+git -C "$work/sdk" config user.name 'Metrics Test'
 printf 'out/\n' > "$work/sdk/.gitignore"
 printf 'source\n' > "$work/sdk/kit/src/Example.java"
 git -C "$work/sdk" add .
