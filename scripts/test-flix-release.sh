@@ -1,0 +1,62 @@
+#!/bin/sh
+# Offline contract test for scripts/check-flix-release.sh, the weekly watcher for a Flix release
+# without a compatibility checkpoint. A stub `curl` stands in for GitHub: it prints the URL the
+# redirect would end at, or fails the way `curl -f` does.
+set -eu
+
+# shellcheck disable=SC1007  # Empty CDPATH is scoped to cd, not assigned to root.
+root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd -P)
+list=$root/plugin/resources/dev/flixw/metrics/verified-flix-versions.txt
+work=$(mktemp -d)
+trap 'rm -rf "$work"' EXIT INT TERM
+mkdir "$work/bin"
+cat > "$work/bin/curl" <<'STUB'
+#!/bin/sh
+printf '%s\n' "$*" > "$STUB_ARGS"
+[ "${STUB_EXIT:-0}" -eq 0 ] || exit "$STUB_EXIT"
+printf '%s' "${STUB_URL-}"
+STUB
+chmod 755 "$work/bin/curl"
+
+fail() { echo "test-flix-release: $1" >&2; exit 1; }
+
+# run <expected-exit> <stub-url> <stub-curl-exit> <label> [<expected stderr text>]
+run() {
+  expected=$1
+  status=0
+  PATH="$work/bin:$PATH" STUB_ARGS="$work/args" STUB_URL=$2 STUB_EXIT=$3 \
+    FLIX_RELEASE_URL=https://example.invalid/releases/latest \
+    sh "$root/scripts/check-flix-release.sh" > "$work/out" 2> "$work/err" || status=$?
+  [ "$status" -eq "$expected" ] || fail "$4: exit $status, expected $expected ($(cat "$work/err"))"
+  [ -z "${5-}" ] || grep -Fq -- "$5" "$work/err" || fail "$4: stderr lacks '$5' ($(cat "$work/err"))"
+}
+
+newest=$(grep -v '^#' "$list" | grep -v '^[[:space:]]*$' | tail -n 1)
+[ -n "$newest" ] || fail "no verified release in $list"
+
+run 0 "https://github.com/flix/flix/releases/tag/v$newest" 0 "the newest verified release"
+grep -q "^newest Flix release: $newest\$" "$work/out" || fail "the release is not announced"
+grep -q 'https://example.invalid/releases/latest$' "$work/args" || fail "the URL is not overridable"
+# -f makes an HTTP error a curl failure instead of a redirect target that happens to look fine.
+case " $(cat "$work/args") " in
+  *" -fsSLI "*) ;;
+  *) fail "curl is not run with -fsSLI" ;;
+esac
+
+run 1 "https://github.com/flix/flix/releases/tag/v0.999.0" 0 "an unlisted release"
+grep -q 'verified-flix-versions.txt' "$work/err" || fail "the message does not name the list"
+grep -q '0.999.0' "$work/err" || fail "the message does not name the release"
+# 0.59.0 and 0.66.0 have `fetch` lines in test-compiler-compatibility.sh but are rejected releases.
+run 1 "https://github.com/flix/flix/releases/tag/v0.59.0" 0 "a fetched but rejected release (0.59.0)"
+run 1 "https://github.com/flix/flix/releases/tag/v0.66.0" 0 "a fetched but rejected release (0.66.0)"
+run 1 "https://github.com/flix/flix/releases/tag/v0.7.0" 0 "an unlisted release near listed ones" \
+  "is not in plugin/resources"
+run 1 "https://github.com/flix/flix/releases/tag/v$newest-rc1" 0 "a prerelease" "could not resolve a Flix version"
+run 1 "https://github.com/flix/flix/releases/tag/v0x79.0" 0 "a malformed version" "could not resolve a Flix version"
+run 1 "https://github.com/flix/flix/releases/tag/v" 0 "an empty version" "could not resolve a Flix version"
+run 1 "https://github.com/flix/flix/releases" 0 "a URL without a tag" "did not end at a release tag"
+run 1 "" 0 "an empty URL" "did not end at a release tag"
+# curl -f ends 22 on an HTTP error; the usable-looking URL must not matter.
+run 1 "https://github.com/flix/flix/releases/tag/v$newest" 22 "a failing curl" "could not read the newest"
+
+echo "test-flix-release: ok"

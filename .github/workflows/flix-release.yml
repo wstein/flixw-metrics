@@ -22,17 +22,4 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - name: compare the newest release with the checkpoints
-        run: |
-          # The tag, not the API's JSON body: one redirect, and no rate limit.
-          v=$(curl -fsSLI -o /dev/null -w '%{url_effective}' \
-                https://github.com/flix/flix/releases/latest | sed 's|.*/tag/v||')
-          case $v in
-            [0-9]*.[0-9]*.[0-9]*) ;;
-            *) echo "could not resolve a Flix version (got '$v')" >&2; exit 1 ;;
-          esac
-          echo "newest Flix release: $v"
-          if ! grep -q "^fetch $v " scripts/test-compiler-compatibility.sh; then
-            echo "::error::Flix $v has no checkpoint in scripts/test-compiler-compatibility.sh;" \
-                 "add one and record docs/compiler-compatibility/flix-$v.md"
-            exit 1
-          fi
+        run: sh scripts/check-flix-release.sh
