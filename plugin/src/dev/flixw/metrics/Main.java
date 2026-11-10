@@ -63,7 +63,7 @@ public final class Main {
                         + "       jar: " + context.compilerJar() + "\n"
                         + "       missing: " + String.join(", ", capabilities.missing()));
                 // Linkage is the admission test; a release without a checkpoint is still loaded.
-                CompilerVersions.warning(context.compilerJar()).ifPresent(System.err::println);
+                CompilerFacade.warning(System.getenv(), context.compilerJar()).ifPresent(System.err::println);
             }
             Options options = parseOptions(args);
             if (options.init()) Initializer.preflight(context.projectRoot(), options.allowDirty());

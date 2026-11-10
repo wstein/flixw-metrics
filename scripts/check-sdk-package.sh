@@ -29,8 +29,8 @@ checks=$((checks + 1))
 unzip -p "$plugin" META-INF/LICENSE-flixw-plugin-sdk | grep -q 'Apache License' || fail 'missing SDK license'
 checks=$((checks + 1))
 # The former in-repository copies must be gone, not merely shadowed.
-if grep -Eq '^dev/flixw/metrics/(sdk/|adapter/|DatalogGraph|CompilerCapabilities)' "$entries"; then
-  fail 'the jar still contains an in-repository copy of an SDK class'
+if grep -Eq '^dev/flixw/metrics/(sdk/|adapter/|DatalogGraph|CompilerCapabilities|CompilerVersions)|^dev/flixw/metrics/verified-flix-versions\.txt$' "$entries"; then
+  fail 'the jar still contains an in-repository copy of an SDK class or of the version list'
 fi
 checks=$((checks + 1))
 # One flat class path with the compiler: no compiler, Scala library or jar inside the plugin.

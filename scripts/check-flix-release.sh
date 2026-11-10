@@ -3,19 +3,19 @@
 # internals, and a Flix release changes them without a commit here; the weekly flix-release workflow
 # runs this so a new release is noticed before a user's project stops measuring.
 #
-# The checkpoint is the release's line in plugin/resources/dev/flixw/metrics/verified-flix-versions.txt
-# (the list that switches the plugin's unknown-release warning off); test-compiler-compatibility.sh
-# checks that every listed release also has a `fetch` line and a packaged-integration checkpoint.
+# The checkpoint is the release's verified entry in versions.json of the pinned SDK (the data that
+# switches the plugin's unknown-release warning off; scripts/sdk-versions.sh reads it);
+# test-compiler-compatibility.sh checks that every verified release also has a packaged-integration
+# checkpoint.
 # This only checks that a checkpoint exists. Whether the release passes is decided by
 # `scripts/test-compiler-compatibility.sh` once the checkpoint is added.
 #
-# FLIX_RELEASE_URL overrides the URL that redirects to the newest release tag and FLIX_VERIFIED_LIST
-# the list file (both for tests).
+# FLIX_RELEASE_URL overrides the URL that redirects to the newest release tag and FLIXW_VERSIONS_JSON
+# the version data (both for tests).
 set -eu
 
 # shellcheck disable=SC1007  # Empty CDPATH is scoped to cd, not assigned to root.
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd -P)
-list=${FLIX_VERIFIED_LIST:-$root/plugin/resources/dev/flixw/metrics/verified-flix-versions.txt}
 url=${FLIX_RELEASE_URL:-https://github.com/flix/flix/releases/latest}
 
 # The tag, not the API's JSON body: one redirect, and no rate limit. No pipe: sh has no pipefail,
@@ -43,9 +43,13 @@ printf '%s\n' "$v" | grep -Eq '^[0-9]+[.][0-9]+[.][0-9]+$' || {
   exit 1
 }
 echo "newest Flix release: $v"
-if ! grep -Fxq "$v" "$list"; then
-  echo "::error::Flix $v is not in ${list#"$root"/};" \
-       "add its checkpoint to scripts/test-compiler-compatibility.sh, the version to that list," \
-       "and record docs/compiler-compatibility/flix-$v.md" >&2
+verified=$(sh "$root/scripts/sdk-versions.sh" verified) || {
+  echo "check-flix-release: could not read the verified releases from versions.json" >&2
+  exit 1
+}
+if ! printf '%s\n' "$verified" | grep -Fxq "$v"; then
+  echo "::error::Flix $v is not in the verified releases of versions.json (flixw-plugin-sdk, pinned in" \
+       "sdk-source.properties); add its checkpoint to scripts/test-compiler-compatibility.sh, the release" \
+       "to versions.json in the SDK repository, and record flix-bridge/docs/compatibility/flix-$v.md there" >&2
   exit 1
 fi

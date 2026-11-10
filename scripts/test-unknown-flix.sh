@@ -4,16 +4,15 @@
 #
 # Admission is the bytecode-derived linkage gate in CompilerCapabilities (Adapters.resolve in the
 # bridge JVM repeats it per adapter), never a version string. On top of it:
-#   - a compiler that links and is in the verified list (dev/flixw/metrics/verified-flix-versions.txt):
-#     no notice;
+#   - a compiler that links and is a verified release in versions.json of the pinned SDK: no notice;
 #   - a compiler that links and is not in the list: loaded as before, same report, exit 0, and exactly
 #     one `metrics: warning: ...` line on stderr, also on a cache hit; nothing added to the report;
 #   - a compiler that does not link: exit 2 and the sentence naming the missing members, no warning.
 #
 # No Flix 0.80.0 exists, so the unrecorded case is the verified 0.79.0 jar copied to a file named
 # flix-0.80.0.jar, and the refused case is a stub jar that declares Implementation-Version 0.80.0 but
-# lacks the compiler classes. The version comes from the jar file name (flixw's cache name is
-# flix-<version>-<sha256>.jar).
+# lacks the compiler classes. The version is the one flixw announces in FLIXW_COMPILER_VERSION, else
+# the one in the jar file name (flixw's cache name is flix-<version>-<sha256>.jar).
 set -eu
 
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd -P)
@@ -88,6 +87,7 @@ plugin() {
   FLIXW_COMPILER_JAR=$compiler \
   FLIXW_JAVA_HOME=$java_home \
   FLIXW_PLUGIN_CACHE=${cache:-} \
+  FLIXW_COMPILER_VERSION=${announced:-} \
     "$java_home/bin/java" -jar "$root/dist/plugin.jar" "$@" \
     > "$scratch/$name/stdout.txt" 2> "$scratch/$name/stderr.txt" || status=$?
 }
@@ -122,8 +122,8 @@ for run in newer-report newer-cached; do
     || fail "an unrecorded release must produce exactly one warning ($run)"
   grep -q '^metrics: warning: Flix 0\.80\.0 ' "$scratch/$run/stderr.txt" \
     || fail "the warning does not name the release ($run)"
-  grep -q 'test-compiler-compatibility.sh' "$scratch/$run/stderr.txt" \
-    || fail "the warning does not point to the compatibility checkpoint ($run)"
+  grep -q 'flix-bridge/docs/compatibility' "$scratch/$run/stderr.txt" \
+    || fail "the warning does not point to the compatibility checkpoints ($run)"
   if grep -q 'metrics: warning' "$scratch/$run/report.json"; then
     fail "the warning leaked into the report ($run)"
   fi
@@ -135,6 +135,29 @@ grep -q '^metrics diagnostics: cache=hit ' "$scratch/newer-cached/stderr.txt" \
 jq -e --slurpfile verified "$scratch/verified-report/report.json" \
   '.summary == $verified[0].summary' "$scratch/newer-report/report.json" >/dev/null \
   || fail "the report for an unrecorded release differs from the verified one"
+
+# 2b. The jar name carries no version (the pinned plugin/lib/flix.jar): flixw announces it, and the
+# announced release is the one judged. Without an announcement the notice says it cannot read it.
+cp "$jar" "$scratch/verified/flix.jar"
+announced=$known
+plugin announced-verified "$scratch/verified/flix.jar" report --format json \
+  --output "$scratch/announced-verified/report.json"
+[ "$status" -eq 0 ] || fail "report failed for flix.jar with an announced verified release (exit $status)"
+if grep -qi 'warning' "$scratch/announced-verified/stderr.txt"; then
+  fail "a verified release announced for flix.jar produced a warning"
+fi
+announced=0.80.0
+plugin announced-newer "$scratch/verified/flix.jar" report --format json \
+  --output "$scratch/announced-newer/report.json"
+[ "$status" -eq 0 ] || fail "report failed for flix.jar with an announced unrecorded release (exit $status)"
+grep -q '^metrics: warning: Flix 0\.80\.0 has no compatibility checkpoint' "$scratch/announced-newer/stderr.txt" \
+  || fail "an unrecorded release announced for flix.jar is not named in the warning"
+announced=
+plugin unannounced "$scratch/verified/flix.jar" report --format json \
+  --output "$scratch/unannounced/report.json"
+[ "$status" -eq 0 ] || fail "report failed for flix.jar without an announcement (exit $status)"
+grep -q '^metrics: warning: cannot read the Flix version from the compiler jar name flix.jar' \
+  "$scratch/unannounced/stderr.txt" || fail "flix.jar without an announcement does not say it cannot read the version"
 
 # 3. An unrecorded release that does not link: exit 2 and a sentence about the missing members.
 stub=$scratch/stub
