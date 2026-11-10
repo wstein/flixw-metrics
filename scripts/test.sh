@@ -8,6 +8,7 @@ sh "$root/scripts/check-lint-adapters.sh"
 sh "$root/scripts/lint.sh"
 sh "$root/scripts/test-calibration.sh"
 sh "$root/scripts/test-flix-release.sh"
+sh "$root/scripts/test-corpus-source.sh"
 sh "$root/scripts/test-performance-budget.sh"
 sh "$root/scripts/package.sh" 0.0.0-test >/dev/null
 sh "$root/scripts/check-sdk-package.sh" "$root/dist/plugin.jar"
