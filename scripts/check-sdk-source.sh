@@ -1,6 +1,8 @@
 #!/bin/sh
 # Verify the exact local source dependency before compiling any plugin or SDK source.
 set -eu
+# A local replacement ref must not substitute different bytes for the pinned object.
+export GIT_NO_REPLACE_OBJECTS=1
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd -P)
 pin=${1:-$root/sdk-source.properties}
 fail() { printf 'sdk-source: %s\n' "$*" >&2; exit 2; }

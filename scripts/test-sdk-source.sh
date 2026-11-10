@@ -84,4 +84,12 @@ printf 'repository=https://example.invalid/sdk\nrevision=%s\nmodule=kit\n' "$rev
 reject 'unsupported repository' 'repository'
 printf 'repository=https://github.com/wstein/flixw-plugin-sdk\nrevision=%s\nmodule=flix-bridge\n' "$revision" > "$pin"
 reject 'unsupported module' 'module'
+write_pin "$revision"
+printf 'replacement source\n' > "$work/sdk/kit/src/Example.java"
+git -C "$work/sdk" add kit/src/Example.java
+git -C "$work/sdk" commit -qm 'test: create replacement SDK fixture'
+replacement=$(git -C "$work/sdk" rev-parse HEAD)
+git -C "$work/sdk" replace "$revision" "$replacement"
+git -C "$work/sdk" checkout -q --detach "$revision"
+reject 'replacement Git objects' 'changed'
 printf 'test-sdk-source: %s passed, 0 failed\n' "$checks"
