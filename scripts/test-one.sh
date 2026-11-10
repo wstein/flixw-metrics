@@ -13,6 +13,8 @@ case $test_name in
 esac
 
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd -P)
+# Adapters compile against the floor jars in plugin/lib; a fresh checkout has none.
+sh "$root/scripts/fetch-flix.sh"
 mill=$root/mill
 [ -x "$mill" ] || mill=mill
 (cd "$root" && "$mill" --no-server plugin.test.compile >/dev/null)
