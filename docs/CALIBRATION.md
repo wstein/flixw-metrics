@@ -136,7 +136,7 @@ newer Prelude source. Flix 0.79.0 starts a documented definition at its `def` li
 definition at its last token, which without compensation gave `qual-effect-system` one finding
 fewer (`definition-too-long` on `canonEqConstr`, `src/Canonicalization.flix:115`, 75 lines under
 0.78.0, 1 line under uncompensated 0.79.0). `Flix0761Adapter` restores the earlier start and end
-([record](compiler-compatibility/flix-0.79.0.md)), so the variant's expectations are the 0.77.0
+([record](https://github.com/wstein/flixw-plugin-sdk/blob/515b8080336bf9f2ab6bc8ec2e87b29858c69eb7/flix-bridge/docs/compatibility/flix-0.79.0.md)), so the variant's expectations are the 0.77.0
 numbers with the 232-line Prelude: `qual-effect-system` keeps its 27 findings.
 
 ## Flix 0.79.0 calibration snapshot (2026-11-09)

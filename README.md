@@ -365,8 +365,10 @@ mostly JVM startup.
 What is cached is the **measurements**, never the report: they are facts about your source
 and cannot go stale while the key holds. Findings and formatting are recomputed every run,
 so an adjusted threshold takes effect immediately instead of at the next cache miss. The key
-covers your sources, `flix.toml`, the pinned compiler, this plugin's version, and the plugin
-artifact bytes — change any of them and it recomputes. The artifact fingerprint also prevents
+covers your sources, `flix.toml`, the pinned compiler, this plugin's version, the plugin
+artifact bytes, and two explicit fields from the bridge, the SDK version and the adapter family that
+links against the compiler — change any of them and it recomputes. The move of the SDK classes to
+`dev.flixw.sdk.bridge` changed the artifact bytes, so entries written before it are not reused once. The artifact fingerprint also prevents
 two local `development` builds from sharing stale measurements. Every cache failure is a miss,
 never a stale answer.
 
@@ -390,14 +392,16 @@ was not compared.
 ## Supported compilers
 
 Flix 0.60.0 through 0.79.0 is verified, with gaps: the releases are listed in the
-[compatibility matrix](docs/compiler-compatibility/README.md), whose machine-readable source is
-`plugin/resources/dev/flixw/metrics/verified-flix-versions.txt`. Verified means that the
+[compatibility matrix](https://github.com/wstein/flixw-plugin-sdk/blob/515b8080336bf9f2ab6bc8ec2e87b29858c69eb7/flix-bridge/docs/compatibility/README.md) of the SDK, whose machine-readable source is
+`flix-bridge/resources/dev/flixw/sdk/bridge/versions.json` (the releases, their SHA-256 digests, their
+adapter family and the two rejected releases). Verified means that the
 bytecode-derived gate accepts the release and that a packaged integration checkpoint for it passes in
 `scripts/test-compiler-compatibility.sh`; semantic fixture, span and corpus evidence differs per
 release, see the matrix. The adapter families and the releases each one
 serves are listed in [docs/COMPILER-SDK.md](docs/COMPILER-SDK.md). Each family is compiled in an
 isolated `adapter.flixNNNN` Mill module against the oldest verified release of that family; the
-adapters share the `dev.flixw.metrics.adapter` package and ship together in `plugin.jar`. The
+adapters are the SDK's (`dev.flixw.sdk.bridge.adapter`, pinned in `sdk-source.properties`) and ship
+together in `plugin.jar`. The
 compiler-neutral `plugin` module has no Flix jar on its compile class path.
 
 The first plugin release that lists a Flix release as verified (from `docs/releases/` and the tagged
@@ -435,7 +439,7 @@ $ ./flixw metrics capabilities
 
 An unsupported compiler gets a sentence naming what is missing, rather than a wrong number
 or a stack trace. Supporting another Flix generation is one adapter class; release-specific
-evidence lives in [docs/compiler-compatibility](docs/compiler-compatibility/README.md), and the
+evidence lives in the SDK's [compatibility records](https://github.com/wstein/flixw-plugin-sdk/blob/515b8080336bf9f2ab6bc8ec2e87b29858c69eb7/flix-bridge/docs/compatibility/README.md), and the
 boundary itself is described in [docs/COMPILER-SDK.md](docs/COMPILER-SDK.md).
 
 The full test suite locks the lower boundary by requiring 0.59.0 to fail the derived AST gate. It
@@ -455,7 +459,7 @@ verified is not warned about, and its behavior is not checked; detecting a fork 
 definition's `line` is the first line of its doc comment and its span ends after the comments that
 directly follow its last token. Flix 0.79.0 itself starts a documented definition at its `def` line
 and ends it at its last token; the adapter restores the earlier convention, see
-[the Flix 0.79.0 record](docs/compiler-compatibility/flix-0.79.0.md). The older adapter families use
+[the Flix 0.79.0 record](https://github.com/wstein/flixw-plugin-sdk/blob/515b8080336bf9f2ab6bc8ec2e87b29858c69eb7/flix-bridge/docs/compatibility/flix-0.79.0.md). The older adapter families use
 the location the compiler reports, and their positions were not compared across releases.
 SARIF regions use the same lines: a finding gets a region only when it has a line, `startLine` is
 that line, and `endLine` is the last line of the definition when that line is the definition's
@@ -474,7 +478,8 @@ sh scripts/measure-performance.sh /tmp/flixw-performance.json
 
 `./mill` bootstraps the pinned build tool, and `scripts/fetch-flix.sh` downloads the oldest Flix
 release of each adapter family, the 0.77.0 test pin and the 0.76.0 test jar, and checks every
-digest — so "it builds here" means something.
+digest against the SDK's `versions.json` — so "it builds here" means something. The build needs the
+pinned SDK checkout (`FLIXW_SDK_SOURCE`, see `sdk-source.properties`).
 
 The corpus command is the slower, networked dogfood check, so it is scheduled weekly rather than
 run on every pull request. It clones only the full commits recorded in
