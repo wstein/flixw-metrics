@@ -25,7 +25,7 @@ run() {
   expected=$1
   status=0
   PATH="$work/bin:$PATH" STUB_ARGS="$work/args" STUB_URL=$2 STUB_EXIT=$3 \
-    FLIX_RELEASE_URL=https://example.invalid/releases/latest \
+    FLIX_RELEASE_URL=https://example.invalid/releases/latest FLIX_VERIFIED_LIST=${FLIX_VERIFIED_LIST:-} \
     sh "$root/scripts/check-flix-release.sh" > "$work/out" 2> "$work/err" || status=$?
   [ "$status" -eq "$expected" ] || fail "$4: exit $status, expected $expected ($(cat "$work/err"))"
   [ -z "${5-}" ] || grep -Fq -- "$5" "$work/err" || fail "$4: stderr lacks '$5' ($(cat "$work/err"))"
@@ -56,6 +56,23 @@ run 1 "https://github.com/flix/flix/releases/tag/v0x79.0" 0 "a malformed version
 run 1 "https://github.com/flix/flix/releases/tag/v" 0 "an empty version" "could not resolve a Flix version"
 run 1 "https://github.com/flix/flix/releases" 0 "a URL without a tag" "did not end at a release tag"
 run 1 "" 0 "an empty URL" "did not end at a release tag"
+# The list is matched by whole lines: 0.79.0 is not verified because 10.79.0 is.
+printf '%s\n' '# comment' 10.79.0 > "$work/list"
+FLIX_VERIFIED_LIST=$work/list run 1 "https://github.com/flix/flix/releases/tag/v0.79.0" 0 "a release that is a substring of a listed one" \
+  "is not in"
+FLIX_VERIFIED_LIST=$work/list run 0 "https://github.com/flix/flix/releases/tag/v10.79.0" 0 "a release in an alternative list"
+# The dots of the version are literal.
+printf '%s\n' 0x79x0 > "$work/list"
+FLIX_VERIFIED_LIST=$work/list run 1 "https://github.com/flix/flix/releases/tag/v0.79.0" 0 "a list line that only matches as a pattern" \
+  "is not in"
+# A value with a line break must not pass line by line.
+multi=$(printf 'https://github.com/flix/flix/releases/tag/v0.999.0\n%s' "$newest")
+run 1 "$multi" 0 "a version with a line break" "could not resolve a Flix version"
+# The call is bounded and retried.
+case " $(cat "$work/args") " in
+  *" --max-time "*" --retry "*) ;;
+  *) fail "curl is run without --max-time and --retry" ;;
+esac
 # curl -f ends 22 on an HTTP error; the usable-looking URL must not matter.
 run 1 "https://github.com/flix/flix/releases/tag/v$newest" 22 "a failing curl" "could not read the newest"
 
