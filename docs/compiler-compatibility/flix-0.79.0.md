@@ -51,8 +51,10 @@ The complete 2026-11-09 corpus comparison exposed a further trailing-span case: 
 stopped `endOf` at the banner after `FordFulkerson.indexOf`, giving 8 instead of 12 definition
 lines and 624 instead of 628 module lines on 0.79.0. `endOf` now uses the lexer token kind
 (`isCommentDoc`), restoring both values. The corpus-derived banner/real-doc regression passes
-on 0.76.1, 0.77.0, 0.78.0 and 0.79.0; no new adapter is needed. The separate pre-existing
-source-line category issue is disclosed in the [snapshot](../CALIBRATION.md#flix-0790-calibration-snapshot-2026-11-09).
+on 0.76.1, 0.77.0, 0.78.0 and 0.79.0; no new adapter is needed. The source-line category issue
+was subsequently corrected across all seven adapter families;
+see the [comment-kind recalibration](../CALIBRATION.md#compiler-comment-kind-recalibration-2026-11-10).
+The original snapshot retains its historical category values.
 
 ## Verification
 

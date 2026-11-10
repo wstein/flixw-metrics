@@ -1,0 +1,457 @@
+{
+  "snapshotVersion": 1,
+  "measuredOn": "2026-11-10",
+  "analyzer": {
+    "sourceCommit": "37e5d765b64701eb9cc4c2db7d9e5e6ae1e6d587",
+    "packageVersion": "0.0.0-calibration",
+    "packageSha256": "63c1cfb41c419b66c5c4573cc83645f5a4107b64409da2e779e484fc917dbda8"
+  },
+  "historicalBaseline": {
+    "snapshot": "calibration/results/flix-0.79.0.json",
+    "snapshotSha256": "d484af504ec35c11ffb82b66072c44821f5d953cc327b1b3f96ea311f70679db",
+    "sourceCommit": "d02ca1372196e9c0b5915af34a41cca7d701842e",
+    "packageSha256": "263287750edad8e82b0e4e3a2422a035e1b3b472b338471e79a5cb5d5b7a2329"
+  },
+  "compilers": {
+    "0.77.0": {
+      "artifactSha256": "20007d79f97b696ba388113e2a4235227691d33a00bfa669f2316b37a7b14201",
+      "manifest": "calibration/corpus.json",
+      "manifestSha256": "e33e4770b618929d97c39b060f0fc05a4077a57de4798b23f9565bd06fc4ee08",
+      "sourceCommit": "4a5b60a31ac03bb762f68b554a0fc2b6f4d982b9"
+    },
+    "0.79.0": {
+      "artifactSha256": "8fad2aa09567a7edabcc43f4101fa6199131df2c22929e001c87659d764f6dcf",
+      "manifest": "calibration/corpus-0.78.json",
+      "manifestSha256": "1cb2a8aa5834c254405f55e7a97bcc1e04102e81848497d7d461c0b857341f29",
+      "sourceCommit": "36d923ca325dc466b28c63419667e6026a80f920"
+    }
+  },
+  "environment": {
+    "java": "Temurin 21.0.13+9-LTS",
+    "os": "Linux",
+    "architecture": "aarch64",
+    "umask": "022"
+  },
+  "compatibility": {
+    "nativeReportSchema": 35,
+    "wireFormat": 14,
+    "sdkChanged": false,
+    "capabilityJsonStructureChanged": false,
+    "cliChanged": false,
+    "defaultTestAndCalibrationCompiler": "0.77.0",
+    "compileFloors": [
+      "0.60.0",
+      "0.61.0",
+      "0.66.1",
+      "0.67.2",
+      "0.68.0",
+      "0.75.3",
+      "0.76.1"
+    ],
+    "derivedAbiAdditionalMethod": "TokenKind.isCommentNonDoc",
+    "trailingSpanCompensationChanged": false,
+    "thresholdsChanged": false,
+    "cache": "changed adapter artifact digest invalidates older measurements"
+  },
+  "totals": {
+    "0.77.0": {
+      "files": 217,
+      "definitions": 2650,
+      "lines": 37037,
+      "datalogRules": 32,
+      "datalogFacts": 28,
+      "findings": 1349
+    },
+    "0.79.0": {
+      "files": 217,
+      "definitions": 2650,
+      "lines": 37040,
+      "datalogRules": 32,
+      "datalogFacts": 28,
+      "findings": 1349
+    }
+  },
+  "checks": {
+    "realCompilerAdapterFamilies": 7,
+    "exactSourceLineComparisons": 21,
+    "packagedReleaseProbes": 14,
+    "packagedProbeOrdinaryLines": 1,
+    "packagedProbeDocumentationLines": 1,
+    "corpusTargetsMatchedPerCompiler": 9,
+    "sameCompilerWarmCacheBaselinesPerCompiler": 8,
+    "unchangedNativePayloadComparisonsWithHistorical079": 9,
+    "fullNativeCrossReleaseComparisons": 8,
+    "crossReleaseWarningBaselines": 8,
+    "sarifTargets": 8,
+    "sarifFindingIdentitiesAndLocations": 1344,
+    "sameInputNormalTargets": 8,
+    "sameInputSourceAndManifestFiles": 220,
+    "changedCategoryObjects": 2,
+    "targetedMutantsRejected": 7,
+    "fullMutationSweep": "not run, by owner decision",
+    "requiredSourceChecks": [
+      "make format",
+      "make lint",
+      "make test"
+    ],
+    "earlierFailedAttempt": "first make test ended with JVM exit 137 during overlapping scratch mutations; not passed; complete serialized rerun passed",
+    "prelude": "compiler-embedded harness; no normal-project cache, cross-release baseline or SARIF claim",
+    "historicalIncompatibleInputs": "flix-basicdb and flix-parsec retained with previous pins/reasons/results; not remeasured"
+  },
+  "targets": {
+    "datalog-compiler-puzzle": {
+      "beforeReportSha256": "4146de778d107b823c1be1b5ff32a9a8f0d18c1eb306e171ce80690bef5ad1f9",
+      "afterReportSha256": "b276ae09bd1a4e4eb97d3cbc9a6e33b8eb0b9106ac6a1ffe8e9636a84dec8883",
+      "unchangedPayloadSha256": "1623e3816b2550589a9b63f47b7b1b9cbf2de11bb39c6847bbe01abab2d7c1c2",
+      "summaryBefore": {
+        "commentLines": 9,
+        "docCommentLines": 3
+      },
+      "summaryAfter": {
+        "commentLines": 9,
+        "docCommentLines": 3
+      },
+      "changes": [],
+      "allOtherPayloadFieldsIdentical": true,
+      "inputProvenance": {
+        "beforePackageSha256": "263287750edad8e82b0e4e3a2422a035e1b3b472b338471e79a5cb5d5b7a2329",
+        "afterPackageSha256": "63c1cfb41c419b66c5c4573cc83645f5a4107b64409da2e779e484fc917dbda8",
+        "beforeInputDigest": "642467fae79040754d2f9d6042345e4c15dac03bcb3d865e27a4cbf53e30fb4d",
+        "afterInputDigest": "f07122c6946ef65081204c6fcd2efd60eff7064a9565a2ed17cb001c35f40024",
+        "sourceAndManifestFileHashesIdentical": true,
+        "cacheDigestsReconstructed": true
+      },
+      "sourceAndManifestFileHashesSha256": "513a0845d593e3378418868ea42ef804eb35e8e2c3e634346dc514301cb4bd9e",
+      "summary": {
+        "datalogFacts": 4,
+        "datalogRules": 3,
+        "definitions": 1,
+        "files": 1,
+        "findings": 0,
+        "lines": 31,
+        "rules": {}
+      }
+    },
+    "datalog-dependency-resolution": {
+      "beforeReportSha256": "320c883728200ba458b5eab8ea3543ae4cc851b4dbe6c1c380ccd5f4a8eba6b9",
+      "afterReportSha256": "55a689e6d23321cd5a575faf7f365896195d76bc026304e4e2193aacb20d2dae",
+      "unchangedPayloadSha256": "05dc153a38002f2256a5512abd9bdd114d8cda0fc92991765abba588202a0924",
+      "summaryBefore": {
+        "commentLines": 14,
+        "docCommentLines": 22
+      },
+      "summaryAfter": {
+        "commentLines": 14,
+        "docCommentLines": 22
+      },
+      "changes": [],
+      "allOtherPayloadFieldsIdentical": true,
+      "inputProvenance": {
+        "beforePackageSha256": "263287750edad8e82b0e4e3a2422a035e1b3b472b338471e79a5cb5d5b7a2329",
+        "afterPackageSha256": "63c1cfb41c419b66c5c4573cc83645f5a4107b64409da2e779e484fc917dbda8",
+        "beforeInputDigest": "b18cbc83a090faf1c83c81982637c392e046758a33f185da78169a3776f4861a",
+        "afterInputDigest": "4a5718103fdc2e415986a4d5573455b7970bf8930bdb738ff83a05ca5b44b5ad",
+        "sourceAndManifestFileHashesIdentical": true,
+        "cacheDigestsReconstructed": true
+      },
+      "sourceAndManifestFileHashesSha256": "7da7abf6d7682f03e5b81c20206a826c193d08dbcb63a52e48329d068fa1b6ff",
+      "summary": {
+        "datalogFacts": 23,
+        "datalogRules": 4,
+        "definitions": 2,
+        "files": 1,
+        "findings": 2,
+        "lines": 107,
+        "rules": {
+          "line-too-long": 2
+        }
+      }
+    },
+    "datalog-ford-fulkerson": {
+      "beforeReportSha256": "30661e573a0acccc0deba2404b55fc3cac2ed8dffb9d791cf1acda9da0f9fbc1",
+      "afterReportSha256": "1f8cccf0982f51cc80056d6733c66fe806bd2b67d1195519ffa47501c69f59c5",
+      "unchangedPayloadSha256": "fa8d859205ade7dade5dd8d863bfd954d7428538c8638a34e72ea2c56698aef7",
+      "summaryBefore": {
+        "commentLines": 6,
+        "docCommentLines": 166
+      },
+      "summaryAfter": {
+        "commentLines": 8,
+        "docCommentLines": 164
+      },
+      "changes": [
+        {
+          "path": "$.summary",
+          "before": {
+            "commentLines": 6,
+            "docCommentLines": 166
+          },
+          "after": {
+            "commentLines": 8,
+            "docCommentLines": 164
+          },
+          "delta": {
+            "commentLines": 2,
+            "docCommentLines": -2
+          }
+        },
+        {
+          "path": "$.sources[0] (src/ford-fulkerson.flix)",
+          "before": {
+            "commentLines": 6,
+            "docCommentLines": 166
+          },
+          "after": {
+            "commentLines": 8,
+            "docCommentLines": 164
+          },
+          "delta": {
+            "commentLines": 2,
+            "docCommentLines": -2
+          }
+        }
+      ],
+      "allOtherPayloadFieldsIdentical": true,
+      "inputProvenance": {
+        "beforePackageSha256": "263287750edad8e82b0e4e3a2422a035e1b3b472b338471e79a5cb5d5b7a2329",
+        "afterPackageSha256": "63c1cfb41c419b66c5c4573cc83645f5a4107b64409da2e779e484fc917dbda8",
+        "beforeInputDigest": "716f0eafec0c37cd3b7d2947f1da7494977628f101effc70bc37a296f83820da",
+        "afterInputDigest": "5ddea9575e000adcba179b9c8d230d721b1ab0a77633f915d867056f1704458d",
+        "sourceAndManifestFileHashesIdentical": true,
+        "cacheDigestsReconstructed": true
+      },
+      "sourceAndManifestFileHashesSha256": "335588e28ad13d64617ff7d076644e6c44d7464855d7b6ddd126df542ba93721",
+      "summary": {
+        "datalogFacts": 0,
+        "datalogRules": 5,
+        "definitions": 42,
+        "files": 1,
+        "findings": 45,
+        "lines": 740,
+        "rules": {
+          "crammed-line": 16,
+          "line-too-long": 29
+        }
+      }
+    },
+    "datalog-railroad-network": {
+      "beforeReportSha256": "7230e446c9b8401aca61fc48a785c10362a42fefb19b7b2e302747fd97d21177",
+      "afterReportSha256": "6d5f63ce32be230bc1c9ae1f775d5eee650878f9e141529b53992dc1f31f8be0",
+      "unchangedPayloadSha256": "e41602368789993fc7e4e7fe61644f32753222410d191d080d300f22d9097bc6",
+      "summaryBefore": {
+        "commentLines": 10,
+        "docCommentLines": 12
+      },
+      "summaryAfter": {
+        "commentLines": 10,
+        "docCommentLines": 12
+      },
+      "changes": [],
+      "allOtherPayloadFieldsIdentical": true,
+      "inputProvenance": {
+        "beforePackageSha256": "263287750edad8e82b0e4e3a2422a035e1b3b472b338471e79a5cb5d5b7a2329",
+        "afterPackageSha256": "63c1cfb41c419b66c5c4573cc83645f5a4107b64409da2e779e484fc917dbda8",
+        "beforeInputDigest": "61ec90aca3e1069c288d5e920221ca207793f8d89bf9057dc070ec8f16ec770b",
+        "afterInputDigest": "a9e725a58b26818fa5e3eb8594295dbe328ea9f41868e00453f7aeb6a4eabfdf",
+        "sourceAndManifestFileHashesIdentical": true,
+        "cacheDigestsReconstructed": true
+      },
+      "sourceAndManifestFileHashesSha256": "c2c3da1e943c4022f53fdaa44b9bb9df4ad41c5c55d9b39c4d9e294a3d484835",
+      "summary": {
+        "datalogFacts": 1,
+        "datalogRules": 13,
+        "definitions": 3,
+        "files": 1,
+        "findings": 3,
+        "lines": 93,
+        "rules": {
+          "crammed-line": 1,
+          "line-too-long": 2
+        }
+      }
+    },
+    "flix-game-engine": {
+      "beforeReportSha256": "64f6351881a8953d2a5d4d6ecf547fdc353655ce4377279131118002e4c2fcb6",
+      "afterReportSha256": "9e79a4d66a82fb3ee5f6d8979e592729f475802e289f755c898b5c948a3f5c2a",
+      "unchangedPayloadSha256": "f1a2a54a7e0dbf391c8f16b3ae1ccad9886d5e6804ebc21bff20cbc50f76eb36",
+      "summaryBefore": {
+        "commentLines": 2709,
+        "docCommentLines": 5680
+      },
+      "summaryAfter": {
+        "commentLines": 2709,
+        "docCommentLines": 5680
+      },
+      "changes": [],
+      "allOtherPayloadFieldsIdentical": true,
+      "inputProvenance": {
+        "beforePackageSha256": "263287750edad8e82b0e4e3a2422a035e1b3b472b338471e79a5cb5d5b7a2329",
+        "afterPackageSha256": "63c1cfb41c419b66c5c4573cc83645f5a4107b64409da2e779e484fc917dbda8",
+        "beforeInputDigest": "867085bac12edfe56843b46c8defee050326eaff7a7eb2f5e1eae9aa354ec9c1",
+        "afterInputDigest": "61b7d66e4faf580dd37ce79449501a767450526c646908566c65453be39a3f10",
+        "sourceAndManifestFileHashesIdentical": true,
+        "cacheDigestsReconstructed": true
+      },
+      "sourceAndManifestFileHashesSha256": "cbaeca1c6a1b5293788e052af990268fa18f3b0f51f50ef723d917d874eb80b1",
+      "summary": {
+        "datalogFacts": 0,
+        "datalogRules": 0,
+        "definitions": 2396,
+        "files": 176,
+        "findings": 1200,
+        "lines": 33171,
+        "rules": {
+          "crammed-line": 109,
+          "deeply-nested": 15,
+          "definition-too-long": 23,
+          "dense": 72,
+          "line-too-long": 725,
+          "noisy-flixdoc-parameters": 28,
+          "too-many-parameters": 89,
+          "undocumented-public": 122,
+          "wide-coupling": 16,
+          "wide-return": 1
+        }
+      }
+    },
+    "flix-json": {
+      "beforeReportSha256": "b77afd02dc4ba8cbf63d98becbc8dda067d983a5457dd4f91321b5a6a5fa5cb2",
+      "afterReportSha256": "636794745828105885bd8b495bbad48474bbd40d1f5b6e3d9b67863b3852180d",
+      "unchangedPayloadSha256": "9cbc1aaea91bb44f4434d51a489e550a89482791c71ec787de2ab3dd0d625ac6",
+      "summaryBefore": {
+        "commentLines": 14,
+        "docCommentLines": 39
+      },
+      "summaryAfter": {
+        "commentLines": 14,
+        "docCommentLines": 39
+      },
+      "changes": [],
+      "allOtherPayloadFieldsIdentical": true,
+      "inputProvenance": {
+        "beforePackageSha256": "263287750edad8e82b0e4e3a2422a035e1b3b472b338471e79a5cb5d5b7a2329",
+        "afterPackageSha256": "63c1cfb41c419b66c5c4573cc83645f5a4107b64409da2e779e484fc917dbda8",
+        "beforeInputDigest": "f13d5cc79f5044c0f11c9b65aaf29cc4a6d036341aaae145a59e63caf077d4a1",
+        "afterInputDigest": "5efca6c813b8dc876306778df52f0b3f4cc118179b9da5cd03138741d4f2e569",
+        "sourceAndManifestFileHashesIdentical": true,
+        "cacheDigestsReconstructed": true
+      },
+      "sourceAndManifestFileHashesSha256": "eb36b675df8673ec1097afb2b499082137a579b4fe30c23d1b5b73e132ca0f4e",
+      "summary": {
+        "datalogFacts": 0,
+        "datalogRules": 0,
+        "definitions": 113,
+        "files": 15,
+        "findings": 60,
+        "lines": 1478,
+        "rules": {
+          "crammed-line": 8,
+          "dense": 2,
+          "line-too-long": 49,
+          "undocumented-public": 1
+        }
+      }
+    },
+    "flix-semver2": {
+      "beforeReportSha256": "937e1080c4b68a579a021fd09be4f0e1e090677397c6c784a772f61f8903fce4",
+      "afterReportSha256": "392bfc71c025dc700f6ba2dd65b3d66e2784dcb0eaa57f8ccdde5016dab2e4be",
+      "unchangedPayloadSha256": "7c7c7b767d3cb409b5c912805c3a8f4b2fad5971da828782d4974f3f6558cde1",
+      "summaryBefore": {
+        "commentLines": 0,
+        "docCommentLines": 0
+      },
+      "summaryAfter": {
+        "commentLines": 0,
+        "docCommentLines": 0
+      },
+      "changes": [],
+      "allOtherPayloadFieldsIdentical": true,
+      "inputProvenance": {
+        "beforePackageSha256": "263287750edad8e82b0e4e3a2422a035e1b3b472b338471e79a5cb5d5b7a2329",
+        "afterPackageSha256": "63c1cfb41c419b66c5c4573cc83645f5a4107b64409da2e779e484fc917dbda8",
+        "beforeInputDigest": "f2a5cf6e750110b6badcf7ee13dbaccb40673b8a13eb7761655b628bd06fed20",
+        "afterInputDigest": "ea49f1da459d18198601c4058e8ea04981871eeb282e9bd88b631363cf7e3e16",
+        "sourceAndManifestFileHashesIdentical": true,
+        "cacheDigestsReconstructed": true
+      },
+      "sourceAndManifestFileHashesSha256": "a61e319d571bc8132488373ab01c5cfada7a94175ca819b9da11409577fa54c6",
+      "summary": {
+        "datalogFacts": 0,
+        "datalogRules": 0,
+        "definitions": 36,
+        "files": 2,
+        "findings": 7,
+        "lines": 299,
+        "rules": {
+          "dense": 1,
+          "undocumented-public": 6
+        }
+      }
+    },
+    "prelude": {
+      "beforeReportSha256": "614b96c94d6fca17b43c5a2bf26d0e07646fefdc977e86473619941fd75a6494",
+      "afterReportSha256": "614b96c94d6fca17b43c5a2bf26d0e07646fefdc977e86473619941fd75a6494",
+      "unchangedPayloadSha256": "e55854b71924f408b553b78791e6df913a0f2e628e5ac938462a029232093323",
+      "summaryBefore": {
+        "commentLines": 0,
+        "docCommentLines": 122
+      },
+      "summaryAfter": {
+        "commentLines": 0,
+        "docCommentLines": 122
+      },
+      "changes": [],
+      "allOtherPayloadFieldsIdentical": true,
+      "summary": {
+        "datalogFacts": 0,
+        "datalogRules": 0,
+        "definitions": 21,
+        "files": 1,
+        "findings": 5,
+        "lines": 232,
+        "rules": {
+          "crammed-line": 4,
+          "line-too-long": 1
+        }
+      }
+    },
+    "qual-effect-system": {
+      "beforeReportSha256": "eeffa6d8eab08f741d104b4634f041ee8fd900151bd1f4828bb4fe2ec2d5e2cd",
+      "afterReportSha256": "8ab609f0bc02608aefee7b2fda324b4e47ad3aa2f2832097d219400d1eafe6ef",
+      "unchangedPayloadSha256": "3d69229af940b91b61a0a7299a4e6ec2df31fc9b9a8f5ef4d20bf0a88b518b4d",
+      "summaryBefore": {
+        "commentLines": 137,
+        "docCommentLines": 50
+      },
+      "summaryAfter": {
+        "commentLines": 137,
+        "docCommentLines": 50
+      },
+      "changes": [],
+      "allOtherPayloadFieldsIdentical": true,
+      "inputProvenance": {
+        "beforePackageSha256": "263287750edad8e82b0e4e3a2422a035e1b3b472b338471e79a5cb5d5b7a2329",
+        "afterPackageSha256": "63c1cfb41c419b66c5c4573cc83645f5a4107b64409da2e779e484fc917dbda8",
+        "beforeInputDigest": "a28a15ccc15664cae8c810018ac3c84cc91eaad26e5ae37d2140f0a0edb6c4a1",
+        "afterInputDigest": "b7b73885a29e363eb372fb43c2ab3869bc29e2bd6f919c4f311b7ad1950a0075",
+        "sourceAndManifestFileHashesIdentical": true,
+        "cacheDigestsReconstructed": true
+      },
+      "sourceAndManifestFileHashesSha256": "f25dcad6eebaf78e591fa7993125285044569f75a9d797337915d63bc4895cdd",
+      "summary": {
+        "datalogFacts": 0,
+        "datalogRules": 7,
+        "definitions": 36,
+        "files": 19,
+        "findings": 27,
+        "lines": 889,
+        "rules": {
+          "deeply-nested": 1,
+          "definition-too-long": 1,
+          "line-too-long": 4,
+          "undocumented-public": 21
+        }
+      }
+    }
+  }
+}
