@@ -1,6 +1,6 @@
 package dev.flixw.metrics;
 
-import dev.flixw.metrics.sdk.AdapterAbi;
+import dev.flixw.sdk.bridge.AdapterAbi;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
@@ -19,7 +19,7 @@ public final class CompilerCapabilitiesTest {
         try {
             Path empty = work.resolve("empty.jar");
             jar(empty, work.resolve("none"));
-            CompilerCapabilities noApi = inspect(empty);
+            CompilerFacade.Capabilities noApi = inspect(empty);
             require(!noApi.hasFlixApi() && !noApi.hasEngineApi() && !noApi.hasNativeMetrics(),
                 "empty jar has no capabilities");
             require(!noApi.missing().isEmpty(), "an empty jar reports what it is missing");
@@ -63,7 +63,7 @@ public final class CompilerCapabilitiesTest {
             require(compiled == 0, "fixture compiler succeeds");
             Path metrics = work.resolve("metrics.jar");
             jar(metrics, classes);
-            CompilerCapabilities found = inspect(metrics);
+            CompilerFacade.Capabilities found = inspect(metrics);
             require(found.hasFlixApi() && !found.hasEngineApi() && found.hasNativeMetrics(),
                 "fixture distinguishes Flix presence from the adapter engine API");
             require(found.missing().contains("class dev.flix.runtime.Global"),
@@ -99,13 +99,13 @@ public final class CompilerCapabilitiesTest {
                 "the gate requires the formal parameter node used for names and FlixDoc width");
 
             if (args.length >= 1) {
-                CompilerCapabilities stock = inspect(Path.of(args[0]));
+                CompilerFacade.Capabilities stock = inspect(Path.of(args[0]));
                 require(stock.hasEngineApi() && stock.missing().isEmpty(),
                     "the pinned compiler satisfies every bytecode-derived adapter requirement");
             }
             if (args.length >= 2) {
                 Path older = Path.of(args[1]);
-                CompilerCapabilities stock = inspect(older);
+                CompilerFacade.Capabilities stock = inspect(older);
                 require(stock.hasEngineApi() && stock.missing().isEmpty(),
                     "the older compiler satisfies one bytecode-derived adapter requirement");
                 require(!missing(older, AdapterAbi.contracts().get(0)).isEmpty(),
@@ -115,7 +115,7 @@ public final class CompilerCapabilitiesTest {
             }
             if (args.length >= 3) {
                 Path oldest = Path.of(args[2]);
-                CompilerCapabilities stock = inspect(oldest);
+                CompilerFacade.Capabilities stock = inspect(oldest);
                 require(stock.hasEngineApi() && stock.missing().isEmpty(),
                     "the oldest compiler satisfies one bytecode-derived adapter requirement");
                 require(!missing(oldest, AdapterAbi.contracts().get(1)).isEmpty(),
@@ -125,7 +125,7 @@ public final class CompilerCapabilitiesTest {
             }
             if (args.length >= 4) {
                 Path earliest = Path.of(args[3]);
-                CompilerCapabilities stock = inspect(earliest);
+                CompilerFacade.Capabilities stock = inspect(earliest);
                 require(stock.hasEngineApi() && stock.missing().isEmpty(),
                     "the earliest compiler satisfies one bytecode-derived adapter requirement");
                 require(!missing(earliest, AdapterAbi.contracts().get(2)).isEmpty(),
@@ -135,7 +135,7 @@ public final class CompilerCapabilitiesTest {
             }
             if (args.length >= 5) {
                 Path resultEra = Path.of(args[4]);
-                CompilerCapabilities stock = inspect(resultEra);
+                CompilerFacade.Capabilities stock = inspect(resultEra);
                 require(stock.hasEngineApi() && stock.missing().isEmpty(),
                     "the Result-era compiler satisfies an adapter contract");
                 require(!missing(resultEra, AdapterAbi.contracts().get(3)).isEmpty(),
@@ -145,7 +145,7 @@ public final class CompilerCapabilitiesTest {
             }
             if (args.length >= 6) {
                 Path validation = Path.of(args[5]);
-                CompilerCapabilities stock = inspect(validation);
+                CompilerFacade.Capabilities stock = inspect(validation);
                 require(stock.hasEngineApi() && stock.missing().isEmpty(),
                     "the Validation-era compiler satisfies an adapter contract");
                 require(!missing(validation, AdapterAbi.contracts().get(4)).isEmpty(),
@@ -155,7 +155,7 @@ public final class CompilerCapabilitiesTest {
             }
             if (args.length >= 7) {
                 Path preExtMatch = Path.of(args[6]);
-                CompilerCapabilities stock = inspect(preExtMatch);
+                CompilerFacade.Capabilities stock = inspect(preExtMatch);
                 require(stock.hasEngineApi() && stock.missing().isEmpty(),
                     "the pre-extensible-match compiler satisfies an adapter contract");
                 require(!missing(preExtMatch, AdapterAbi.contracts().get(5)).isEmpty(),
@@ -169,10 +169,10 @@ public final class CompilerCapabilitiesTest {
     }
 
     /** Inspection needs a loader now; the gate never initialises through it. */
-    private static CompilerCapabilities inspect(Path jar) throws IOException {
+    private static CompilerFacade.Capabilities inspect(Path jar) throws IOException {
         try (java.net.URLClassLoader loader = new java.net.URLClassLoader(
                 new java.net.URL[] {jar.toUri().toURL()}, ClassLoader.getPlatformClassLoader())) {
-            return CompilerCapabilities.inspect(loader, jar);
+            return CompilerFacade.inspect(loader, jar);
         }
     }
 

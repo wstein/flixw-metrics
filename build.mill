@@ -10,9 +10,21 @@ private val flixScalaVersion = "2.13.18"
  * family: `flixJar` names that jar in `plugin/lib`. It is not the pinned `flix.jar`, which moves
  * forward with each verified release: compiling against it would let a reference that only the
  * newer release provides slip into a family whose floor lacks it.
+ *
+ * <p>The sources are the SDK's `flix-bridge/adapter/<family>/src`, guarded by the source pin.
+ * This build only compiles them; it holds no copy.
  */
 trait FlixAdapter extends ScalaModule {
+  def family: String
+
   def flixJar: String
+
+  /** The pinned adapter sources of this family. */
+  def sdkSources = Task {
+    PathRef(plugin.sdkRoot().path / "flix-bridge" / "adapter" / family / "src")
+  }
+
+  override def sources = Task { Seq(sdkSources()) }
 
   def scalaVersion = flixScalaVersion
 
@@ -28,25 +40,25 @@ trait FlixAdapter extends ScalaModule {
 /** Compiler-facing modules, grouped physically and logically under one adapter boundary. */
 object adapter extends Module {
   /** The current adapter, against the oldest compiler in its ABI family (0.76.1 through 0.79.0). */
-  object flix0761 extends FlixAdapter { def flixJar = "flix-0.76.1.jar" }
+  object flix0761 extends FlixAdapter { def family = "flix0761"; def flixJar = "flix-0.76.1.jar" }
 
   /** The outgoing adapter. */
-  object flix0753 extends FlixAdapter { def flixJar = "flix-0.75.3.jar" }
+  object flix0753 extends FlixAdapter { def family = "flix0753"; def flixJar = "flix-0.75.3.jar" }
 
   /** An older adapter. */
-  object flix0680 extends FlixAdapter { def flixJar = "flix-0.68.0.jar" }
+  object flix0680 extends FlixAdapter { def family = "flix0680"; def flixJar = "flix-0.68.0.jar" }
 
   /** The pre-0.68 adapter. */
-  object flix0672 extends FlixAdapter { def flixJar = "flix-0.67.2.jar" }
+  object flix0672 extends FlixAdapter { def family = "flix0672"; def flixJar = "flix-0.67.2.jar" }
 
   /** The pre-0.67.2 adapter. */
-  object flix0661 extends FlixAdapter { def flixJar = "flix-0.66.1.jar" }
+  object flix0661 extends FlixAdapter { def family = "flix0661"; def flixJar = "flix-0.66.1.jar" }
 
   /** The Validation-era adapter. */
-  object flix0610 extends FlixAdapter { def flixJar = "flix-0.61.0.jar" }
+  object flix0610 extends FlixAdapter { def family = "flix0610"; def flixJar = "flix-0.61.0.jar" }
 
   /** The pre-extensible-match adapter, against Flix 0.60.0. */
-  object flix0600 extends FlixAdapter { def flixJar = "flix-0.60.0.jar" }
+  object flix0600 extends FlixAdapter { def family = "flix0600"; def flixJar = "flix-0.60.0.jar" }
 
   /** Every adapter, newest first. The one list the class paths below are built from. */
   def all: Seq[FlixAdapter] =
@@ -67,20 +79,23 @@ object plugin extends ScalaModule {
 
   def javacOptions = Seq("-Xlint:all", "-Werror", "--release", "21")
 
-  /** Validate and declare both SDK input trees, including in-repository CI checkouts. */
-  def sdkInputs = Task.Input {
-    val source = os.Path(os.proc("sh", moduleDir / os.up / "scripts" / "check-sdk-source.sh")
-      .call().out.text().trim)
-    (PathRef(source / "kit" / "src"), PathRef(source / "kit" / "resources"))
-  }
+  /** Validate the pinned SDK checkout, including in-repository CI checkouts, once per run. */
+  def sdkRoot = Task.Input { PathRef(os.Path(os.proc("sh", moduleDir / os.up / "scripts" / "check-sdk-source.sh")
+    .call().out.text().trim)) }
 
-  /** Embed only the pinned, compiler-neutral kit sources and its license resources. */
+  /**
+   * Embed the pinned kit and flix-bridge: their Java sources, and the resources that carry the
+   * version data and the SDK license. The bridge's Scala adapters are compiled in `adapter` and
+   * join the single plugin jar through `localClasspath`.
+   */
   override def sources = Task {
-    super.sources() ++ Seq(sdkInputs()._1)
+    val root = sdkRoot().path
+    super.sources() ++ Seq(PathRef(root / "kit" / "src"), PathRef(root / "flix-bridge" / "src"))
   }
 
   override def resources = Task {
-    super.resources() ++ Seq(sdkInputs()._2)
+    val root = sdkRoot().path
+    super.resources() ++ Seq(PathRef(root / "kit" / "resources"), PathRef(root / "flix-bridge" / "resources"))
   }
 
   /**

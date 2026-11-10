@@ -1,7 +1,7 @@
 package dev.flixw.metrics;
 
-import dev.flixw.metrics.sdk.CompilerModel;
-import dev.flixw.metrics.sdk.CompilerModel.LineInfo;
+import dev.flixw.sdk.bridge.CompilerModel;
+import dev.flixw.sdk.bridge.CompilerModel.LineInfo;
 
 import java.nio.file.Files;
 import java.nio.file.Path;

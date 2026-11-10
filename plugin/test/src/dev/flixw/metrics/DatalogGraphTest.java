@@ -1,5 +1,6 @@
 package dev.flixw.metrics;
 
+import dev.flixw.sdk.bridge.DatalogGraph;
 import java.util.HashSet;
 import java.util.Set;
 

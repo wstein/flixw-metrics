@@ -1,10 +1,10 @@
 package dev.flixw.metrics;
 
-import dev.flixw.metrics.sdk.CompilerModel.DefInfo;
-import dev.flixw.metrics.sdk.CompilerModel.DefInfo.EffectDetail;
-import dev.flixw.metrics.sdk.CompilerModel.EffectInfo;
-import dev.flixw.metrics.sdk.CompilerModel.EffectOperationInfo;
-import dev.flixw.metrics.sdk.CompilerModel.ModuleInfo;
+import dev.flixw.sdk.bridge.CompilerModel.DefInfo;
+import dev.flixw.sdk.bridge.CompilerModel.DefInfo.EffectDetail;
+import dev.flixw.sdk.bridge.CompilerModel.EffectInfo;
+import dev.flixw.sdk.bridge.CompilerModel.EffectOperationInfo;
+import dev.flixw.sdk.bridge.CompilerModel.ModuleInfo;
 
 import java.util.List;
 

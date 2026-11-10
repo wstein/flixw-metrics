@@ -11,5 +11,5 @@ revision=$(git -C "$source" rev-parse HEAD)
 git -C "$work/sdk" checkout -q --detach "$revision"
 mill=$root/mill
 [ -x "$mill" ] || mill=mill
-(cd "$root" && FLIXW_SDK_SOURCE="$work/sdk" "$mill" --no-server plugin.compile + plugin.resources)
-printf '%s\n' 'sdk-layout: 2 passed, 0 failed'
+(cd "$root" && FLIXW_SDK_SOURCE="$work/sdk" "$mill" --no-server plugin.compile + plugin.resources + adapter.flix0600.compile)
+printf '%s\n' 'sdk-layout: 3 passed, 0 failed'

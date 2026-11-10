@@ -75,7 +75,7 @@ public final class ResultCacheTest {
             // The cache holds the compiler's *measurements*, not the report, so this is what
             // has to survive: a definition with everything set, and a symbol carrying the tab
             // the format itself uses to separate fields.
-            var def = dev.flixw.metrics.sdk.CompilerModel.DefInfo.builder(
+            var def = dev.flixw.sdk.bridge.CompilerModel.DefInfo.builder(
                     "Foo.od\td", "Foo", "src/A.flix", 3)
                 .lines(40).codeLines(30).parameters(2).maxLocalParameters(9)
                 .maxLocalParametersOwner("Foo.odd.loop").maxLocalParametersLine(5).localDefs(1)
@@ -89,19 +89,19 @@ public final class ResultCacheTest {
                 .flixdocResultCharacters(88).handlers(2).handledOperations(5)
                 .maxHandlerOperations(3).resumptions(4).declaredPure(false)
                 .effectPolymorphic(true).effectDetails(List.of(
-                    new dev.flixw.metrics.sdk.CompilerModel.DefInfo.EffectDetail(
+                    new dev.flixw.sdk.bridge.CompilerModel.DefInfo.EffectDetail(
                         "State\tful", List.of("Result[Int32, String]", "A;B"))))
                 .build();
-            var mod = new dev.flixw.metrics.sdk.CompilerModel.ModuleInfo("Foo", 1, 40, 2, 3,
+            var mod = new dev.flixw.sdk.bridge.CompilerModel.ModuleInfo("Foo", 1, 40, 2, 3,
                 List.of("Bar"), List.of("Baz", "Qux"));
-            var sourceInfo = new dev.flixw.metrics.sdk.CompilerModel.SourceInfo("src/A.flix",
-                new dev.flixw.metrics.sdk.CompilerModel.LineInfo(40, 30, 4, 3, 3));
-            var effect = new dev.flixw.metrics.sdk.CompilerModel.EffectInfo(
+            var sourceInfo = new dev.flixw.sdk.bridge.CompilerModel.SourceInfo("src/A.flix",
+                new dev.flixw.sdk.bridge.CompilerModel.LineInfo(40, 30, 4, 3, 3));
+            var effect = new dev.flixw.sdk.bridge.CompilerModel.EffectInfo(
                 "Foo.Control", "src/A.flix", 2, 1, List.of(
-                    new dev.flixw.metrics.sdk.CompilerModel.EffectOperationInfo("abort", 1),
-                    new dev.flixw.metrics.sdk.CompilerModel.EffectOperationInfo("retry\tnow", 2)));
-            var model = new dev.flixw.metrics.sdk.CompilerModel.Model(List.of(def), List.of(mod),
-                new dev.flixw.metrics.sdk.CompilerModel.LineInfo(40, 30, 4, 3, 3),
+                    new dev.flixw.sdk.bridge.CompilerModel.EffectOperationInfo("abort", 1),
+                    new dev.flixw.sdk.bridge.CompilerModel.EffectOperationInfo("retry\tnow", 2)));
+            var model = new dev.flixw.sdk.bridge.CompilerModel.Model(List.of(def), List.of(mod),
+                new dev.flixw.sdk.bridge.CompilerModel.LineInfo(40, 30, 4, 3, 3),
                 1, 2, 3, 7, 4, 5, 6, List.of(sourceInfo), List.of(effect));
             ResultCache.write(pluginCache, base, Wire.encode(model));
             var back = Wire.decode(ResultCache.read(pluginCache, base));

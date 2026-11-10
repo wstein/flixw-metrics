@@ -1,6 +1,6 @@
 package dev.flixw.metrics;
 
-import dev.flixw.metrics.sdk.CompilerModel.DefInfo;
+import dev.flixw.sdk.bridge.CompilerModel.DefInfo;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -51,8 +51,8 @@ public final class MetricsConfigTest {
             List<SourceMetrics.Smell> found = Thresholds.apply(List.of(legacy), List.of(), config);
             require(found.size() == 1 && config.isSuppressed(found.get(0)),
                 "a justified scoped suppression matches its finding through its expiry date");
-            var model = new dev.flixw.metrics.sdk.CompilerModel.Model(List.of(legacy), List.of(),
-                new dev.flixw.metrics.sdk.CompilerModel.LineInfo(1, 1, 0, 0, 0), 0, 0, 0, 0, 0, 0);
+            var model = new dev.flixw.sdk.bridge.CompilerModel.Model(List.of(legacy), List.of(),
+                new dev.flixw.sdk.bridge.CompilerModel.LineInfo(1, 1, 0, 0, 0), 0, 0, 0, 0, 0, 0);
             Metrics.Report filtered = Metrics.of(1, model,
                 new SourceMetrics(1, 1, 0, List.of()), config);
             require(filtered.smells().isEmpty(),
@@ -74,14 +74,14 @@ public final class MetricsConfigTest {
                     "src/generated/Data.flix", 1)
                 .lines(200).codeLines(10).parameters(9).maxLocalParameters(9).nesting(8)
                 .cognitive(20).maxLineTokens(50).isPublic(true).build();
-            var generatedModel = new dev.flixw.metrics.sdk.CompilerModel.Model(
+            var generatedModel = new dev.flixw.sdk.bridge.CompilerModel.Model(
                 List.of(generatedDef), List.of(),
-                new dev.flixw.metrics.sdk.CompilerModel.LineInfo(201, 11, 0, 0, 190),
+                new dev.flixw.sdk.bridge.CompilerModel.LineInfo(201, 11, 0, 0, 190),
                 0, 0, 0, 0, 0, 0, List.of(
-                    new dev.flixw.metrics.sdk.CompilerModel.SourceInfo("src/Long.flix",
-                        new dev.flixw.metrics.sdk.CompilerModel.LineInfo(1, 1, 0, 0, 0)),
-                    new dev.flixw.metrics.sdk.CompilerModel.SourceInfo("src/generated/Data.flix",
-                        new dev.flixw.metrics.sdk.CompilerModel.LineInfo(200, 10, 0, 0, 190))));
+                    new dev.flixw.sdk.bridge.CompilerModel.SourceInfo("src/Long.flix",
+                        new dev.flixw.sdk.bridge.CompilerModel.LineInfo(1, 1, 0, 0, 0)),
+                    new dev.flixw.sdk.bridge.CompilerModel.SourceInfo("src/generated/Data.flix",
+                        new dev.flixw.sdk.bridge.CompilerModel.LineInfo(200, 10, 0, 0, 190))));
             Metrics.Report excluded = Metrics.of(2, generatedModel, excludedText, config);
             require(excluded.definitions() == 1 && excluded.lines() == 1
                     && excluded.codeLines() == 1 && excluded.smells().isEmpty()
@@ -106,9 +106,9 @@ public final class MetricsConfigTest {
             DefInfo second = ranked("Api.second", "src/Api.flix", 20);
             DefInfo third = ranked("Api.third", "src/Api.flix", 10);
             DefInfo excludedFirst = ranked("Generated.first", "src/generated/Data.flix", 400);
-            var rankingModel = new dev.flixw.metrics.sdk.CompilerModel.Model(
+            var rankingModel = new dev.flixw.sdk.bridge.CompilerModel.Model(
                 List.of(excludedFirst, first, second, third), List.of(),
-                new dev.flixw.metrics.sdk.CompilerModel.LineInfo(1, 1, 0, 0, 0),
+                new dev.flixw.sdk.bridge.CompilerModel.LineInfo(1, 1, 0, 0, 0),
                 0, 0, 0, 0, 0, 0);
             List<String> longest = Metrics.of(2, rankingModel, excludedText, config).ranks().stream()
                 .filter(rank -> rank.measure().equals("longest"))

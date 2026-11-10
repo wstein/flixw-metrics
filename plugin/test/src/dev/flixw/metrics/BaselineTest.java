@@ -3,7 +3,7 @@ package dev.flixw.metrics;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import dev.flixw.metrics.sdk.CompilerModel;
+import dev.flixw.sdk.bridge.CompilerModel;
 
 /** Exercises report-baseline compatibility and observation lifecycle semantics. */
 public final class BaselineTest {

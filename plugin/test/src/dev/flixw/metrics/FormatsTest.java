@@ -255,10 +255,10 @@ public final class FormatsTest {
         Locale previous = Locale.getDefault();
         try {
             Locale.setDefault(Locale.GERMANY);
-            var def = dev.flixw.metrics.sdk.CompilerModel.DefInfo.builder(
+            var def = dev.flixw.sdk.bridge.CompilerModel.DefInfo.builder(
                     "A.f", "A", "src/A.flix", 1)
                 .lines(2).codeLines(2).nesting(1).cognitive(3).hasDoc(true).build();
-            var module = new dev.flixw.metrics.sdk.CompilerModel.ModuleInfo("A", 1, 2, 1, 2,
+            var module = new dev.flixw.sdk.bridge.CompilerModel.ModuleInfo("A", 1, 2, 1, 2,
                 List.of("B", "C"), List.of("Foundation"));
             Metrics.Report localized = new Metrics.Report(1, 1, 1, 0, 0, 0, 0, 0, 3,
                 0, 0, 0, 0, 0, 0, 0, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0,
@@ -323,20 +323,20 @@ public final class FormatsTest {
 
     private static Metrics.Report reportWithRank(Rankings.Rank rank,
                                                  List<SourceMetrics.Smell> smells) {
-        var definition = dev.flixw.metrics.sdk.CompilerModel.DefInfo.builder(
+        var definition = dev.flixw.sdk.bridge.CompilerModel.DefInfo.builder(
                 "A.b", "A", "src/A.flix", 3)
             .effectDetails(List.of(
-                new dev.flixw.metrics.sdk.CompilerModel.DefInfo.EffectDetail(
+                new dev.flixw.sdk.bridge.CompilerModel.DefInfo.EffectDetail(
                     "State", List.of("Int32"))))
             .build();
         return new Metrics.Report(1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
             10, 8, 1, 1, 0, 10, 40, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 100, 100,
             List.of(), smells,
             List.of(rank), List.of(definition), List.of(), List.of(
-                new dev.flixw.metrics.sdk.CompilerModel.EffectInfo(
+                new dev.flixw.sdk.bridge.CompilerModel.EffectInfo(
                     "A.Console", "src/A.flix", 2, 1, List.of(
-                        new dev.flixw.metrics.sdk.CompilerModel.EffectOperationInfo("print", 1),
-                        new dev.flixw.metrics.sdk.CompilerModel.EffectOperationInfo("format", 3)))),
+                        new dev.flixw.sdk.bridge.CompilerModel.EffectOperationInfo("print", 1),
+                        new dev.flixw.sdk.bridge.CompilerModel.EffectOperationInfo("format", 3)))),
             List.of());
     }
 

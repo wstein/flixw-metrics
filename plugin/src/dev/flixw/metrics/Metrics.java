@@ -6,7 +6,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
-import dev.flixw.metrics.sdk.CompilerModel;
+import dev.flixw.sdk.bridge.CompilerModel;
 
 import java.util.List;
 import java.util.Locale;

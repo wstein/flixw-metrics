@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
-import dev.flixw.metrics.sdk.CompilerModel;
+import dev.flixw.sdk.bridge.CompilerModel;
 
 /** Runs measurement work only against an input snapshot that remains unchanged. */
 final class StableInputs {
