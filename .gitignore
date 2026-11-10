@@ -6,3 +6,4 @@ plugin/test/fixtures/**/packages.lock
 
 # Exact SDK source checkout used by CI; never part of the plugin source tree.
 /.sdk-source/
+/.sdk-layout-test-*/
