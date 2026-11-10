@@ -83,7 +83,10 @@ sh "$root/scripts/copy-corpus-source.sh" "$work/linked" "$work/linked-copy"
 printf '%s\n' '{"publicModules":[{"file":"src/Alpha.flix","module":"Alpha"}]}' > "$work/spec-linked.json"
 sh "$root/scripts/rewrite-corpus-copy.sh" "$work/linked-copy" "$work/spec-linked.json" x
 grep -q '^pub mod Alpha {$' "$work/linked-copy/src/Alpha.flix"
-! grep -q '^name' "$work/linked-copy/flix.toml"
+if grep -q '^name' "$work/linked-copy/flix.toml"; then
+  echo "test-calibration: the rewrite kept the package name" >&2
+  exit 1
+fi
 grep -q '^name = "old"$' "$work/real/flix.toml" || {
   echo "test-calibration: the rewrite changed the linked original" >&2
   exit 1
