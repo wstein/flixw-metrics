@@ -29,6 +29,7 @@ sh "$root/scripts/package.sh" 0.0.0-schema >/dev/null
 FLIXW_ABI_VERSION=1 \
 FLIXW_PROJECT_ROOT=$work/project \
 FLIXW_COMPILER_JAR=$root/plugin/lib/flix.jar \
+FLIXW_COMPILER_VERSION=$(sh "$root/scripts/sdk-versions.sh" pin) \
 FLIXW_JAVA_HOME=$java_home \
 FLIXW_PLUGIN_CACHE=$work/cache \
   "$java_home/bin/java" -jar "$root/dist/plugin.jar" report --format json \
