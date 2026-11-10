@@ -41,7 +41,7 @@ trap 'rm -rf "$work"; rm -f "$manifest" "$entries"' EXIT INT TERM
 # in a per-entry section, where nothing looks for it.
 tr -d '\r' < "$work/META-INF/MANIFEST.MF" | awk 'NF==0{exit} {print}' > "$manifest"
 printf 'Implementation-Version: %s\n' "$version" >> "$manifest"
-rm -rf "$work/META-INF"
+rm -f "$work/META-INF/MANIFEST.MF"
 # JARs are ZIP files: both entry order and entry timestamps affect their digest. Make both
 # explicit so the same source and version produce the checksum CI will publish.
 (cd "$work" && find . -type f -print | LC_ALL=C sort > "$entries")

@@ -67,6 +67,21 @@ object plugin extends ScalaModule {
 
   def javacOptions = Seq("-Xlint:all", "-Werror", "--release", "21")
 
+  /** Validate the explicit source checkout on every invocation, including cached builds. */
+  def sdkSource = Task.Input {
+    os.Path(os.proc("sh", moduleDir / os.up / "scripts" / "check-sdk-source.sh")
+      .call().out.text().trim)
+  }
+
+  /** Embed only the pinned, compiler-neutral kit sources and its license resources. */
+  override def sources = Task {
+    super.sources() ++ Seq(PathRef(sdkSource() / "kit" / "src"))
+  }
+
+  override def resources = Task {
+    super.resources() ++ Seq(PathRef(sdkSource() / "kit" / "resources"))
+  }
+
   /**
    * The current compiler jar, exposed only to the current adapter and tests.
    *

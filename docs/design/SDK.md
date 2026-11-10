@@ -208,6 +208,22 @@ moves to the SDK repository and runs there through the conformance suite and the
 `flixw-metrics` and runs against the embedded SDK. Whether the script splits at that line is
 UNKNOWN.
 
+For #21, before the first SDK release is published, Metrics uses an explicit source pin:
+`sdk-source.properties` records the official repository, full commit SHA, and `module=kit`.
+`FLIXW_SDK_SOURCE` names a separate clean checkout at that SHA. Mill checks the revision and
+tracked/untracked changes before compiling the plugin, then embeds only `kit/src` and
+`kit/resources` in the one plugin JAR. Consumed bytes are checked against their Git blobs, independent of index
+flags; ignored files inside the consumed source/resource trees are rejected. Ignored build outputs
+elsewhere are allowed. There is no sibling-path
+or download fallback and no runtime SDK dependency. CI checks out that exact source revision.
+The pin changes to the merged SDK commit before the Metrics PR becomes ready.
+This interim contract does not publish an SDK artifact or replace the decided release-asset policy.
+
+The #21 extraction passes the plugin artifact and main class explicitly to the kit launcher and
+cache. Metrics keeps provenance JSON rendering and compatibility facades for its unchanged tests.
+No new header or cache-key fields are introduced: the SDK bytes affect the existing plugin-artifact
+digest, so the accepted artifact-change cache miss remains. Q6 and Q7 join the #22/#23 stage.
+
 Publication of the SDK release asset and the SHA-256 pin are owner operations (`AGENTS.md`, owner
 controls artifact publication). Issue #24 (digest check of the cached compiler jar) touches
 `scripts/test-compiler-compatibility.sh` and `scripts/fetch-flix.sh`; it lands before step 2 or

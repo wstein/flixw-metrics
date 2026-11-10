@@ -1,18 +1,16 @@
 package dev.flixw.metrics;
 
-import java.io.File;
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.net.URLClassLoader;
+import dev.flixw.sdk.kit.AtomicOutput;
+import dev.flixw.sdk.kit.ExitCodes;
+import dev.flixw.sdk.kit.InspectionLoader;
+import dev.flixw.sdk.kit.Launcher;
 import dev.flixw.metrics.sdk.Adapters;
 import dev.flixw.metrics.sdk.CompilerModel;
 
 import java.nio.file.Path;
-import java.nio.file.Files;
-import java.nio.file.AtomicMoveNotSupportedException;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -82,17 +80,17 @@ public final class Main {
                 Baseline.Comparison comparison = emit(context, report, config, options,
                     cached.digest());
                 emitDiagnostics(options, cacheState(context, true), cached.retries(), startedAt);
-                if (options.shouldFail(report, comparison)) System.exit(1);
+                if (options.shouldFail(report, comparison)) System.exit(ExitCodes.POLICY_FINDING);
                 return;
             }
             System.exit(spawnBridge(context, args));
         } catch (Usage | Metrics.Failure | MetricsConfig.Invalid | Baseline.Invalid
                 | CompilerModel.ModelFailure e) {
             System.err.println("metrics: " + e.getMessage());
-            System.exit(2);
+            System.exit(ExitCodes.ERROR);
         } catch (IOException e) {
             System.err.println("metrics: " + e.getMessage());
-            System.exit(2);
+            System.exit(ExitCodes.ERROR);
         }
     }
 
@@ -128,7 +126,7 @@ public final class Main {
             Baseline.Comparison comparison = emit(context, measured.report(), measured.config(),
                 options, stable.digest());
             emitDiagnostics(options, cacheState(context, false), stable.retries(), startedAt);
-            if (options.shouldFail(measured.report(), comparison)) System.exit(1);
+            if (options.shouldFail(measured.report(), comparison)) System.exit(ExitCodes.POLICY_FINDING);
         } catch (LinkageError e) {
             // The promise is a sentence, never a stack trace. The descriptor gate covers the
             // adapter's direct Flix linkage; this remains the final guard for transitive linkage
@@ -136,14 +134,14 @@ public final class Main {
             System.err.println("metrics: this compiler is not the one this build supports");
             System.err.println("       " + e);
             System.err.println("       run: ./flixw metrics capabilities");
-            System.exit(2);
+            System.exit(ExitCodes.ERROR);
         } catch (Usage | Metrics.Failure | MetricsConfig.Invalid | Baseline.Invalid
                 | CompilerModel.ModelFailure e) {
             System.err.println("metrics: " + e.getMessage());
-            System.exit(2);
+            System.exit(ExitCodes.ERROR);
         } catch (IOException e) {
             System.err.println("metrics: " + e.getMessage());
-            System.exit(2);
+            System.exit(ExitCodes.ERROR);
         }
     }
 
@@ -167,28 +165,7 @@ public final class Main {
 
     /** Writes a report beside a temporary file, then publishes it with one atomic rename. */
     static void writeOutput(Path projectRoot, Path requested, String contents) throws IOException {
-        if (requested == null) {
-            System.out.print(contents);
-            return;
-        }
-        Path target = (requested.isAbsolute() ? requested : projectRoot.resolve(requested))
-            .toAbsolutePath().normalize();
-        Path parent = target.getParent();
-        if (parent == null || !Files.isDirectory(parent))
-            throw new IOException("output directory does not exist: " + parent);
-        Path temporary = Files.createTempFile(parent, ".flixw-metrics-", ".tmp");
-        try {
-            Files.writeString(temporary, contents);
-            try {
-                Files.move(temporary, target, StandardCopyOption.ATOMIC_MOVE,
-                    StandardCopyOption.REPLACE_EXISTING);
-            } catch (AtomicMoveNotSupportedException e) {
-                throw new IOException("output filesystem does not support atomic replacement: "
-                    + target, e);
-            }
-        } finally {
-            Files.deleteIfExists(temporary);
-        }
+        AtomicOutput.write(projectRoot, requested, contents);
     }
 
     private static String cacheState(Context context, boolean hit) {
@@ -235,45 +212,31 @@ public final class Main {
      */
     private static URLClassLoader inspectionLoader(Path compilerJar) {
         try {
-            return new URLClassLoader("flix-inspect", new URL[] {compilerJar.toUri().toURL()},
-                ClassLoader.getPlatformClassLoader());
-        } catch (MalformedURLException e) {
-            throw new Usage("cannot open the compiler jar " + compilerJar + ": " + e.getMessage());
+            return InspectionLoader.open(compilerJar);
+        } catch (dev.flixw.sdk.kit.Usage e) {
+            throw new Usage(e.getMessage());
         }
     }
 
     private static int spawnBridge(Context context, String[] args) {
         try {
-            return new ProcessBuilder(bridgeCommand(context, args))
-                .directory(context.projectRoot().toFile())
-                .inheritIO().start().waitFor();
-        } catch (IOException e) {
-            throw new Usage("cannot start compiler bridge: " + e.getMessage());
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new Usage("interrupted while waiting for compiler bridge");
+            return Launcher.spawnBridge(context.kit(), pluginArtifact(), Main.class.getName(), args);
+        } catch (URISyntaxException | dev.flixw.sdk.kit.Usage e) {
+            throw new Usage(e instanceof URISyntaxException
+                ? "cannot start compiler bridge: " + e.getMessage() : e.getMessage());
         }
     }
 
     static List<String> bridgeCommand(Context context, String[] args) {
         try {
-            Path plugin = Path.of(Main.class.getProtectionDomain().getCodeSource()
-                .getLocation().toURI());
-            List<String> command = new ArrayList<>();
-            command.add(context.java().toString());
-            // Flix's constraint visitors are deliberately recursive. Its own compiler constants
-            // specify this worker-stack floor; making the bridge explicit avoids platform JVM
-            // defaults (notably hosted Linux) deciding whether a valid large project compiles.
-            command.add("-Xss64m");
-            command.add("-cp");
-            command.add(plugin + File.pathSeparator + context.compilerJar());
-            command.add(Main.class.getName());
-            command.add("--bridge");
-            command.addAll(Arrays.asList(args));
-            return List.copyOf(command);
+            return Launcher.bridgeCommand(context.kit(), pluginArtifact(), Main.class.getName(), args);
         } catch (URISyntaxException e) {
             throw new Usage("cannot start compiler bridge: " + e.getMessage());
         }
+    }
+
+    static Path pluginArtifact() throws URISyntaxException {
+        return Path.of(Main.class.getProtectionDomain().getCodeSource().getLocation().toURI());
     }
 
     private static String version() {
@@ -420,22 +383,17 @@ public final class Main {
 
     record Context(Path projectRoot, Path compilerJar, Path java, Path pluginCache) {
         static Context read() {
-            if (!"1".equals(System.getenv("FLIXW_ABI_VERSION")))
-                throw new Usage("requires flixw ABI version 1");
-            // Optional, unlike the rest. It arrived after ABI 1 was first published, so a
-            // wrapper that predates it simply does not set it -- and a report is correct
-            // without a cache, so absence disables caching rather than failing the run.
-            String cache = System.getenv("FLIXW_PLUGIN_CACHE");
-            return new Context(path("FLIXW_PROJECT_ROOT"), path("FLIXW_COMPILER_JAR"),
-                path("FLIXW_JAVA_HOME").resolve("bin").resolve("java"),
-                cache == null || cache.isBlank()
-                    ? null : Path.of(cache).toAbsolutePath().normalize());
+            try {
+                dev.flixw.sdk.kit.Context context = dev.flixw.sdk.kit.Context.read();
+                return new Context(context.projectRoot(), context.compilerJar(), context.java(),
+                    context.pluginCache());
+            } catch (dev.flixw.sdk.kit.Usage e) {
+                throw new Usage(e.getMessage());
+            }
         }
 
-        private static Path path(String name) {
-            String value = System.getenv(name);
-            if (value == null || value.isBlank()) throw new Usage("missing " + name);
-            return Path.of(value).toAbsolutePath().normalize();
+        dev.flixw.sdk.kit.Context kit() {
+            return new dev.flixw.sdk.kit.Context(projectRoot, compilerJar, java, pluginCache);
         }
     }
 
