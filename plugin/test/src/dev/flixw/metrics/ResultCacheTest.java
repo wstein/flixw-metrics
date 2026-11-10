@@ -82,6 +82,11 @@ public final class ResultCacheTest {
             require(base.equals(ResultCache.key(context, sources, "1.0.0",
                     Map.of("adapterFamily", "flix0761", "sdkVersion", "1"))),
                 "the order of the fields does not matter");
+            // Without the length prefix, a = "1\nfield b 2" and the two fields a = "1", b = "2" would
+            // be the same text; the prefix keeps the field boundaries apart.
+            require(!ResultCache.key(context, sources, "1.0.0", Map.of("a", "1\nfield b 2"))
+                .equals(ResultCache.key(context, sources, "1.0.0", Map.of("a", "1", "b", "2"))),
+                "a value that spells out a following field cannot equal the two fields");
             // A value cannot pose as another field.
             require(!ResultCache.key(context, sources, "1.0.0",
                     Map.of("sdkVersion", "1", "adapterFamily", "flix0761\nx y"))
