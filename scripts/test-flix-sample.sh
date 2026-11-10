@@ -8,17 +8,16 @@
 # with a handler, a test and a documented definition. Positions are kept out of the totals golden
 # and pinned separately, per release: Flix 0.79.0 starts a documented definition at its `def`
 # line, and Flix0761Adapter restores the doc-comment start, so both releases are pinned to the
-# same position (docs/compiler-compatibility/flix-0.79.0.md).
+# same position (flix-bridge/docs/compatibility/flix-0.79.0.md in the SDK).
 #
-# The release digests are read from the `fetch <version> <sha256>` lines of
-# test-compiler-compatibility.sh, so a digest is stated once. Needs dist/plugin.jar (make package).
+# The releases and their digests are versions.json of the pinned SDK, fetched into plugin/lib by
+# scripts/fetch-flix.sh, so a digest is stated once. Needs dist/plugin.jar (make package).
 set -eu
 
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd -P)
 sample=$root/plugin/test/fixtures/release-sample
 golden=$root/plugin/test/golden
-registry=$root/scripts/test-compiler-compatibility.sh
-work=$root/out/compiler-compatibility
+lib=$root/plugin/lib
 versions="0.78.0 0.79.0"
 
 for command in curl java jq diff; do
@@ -31,7 +30,6 @@ done
   echo "test-flix-sample: dist/plugin.jar is missing; run scripts/package.sh first" >&2
   exit 2
 }
-if command -v sha256sum >/dev/null 2>&1; then sum=sha256sum; else sum="shasum -a 256"; fi
 
 java_home=${JAVA_HOME:-}
 if [ -z "$java_home" ]; then
@@ -44,41 +42,9 @@ fi
 
 scratch=$(mktemp -d "${TMPDIR:-/tmp}/flixw-metrics-sample.XXXXXX")
 trap 'rm -rf "$scratch"' EXIT
-mkdir -p "$work"
-
-digest_of() {
-  expected=$(awk -v v="$1" '$1 == "fetch" && $2 == v { print $3 }' "$registry")
-  case $expected in
-    [0-9a-f]*) [ "${#expected}" -eq 64 ] || expected= ;;
-    *) expected= ;;
-  esac
-  [ -n "$expected" ] || {
-    echo "test-flix-sample: no 64-hex digest for Flix $1 in test-compiler-compatibility.sh" >&2
-    exit 1
-  }
-  echo "$expected"
-}
 
 fetch() {
-  version=$1
-  expected=$(digest_of "$version")
-  jar=$work/flix-$version.jar
-  if [ -f "$jar" ]; then
-    # shellcheck disable=SC2086  # $sum is a command plus flags, deliberately split
-    actual=$($sum "$jar" | cut -d' ' -f1)
-    [ "$actual" = "$expected" ] && return
-    rm -f "$jar"
-  fi
-  echo "test-flix-sample: downloading Flix $version" >&2
-  curl -fsSL -o "$jar.part" "https://github.com/flix/flix/releases/download/v$version/flix.jar"
-  # shellcheck disable=SC2086
-  actual=$($sum "$jar.part" | cut -d' ' -f1)
-  if [ "$actual" != "$expected" ]; then
-    rm -f "$jar.part"
-    echo "test-flix-sample: digest mismatch for Flix $version" >&2
-    exit 1
-  fi
-  mv "$jar.part" "$jar"
+  sh "$root/scripts/fetch-flix.sh" "$1" >&2
 }
 
 for version in $versions; do
@@ -94,7 +60,7 @@ for version in $versions; do
   cp -R "$sample/." "$project/"
   FLIXW_ABI_VERSION=1 \
   FLIXW_PROJECT_ROOT=$project \
-  FLIXW_COMPILER_JAR=$work/flix-$version.jar \
+  FLIXW_COMPILER_JAR=$lib/flix-$version.jar \
   FLIXW_JAVA_HOME=$java_home \
     "$java_home/bin/java" -jar "$root/dist/plugin.jar" report --format json --output "$scratch/$version/report.json" > "$scratch/$version/stdout.txt" \
     2> "$scratch/$version/stderr.txt" || {

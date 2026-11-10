@@ -2,7 +2,7 @@
 # Pin what the plugin does with a Flix release that has no compatibility checkpoint (for example
 # 0.80.0), a decision of the repository owner.
 #
-# Admission is the bytecode-derived linkage gate in CompilerCapabilities (Adapters.resolve in the
+# Admission is the bytecode-derived linkage gate in CompilerFacade (Adapters.select in the
 # bridge JVM repeats it per adapter), never a version string. On top of it:
 #   - a compiler that links and is a verified release in versions.json of the pinned SDK: no notice;
 #   - a compiler that links and is not in the list: loaded as before, same report, exit 0, and exactly
@@ -17,8 +17,6 @@ set -eu
 
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd -P)
 sample=$root/plugin/test/fixtures/release-sample
-registry=$root/scripts/test-compiler-compatibility.sh
-work=$root/out/compiler-compatibility
 known=0.79.0
 
 for command in curl java javac jar jq; do
@@ -31,7 +29,6 @@ done
   echo "test-unknown-flix: dist/plugin.jar is missing; run scripts/package.sh first" >&2
   exit 2
 }
-if command -v sha256sum >/dev/null 2>&1; then sum=sha256sum; else sum="shasum -a 256"; fi
 
 java_home=${JAVA_HOME:-}
 if [ -z "$java_home" ]; then
@@ -44,29 +41,13 @@ fi
 
 scratch=$(mktemp -d "${TMPDIR:-/tmp}/flixw-metrics-unknown.XXXXXX")
 trap 'rm -rf "$scratch"' EXIT
-mkdir -p "$work"
 
-expected=$(awk -v v="$known" '$1 == "fetch" && $2 == v { print $3 }' "$registry")
-[ "${#expected}" -eq 64 ] || {
-  echo "test-unknown-flix: no 64-hex digest for Flix $known in test-compiler-compatibility.sh" >&2
+expected=$(sh "$root/scripts/sdk-versions.sh" digest "$known") || {
+  echo "test-unknown-flix: Flix $known is not in versions.json" >&2
   exit 1
 }
-jar=$work/flix-$known.jar
-if [ -f "$jar" ]; then
-  # shellcheck disable=SC2086  # $sum is a command plus flags, deliberately split
-  [ "$($sum "$jar" | cut -d' ' -f1)" = "$expected" ] || rm -f "$jar"
-fi
-if [ ! -f "$jar" ]; then
-  echo "test-unknown-flix: downloading Flix $known" >&2
-  curl -fsSL -o "$jar.part" "https://github.com/flix/flix/releases/download/v$known/flix.jar"
-  # shellcheck disable=SC2086
-  if [ "$($sum "$jar.part" | cut -d' ' -f1)" != "$expected" ]; then
-    rm -f "$jar.part"
-    echo "test-unknown-flix: digest mismatch for Flix $known" >&2
-    exit 1
-  fi
-  mv "$jar.part" "$jar"
-fi
+sh "$root/scripts/fetch-flix.sh" "$known" >&2
+jar=$root/plugin/lib/flix-$known.jar
 
 fail() {
   echo "test-unknown-flix: $1" >&2

@@ -13,51 +13,13 @@ for command in curl java jq; do
   }
 done
 
-if command -v sha256sum >/dev/null 2>&1; then sum=sha256sum; else sum="shasum -a 256"; fi
-
-fetch() {
-  version=$1
-  expected=$2
-  jar=$work/flix-$version.jar
-  if [ -f "$jar" ]; then
-    # shellcheck disable=SC2086  # $sum is a command plus flags, deliberately split
-    actual=$($sum "$jar" | cut -d' ' -f1)
-    [ "$actual" = "$expected" ] && return
-    rm -f "$jar"
-  fi
-  url=https://github.com/flix/flix/releases/download/v$version/flix.jar
-  echo "test-compiler-compatibility: downloading Flix $version" >&2
-  curl -fsSL -o "$jar.part" "$url"
-  # shellcheck disable=SC2086
-  actual=$($sum "$jar.part" | cut -d' ' -f1)
-  if [ "$actual" != "$expected" ]; then
-    rm -f "$jar.part"
-    echo "test-compiler-compatibility: digest mismatch for Flix $version" >&2
-    exit 1
-  fi
-  mv "$jar.part" "$jar"
-}
-
-fetch 0.66.0 e3910bb06f3c60e2439ba4cc9bbf0fc51ca67c6ad06eceb8e0e28804741b67a3
-fetch 0.66.1 71b46d37d9c2e24b4eabd67ed2491a33adbb1a039e7bc49ef1f7556870e6344d
-fetch 0.61.0 e024cd8a72d52d3553cf7fb6b18cb81e1315ad524d9bfab89e317d63dda04ab9
-fetch 0.65.0 5cab00e9b5d30f48cd905f4971562e722621e1bc2d135077c67e86ff02c7cb13
-fetch 0.59.0 461d62d302faf937748fe789e2a098612cfc7661b53a9ed9d1c1810638c9ebc4
-fetch 0.60.0 9920b107c9b4eb42bf17c6f556141b4cc8edbfffdf792de9a1bc5284505cd3c5
-fetch 0.67.1 2f888a5c1ca2b343915add0ca697d36167fd16ae82e61b37bc0be29d09a1d8c4
-fetch 0.67.2 3162ba033d77e481c8cd731441e1f279bd8f44e5f278b2b21632149c30f8ed3f
-fetch 0.68.0 af568a2d4046207f908f8ec37786409b3dccdec944c2df5f571444599fb6b7c8
-fetch 0.75.2 a2697d875725a0dde6e793b8d54cb220e86167a6d49ec5f0ccb0832966c8c15a
-fetch 0.75.3 bf123cdb6494d6e0cbff6399bf185314d332bbe97bfd776e4abc03a5d39dd954
-fetch 0.76.0 d8d9a3870e199c03ed6364ea9430f56f67bfd38c332c411628a6a7cb88b2b0b4
-fetch 0.76.1 b2ed2b7f49902e2dfe1b4f10e23d9a5cb085461e7e8c64909ca2b3abfa566e74
-fetch 0.77.0 20007d79f97b696ba388113e2a4235227691d33a00bfa669f2316b37a7b14201
-fetch 0.78.0 f6a8297a1fe269751aea6255ddd1549f64e74d80b5c6a99ac2a56201a7330957
-fetch 0.79.0 8fad2aa09567a7edabcc43f4101fa6199131df2c22929e001c87659d764f6dcf
+# Every release versions.json names, rejected ones included, is fetched and digest-checked into
+# plugin/lib; the same jars serve the other scripts and the tests.
+sh "$root/scripts/fetch-flix.sh" all
+lib=$root/plugin/lib
 
 # versions.json of the pinned SDK is the one place a verified release is named. Every verified
-# release needs a `fetch` line and a packaged-integration checkpoint below, and every checkpoint a
-# verified release. The rejected releases are the ones this script proves are refused.
+# release needs a packaged-integration checkpoint below, and every checkpoint a verified release. The rejected releases are the ones this script proves are refused.
 verified=$(sh "$root/scripts/sdk-versions.sh" verified)
 [ -n "$verified" ] || {
   echo "test-compiler-compatibility: no verified releases in the pinned versions.json" >&2
@@ -68,12 +30,12 @@ verified=$(sh "$root/scripts/sdk-versions.sh" verified)
   exit 1
 }
 for version in $verified; do
-  grep -q "^fetch $version " "$0" && grep -q "^integration \"\$work/flix-$version.jar\"" "$0" || {
-    echo "test-compiler-compatibility: verified release $version has no fetch line or integration checkpoint" >&2
+  grep -q "^integration \"\$lib/flix-$version.jar\"" "$0" || {
+    echo "test-compiler-compatibility: verified release $version has no integration checkpoint" >&2
     exit 1
   }
 done
-for version in $(grep -o '^integration "\$work/flix-[0-9.]*\.jar"' "$0" | sed 's/.*flix-\(.*\)\.jar".*/\1/'); do
+for version in $(grep -o '^integration "\$lib/flix-[0-9.]*\.jar"' "$0" | sed 's/.*flix-\(.*\)\.jar".*/\1/'); do
   printf '%s\n' "$verified" | grep -qx "$version" || {
     echo "test-compiler-compatibility: integration checkpoint for $version is not in the verified list" >&2
     exit 1
@@ -98,7 +60,7 @@ capabilities() {
     "$java_home/bin/java" -jar "$root/dist/plugin.jar" capabilities
 }
 
-capabilities "$work/flix-0.66.0.jar" > "$work/0.66.0.json"
+capabilities "$lib/flix-0.66.0.jar" > "$work/0.66.0.json"
 jq -e '
   (.hasEngineApi == false) and
   any(.missing[]; contains("dev.flix.runtime.Global"))
@@ -107,7 +69,7 @@ jq -e '
   exit 1
 }
 
-capabilities "$work/flix-0.59.0.jar" > "$work/0.59.0.json"
+capabilities "$lib/flix-0.59.0.jar" > "$work/0.59.0.json"
 jq -e '
   (.hasEngineApi == false) and
   any(.missing[]; contains("Symbol$EffSym"))
@@ -116,58 +78,58 @@ jq -e '
   exit 1
 }
 
-capabilities "$work/flix-0.60.0.jar" > "$work/0.60.0.json"
+capabilities "$lib/flix-0.60.0.jar" > "$work/0.60.0.json"
 jq -e '.hasEngineApi and (.missing | length == 0)' "$work/0.60.0.json" >/dev/null || {
   echo "test-compiler-compatibility: Flix 0.60.0 did not satisfy the adapter ABI" >&2
   exit 1
 }
 
-capabilities "$work/flix-0.66.1.jar" > "$work/0.66.1.json"
+capabilities "$lib/flix-0.66.1.jar" > "$work/0.66.1.json"
 jq -e '.hasEngineApi and (.missing | length == 0)' "$work/0.66.1.json" >/dev/null || {
   echo "test-compiler-compatibility: Flix 0.66.1 did not satisfy the adapter ABI" >&2
   exit 1
 }
 
 for version in 0.61.0 0.65.0; do
-  capabilities "$work/flix-$version.jar" > "$work/$version.json"
+  capabilities "$lib/flix-$version.jar" > "$work/$version.json"
   jq -e '.hasEngineApi and (.missing | length == 0)' "$work/$version.json" >/dev/null || {
     echo "test-compiler-compatibility: Flix $version did not satisfy the adapter ABI" >&2
     exit 1
   }
 done
 
-capabilities "$work/flix-0.67.1.jar" > "$work/0.67.1.json"
+capabilities "$lib/flix-0.67.1.jar" > "$work/0.67.1.json"
 jq -e '.hasEngineApi and (.missing | length == 0)' "$work/0.67.1.json" >/dev/null || {
   echo "test-compiler-compatibility: Flix 0.67.1 did not satisfy the adapter ABI" >&2
   exit 1
 }
 
-capabilities "$work/flix-0.67.2.jar" > "$work/0.67.2.json"
+capabilities "$lib/flix-0.67.2.jar" > "$work/0.67.2.json"
 jq -e '.hasEngineApi and (.missing | length == 0)' "$work/0.67.2.json" >/dev/null || {
   echo "test-compiler-compatibility: Flix 0.67.2 did not satisfy the adapter ABI" >&2
   exit 1
 }
 
-capabilities "$work/flix-0.68.0.jar" > "$work/0.68.0.json"
+capabilities "$lib/flix-0.68.0.jar" > "$work/0.68.0.json"
 jq -e '.hasEngineApi and (.missing | length == 0)' "$work/0.68.0.json" >/dev/null || {
   echo "test-compiler-compatibility: Flix 0.68.0 did not satisfy the adapter ABI" >&2
   exit 1
 }
 
-capabilities "$work/flix-0.75.2.jar" > "$work/0.75.2.json"
+capabilities "$lib/flix-0.75.2.jar" > "$work/0.75.2.json"
 jq -e '.hasEngineApi and (.missing | length == 0)' "$work/0.75.2.json" >/dev/null || {
   echo "test-compiler-compatibility: Flix 0.75.2 did not satisfy the adapter ABI" >&2
   exit 1
 }
 
-capabilities "$work/flix-0.75.3.jar" > "$work/0.75.3.json"
+capabilities "$lib/flix-0.75.3.jar" > "$work/0.75.3.json"
 jq -e '.hasEngineApi and (.missing | length == 0)' "$work/0.75.3.json" >/dev/null || {
   echo "test-compiler-compatibility: Flix 0.75.3 did not satisfy the adapter ABI" >&2
   exit 1
 }
 
 for version in 0.76.0 0.76.1 0.77.0 0.78.0 0.79.0; do
-  capabilities "$work/flix-$version.jar" > "$work/$version.json"
+  capabilities "$lib/flix-$version.jar" > "$work/$version.json"
   jq -e '.hasEngineApi and (.missing | length == 0)' "$work/$version.json" >/dev/null || {
     echo "test-compiler-compatibility: Flix $version did not satisfy the adapter ABI" >&2
     exit 1
@@ -188,20 +150,20 @@ integration() {
     "$fixture" "$root/dist/plugin.jar" "$compiler" "$effect_surface"
 }
 
-integration "$work/flix-0.60.0.jar" 0 "$root/plugin/test/fixtures/semantic-validation"
-integration "$work/flix-0.61.0.jar" 0 "$root/plugin/test/fixtures/semantic-validation"
-integration "$work/flix-0.65.0.jar" 0 "$root/plugin/test/fixtures/semantic-validation"
-integration "$work/flix-0.66.1.jar" 2
-integration "$work/flix-0.67.1.jar" 2
-integration "$work/flix-0.67.2.jar" 2
-integration "$work/flix-0.68.0.jar"
-integration "$work/flix-0.75.2.jar"
-integration "$work/flix-0.75.3.jar"
-integration "$work/flix-0.76.0.jar"
-integration "$work/flix-0.76.1.jar"
-integration "$work/flix-0.77.0.jar"
-integration "$work/flix-0.78.0.jar"
-integration "$work/flix-0.79.0.jar"
+integration "$lib/flix-0.60.0.jar" 0 "$root/plugin/test/fixtures/semantic-validation"
+integration "$lib/flix-0.61.0.jar" 0 "$root/plugin/test/fixtures/semantic-validation"
+integration "$lib/flix-0.65.0.jar" 0 "$root/plugin/test/fixtures/semantic-validation"
+integration "$lib/flix-0.66.1.jar" 2
+integration "$lib/flix-0.67.1.jar" 2
+integration "$lib/flix-0.67.2.jar" 2
+integration "$lib/flix-0.68.0.jar"
+integration "$lib/flix-0.75.2.jar"
+integration "$lib/flix-0.75.3.jar"
+integration "$lib/flix-0.76.0.jar"
+integration "$lib/flix-0.76.1.jar"
+integration "$lib/flix-0.77.0.jar"
+integration "$lib/flix-0.78.0.jar"
+integration "$lib/flix-0.79.0.jar"
 
 # Flix 0.79.0 starts a documented definition at its def line instead of its doc comment. The
 # adapter makes up the difference, so one project must measure identically on every release:
@@ -209,7 +171,7 @@ integration "$work/flix-0.79.0.jar"
 span_report() {
   version=$1
   shift
-  compiler=$work/flix-$version.jar
+  compiler=$lib/flix-$version.jar
   dir=$work/span-$version
   rm -rf "$dir" "$work/span-cache-$version"
   mkdir -p "$dir" "$work/span-cache-$version"
