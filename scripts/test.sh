@@ -2,6 +2,7 @@
 set -eu
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd -P)
 sh "$root/scripts/test-sdk-source.sh"
+sh "$root/scripts/test-sdk-layout.sh"
 sh "$root/scripts/check-mill-jdk.sh"
 sh "$root/scripts/check-lint-adapters.sh"
 sh "$root/scripts/lint.sh"
