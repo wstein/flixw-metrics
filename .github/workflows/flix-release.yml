@@ -1,9 +1,10 @@
 name: flix-release
 
 # The adapter binds to compiler internals, and a Flix release changes them without a single
-# commit here. This job fails when the newest Flix release is not in the verified list, so a
-# new release is noticed within a week and the failed run is the cue to investigate it, instead
-# of being found by a user whose project stopped measuring. The job opens no issue.
+# commit here. This job fails when the newest Flix release is not verified in versions.json of the
+# pinned SDK, so a new release is noticed within a week and the failed run is the cue to
+# investigate it, instead of being found by a user whose project stopped measuring. The job opens
+# no issue.
 #
 # It checks only that a checkpoint exists (scripts/check-flix-release.sh). Whether the release
 # actually passes is decided by `scripts/test-compiler-compatibility.sh` once the checkpoint is
@@ -25,5 +26,16 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
+      - name: Read the pinned SDK revision
+        id: sdk-pin
+        run: echo "revision=$(awk -F= '$1 == "revision" {print $2}' sdk-source.properties)" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+          repository: wstein/flixw-plugin-sdk
+          ref: ${{ steps.sdk-pin.outputs.revision }}
+          path: .sdk-source
+      - name: Select the SDK source checkout
+        run: echo "FLIXW_SDK_SOURCE=$GITHUB_WORKSPACE/.sdk-source" >> "$GITHUB_ENV"
       - name: compare the newest release with the checkpoints
         run: sh scripts/check-flix-release.sh

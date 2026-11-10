@@ -55,12 +55,16 @@ fetch 0.77.0 20007d79f97b696ba388113e2a4235227691d33a00bfa669f2316b37a7b14201
 fetch 0.78.0 f6a8297a1fe269751aea6255ddd1549f64e74d80b5c6a99ac2a56201a7330957
 fetch 0.79.0 8fad2aa09567a7edabcc43f4101fa6199131df2c22929e001c87659d764f6dcf
 
-# The list the packaged plugin warns from is the one place a verified release is named. Every entry
-# needs a `fetch` line and a packaged-integration checkpoint below, and every checkpoint an entry.
-list=$root/plugin/resources/dev/flixw/metrics/verified-flix-versions.txt
-verified=$(grep -v '^#' "$list" | grep -v '^$' || true)
+# versions.json of the pinned SDK is the one place a verified release is named. Every verified
+# release needs a `fetch` line and a packaged-integration checkpoint below, and every checkpoint a
+# verified release. The rejected releases are the ones this script proves are refused.
+verified=$(sh "$root/scripts/sdk-versions.sh" verified)
 [ -n "$verified" ] || {
-  echo "test-compiler-compatibility: no verified releases in $list" >&2
+  echo "test-compiler-compatibility: no verified releases in the pinned versions.json" >&2
+  exit 1
+}
+[ "$(sh "$root/scripts/sdk-versions.sh" rejected | tr '\n' ' ')" = '0.59.0 0.66.0 ' ] || {
+  echo "test-compiler-compatibility: the rejected releases in versions.json are not 0.59.0 and 0.66.0" >&2
   exit 1
 }
 for version in $verified; do

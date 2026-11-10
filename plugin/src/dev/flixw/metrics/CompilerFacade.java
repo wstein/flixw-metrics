@@ -1,8 +1,11 @@
 package dev.flixw.metrics;
 
 import dev.flixw.sdk.bridge.CompilerCapabilities;
+import dev.flixw.sdk.bridge.VersionData;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 /**
  * What this plugin adds to the SDK's compiler inspection: the probe for the compiler's own
@@ -44,6 +47,22 @@ final class CompilerFacade {
         }
         return new Capabilities(found.hasFlixApi(), found.hasEngineApi(),
             CompilerCapabilities.present(compiler, "ca.uwaterloo.flix.tools.Metrics$"), found.missing());
+    }
+
+    /**
+     * The single warning line for a compiler release without a compatibility checkpoint, or empty
+     * when it is verified.
+     *
+     * <p>This is not admission: linkage is. The release is the one flixw announces in
+     * {@code FLIXW_COMPILER_VERSION}, else the one in the jar file name, so a pinned
+     * {@code flix.jar} is judged by what flixw says it is instead of drawing the "cannot read the
+     * Flix version" notice. The list of verified releases is the SDK's {@code versions.json}.
+     */
+    static Optional<String> warning(Map<String, String> environment, Path compilerJar) {
+        VersionData data = VersionData.load();
+        return VersionData.flixVersion(environment, compilerJar)
+            .map(version -> data.warningFor("metrics", version))
+            .orElseGet(() -> data.warning("metrics", compilerJar));
     }
 
     private static String quote(String value) {
