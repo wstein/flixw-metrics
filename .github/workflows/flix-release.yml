@@ -1,12 +1,13 @@
 name: flix-release
 
 # The adapter binds to compiler internals, and a Flix release changes them without a single
-# commit here. This job fails when the newest Flix release has no checkpoint in the
-# compatibility run, so a new release is noticed within a week and an investigation is
-# opened, instead of being found by a user whose project stopped measuring.
+# commit here. This job fails when the newest Flix release is not in the verified list, so a
+# new release is noticed within a week and the failed run is the cue to investigate it, instead
+# of being found by a user whose project stopped measuring. The job opens no issue.
 #
-# It checks only that a checkpoint exists. Whether the release actually passes is decided by
-# `scripts/test-compiler-compatibility.sh` once the checkpoint is added.
+# It checks only that a checkpoint exists (scripts/check-flix-release.sh). Whether the release
+# actually passes is decided by `scripts/test-compiler-compatibility.sh` once the checkpoint is
+# added.
 on:
   schedule:
     - cron: "23 6 * * 1"
@@ -19,7 +20,10 @@ jobs:
   newest:
     name: newest Flix has a compatibility checkpoint
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
       - name: compare the newest release with the checkpoints
         run: sh scripts/check-flix-release.sh
