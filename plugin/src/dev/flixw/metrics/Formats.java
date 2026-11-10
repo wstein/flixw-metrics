@@ -1,6 +1,6 @@
 package dev.flixw.metrics;
 
-import dev.flixw.metrics.sdk.CompilerModel;
+import dev.flixw.sdk.bridge.CompilerModel;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;

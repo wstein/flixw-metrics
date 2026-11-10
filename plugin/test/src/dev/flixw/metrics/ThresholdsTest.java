@@ -1,7 +1,7 @@
 package dev.flixw.metrics;
 
-import dev.flixw.metrics.sdk.CompilerModel.DefInfo;
-import dev.flixw.metrics.sdk.CompilerModel.ModuleInfo;
+import dev.flixw.sdk.bridge.CompilerModel.DefInfo;
+import dev.flixw.sdk.bridge.CompilerModel.ModuleInfo;
 
 import java.util.List;
 

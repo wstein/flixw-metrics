@@ -7,8 +7,8 @@ import dev.flixw.sdk.kit.AtomicOutput;
 import dev.flixw.sdk.kit.ExitCodes;
 import dev.flixw.sdk.kit.InspectionLoader;
 import dev.flixw.sdk.kit.Launcher;
-import dev.flixw.metrics.sdk.Adapters;
-import dev.flixw.metrics.sdk.CompilerModel;
+import dev.flixw.sdk.bridge.Adapters;
+import dev.flixw.sdk.bridge.CompilerModel;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -52,7 +52,7 @@ public final class Main {
             // nothing is executed through it. It is deliberately not the loader the engine
             // measures with, which cannot be isolated at all.
             try (URLClassLoader inspector = inspectionLoader(context.compilerJar())) {
-                CompilerCapabilities capabilities = CompilerCapabilities.inspect(inspector,
+                CompilerFacade.Capabilities capabilities = CompilerFacade.inspect(inspector,
                     context.compilerJar());
                 if (args.length == 1 && "capabilities".equals(args[0])) {
                     System.out.println(capabilities.json(context));

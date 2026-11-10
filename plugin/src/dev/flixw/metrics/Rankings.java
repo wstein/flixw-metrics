@@ -1,8 +1,8 @@
 package dev.flixw.metrics;
 
-import dev.flixw.metrics.sdk.CompilerModel.DefInfo;
-import dev.flixw.metrics.sdk.CompilerModel.ModuleInfo;
-import dev.flixw.metrics.sdk.CompilerModel.SourceInfo;
+import dev.flixw.sdk.bridge.CompilerModel.DefInfo;
+import dev.flixw.sdk.bridge.CompilerModel.ModuleInfo;
+import dev.flixw.sdk.bridge.CompilerModel.SourceInfo;
 
 import java.util.ArrayList;
 import java.util.Comparator;

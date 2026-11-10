@@ -1,7 +1,7 @@
 package dev.flixw.metrics;
 
-import dev.flixw.metrics.adapter.Flix0761Adapter;
-import dev.flixw.metrics.sdk.CompilerModel.Model;
+import dev.flixw.sdk.bridge.adapter.Flix0761Adapter;
+import dev.flixw.sdk.bridge.CompilerModel.Model;
 
 import java.nio.file.Path;
 import java.util.List;
