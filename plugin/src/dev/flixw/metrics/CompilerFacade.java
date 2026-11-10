@@ -1,5 +1,6 @@
 package dev.flixw.metrics;
 
+import dev.flixw.sdk.bridge.AdapterAbi;
 import dev.flixw.sdk.bridge.CompilerCapabilities;
 import dev.flixw.sdk.bridge.VersionData;
 import java.nio.file.Path;
@@ -47,6 +48,25 @@ final class CompilerFacade {
         }
         return new Capabilities(found.hasFlixApi(), found.hasEngineApi(),
             CompilerCapabilities.present(compiler, "ca.uwaterloo.flix.tools.Metrics$"), found.missing());
+    }
+
+    /**
+     * The cache fields of the adapter that would link against {@code compiler}, or an empty map when
+     * none does.
+     *
+     * <p>The outer phase has no adapter to select, but it must key the cache exactly as the
+     * measuring phase does, which takes the fields from {@code Adapters.select()}. Selection is the
+     * first family, newest first, whose bytecode-derived contract the compiler satisfies, so this
+     * does the same with the compiler's own loader and gets the same family.
+     */
+    static Map<String, String> cacheFields(ClassLoader compiler) {
+        VersionData data = VersionData.load();
+        for (VersionData.Family family : data.families()) {
+            AdapterAbi.Contract contract = AdapterAbi.contract(family.adapter(),
+                AdapterAbi.class.getClassLoader());
+            if (AdapterAbi.missing(contract, compiler).isEmpty()) return data.cacheFields(family.id());
+        }
+        return Map.of();
     }
 
     /**

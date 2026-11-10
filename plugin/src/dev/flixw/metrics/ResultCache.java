@@ -1,8 +1,13 @@
 package dev.flixw.metrics;
 
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import dev.flixw.sdk.kit.KeyedStore;
 
 /**
@@ -26,6 +31,12 @@ import dev.flixw.sdk.kit.KeyedStore;
      * Every project source path <em>with</em> its digest, sorted, because a deleted file
  * changes the report and a content-only hash would not notice. {@code flix.toml}, because it
  * selects dependencies that participate in typing.
+ *
+ * <p>The bridge's {@code sdkVersion} and the {@code adapterFamily} that linked are explicit
+ * fields of the key, taken from {@code Adapters.Selection.cacheFields()} in the measuring phase
+ * and derived the same way from the contracts in the outer phase. They are redundant with the
+ * plugin artifact digest while the adapters ship in the plugin jar; they stay explicit so that a
+ * change of either one cannot hit an entry written under another.
  *
  * <p><b>The directory is flixw's to name, not this plugin's to guess.</b>
  * {@code FLIXW_PLUGIN_CACHE} is where a plugin may keep derived data, and flixw collects it
@@ -52,18 +63,34 @@ final class ResultCache {
      * cached is still a correct report, and an unreadable file here means the compiler is
      * about to produce a better diagnostic about it than this class could.
      */
-    static String key(Main.Context context, List<Path> sources, String pluginVersion) {
+    static String key(Main.Context context, List<Path> sources, String pluginVersion,
+                      Map<String, String> fields) {
         try {
             Path plugin = Main.pluginArtifact();
-            return key(context, sources, pluginVersion, plugin);
+            return key(context, sources, pluginVersion, plugin, fields);
         } catch (URISyntaxException e) {
             return null;
         }
     }
 
     static String key(Main.Context context, List<Path> sources, String pluginVersion,
-                      Path pluginArtifact) {
-        return KeyedStore.key(context.kit(), sources, pluginVersion, pluginArtifact);
+                      Path pluginArtifact, Map<String, String> fields) {
+        String base = KeyedStore.key(context.kit(), sources, pluginVersion, pluginArtifact);
+        if (base == null) return null;
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            digest.update(("kit-key " + base + '\n').getBytes(StandardCharsets.UTF_8));
+            // Sorted, and each value length-prefixed: a value cannot pose as another field.
+            for (Map.Entry<String, String> field : new TreeMap<>(fields).entrySet()) {
+                digest.update(("field " + field.getKey() + ' ' + field.getValue().length() + ' '
+                    + field.getValue() + '\n').getBytes(StandardCharsets.UTF_8));
+            }
+            StringBuilder hex = new StringBuilder();
+            for (byte b : digest.digest()) hex.append(String.format("%02x", b));
+            return hex.toString();
+        } catch (NoSuchAlgorithmException e) {
+            return null;
+        }
     }
 
     static String read(Path dir, String key) {

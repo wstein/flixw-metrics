@@ -21,7 +21,7 @@ public final class ProvenanceTest {
             Files.writeString(compiler, "compiler\n");
             Main.Context context = new Main.Context(project, compiler, Path.of("java"), null);
 
-            String digest = ResultCache.key(context, List.of(source), "test");
+            String digest = ResultCache.key(context, List.of(source), "test", java.util.Map.of());
             Provenance outside = Provenance.of(context, "test", digest);
             require(outside.commit().equals("(not a git checkout)") && !outside.dirty(),
                 "a non-checkout has explicit fallback provenance and is not spuriously dirty");
