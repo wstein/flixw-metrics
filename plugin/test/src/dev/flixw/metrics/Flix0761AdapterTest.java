@@ -14,6 +14,7 @@ public final class Flix0761AdapterTest {
     private Flix0761AdapterTest() { }
 
     public static void main(String[] args) throws Exception {
+        CommentKindChecks.verify(new Flix0761Adapter(), Path.of(args[0]));
         Path project = copyFixture(Path.of(args[0]));
         try {
             Model model = new Flix0761Adapter().measure(project);

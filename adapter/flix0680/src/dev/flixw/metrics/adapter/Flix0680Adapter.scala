@@ -141,7 +141,8 @@ final class Flix0680Adapter extends CompilerModel {
         }
         val target =
           if (!t.kind.isComment) codeLines
-          else if (t.text.startsWith("///")) docLines
+          // isCommentNonDoc also exists at the oldest compiler floors.
+          else if (!t.kind.isCommentNonDoc) docLines
           else commentLines
         for (line <- t.start.lineOneIndexed to t.end.lineOneIndexed) target += line
       }
