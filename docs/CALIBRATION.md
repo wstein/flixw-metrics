@@ -186,15 +186,65 @@ only trailing spans before slash banners; its artifact digest changes, invalidat
 measurement-cache entries as designed. The bytecode-derived ABI contract additionally references
 the existing `TokenKind.isCommentDoc` method; the family still compiles against 0.76.1.
 
-A separate existing classification issue remains
-([#33](https://github.com/wstein/flixw-metrics/issues/33)): every adapter uses a textual `///`
-prefix for source doc-comment line totals. A three-line probe containing one `////` banner, one actual
-`///` comment and one definition reports zero ordinary comment lines and two doc-comment lines
-on both 0.75.3 and 0.79.0, although the compiler classifies only the latter as documentation.
-This snapshot preserves those historical raw line-category totals; it does not establish that
-they are correct. A separate correction should use the compiler token kind for line categories,
-prove 1 ordinary/1 documentation line on each family and rerun calibration. The span fix here
-does not change those categories or their thresholds.
+The snapshot above preserves the then-existing raw category error from
+[#33](https://github.com/wstein/flixw-metrics/issues/33): the textual `///` prefix counted
+ordinary slash banners as documentation. The correction and its historical category changes
+are recorded below; the earlier snapshot remains evidence of its named source revision.
+
+## Compiler comment-kind recalibration (2026-11-10)
+
+Analyzer source `37e5d765b64701eb9cc4c2db7d9e5e6ae1e6d587` classifies source comment
+lines by the compiler token kind in all seven adapter families. Within the `isComment` branch,
+`!isCommentNonDoc` identifies documentation. Unlike `isCommentDoc`, that predicate exists at
+every original compile floor, including 0.60.0 through 0.68.0. The existing `Flix0761Adapter`
+trailing-span compensation still uses `isCommentDoc` and is unchanged.
+
+Each family's real-compiler test now checks three source files: exactly three, four, five and
+sixteen slashes; ordinary `//`; multiline block comments containing `///`; and inline comments,
+CRLF and a blank line. All 21 exact source-line comparisons pass. The issue's three-line
+banner/doc/definition probe reports `commentLines=1, docCommentLines=1` at all 14 packaged
+release checkpoints from 0.60.0 through 0.79.0, including 0.75.3 and 0.79.0. All seven old
+implementations fail that regression with 0/2. Seven targeted mutants are rejected by their
+intended assertions; the full mutation sweep was not run, by owner decision.
+
+Both complete nine-target corpus commands passed, each with eight empty warm-cache baseline
+comparisons. The 0.77.0 default has 37,037 lines; the 0.79.0 variant has 37,040 because its
+Prelude source is three lines longer. Each retains 217 files, 2,650 definitions, 32 Datalog
+rules, 28 facts and 1,349 findings. No thresholds, corpus pins, compiler floors or performance
+budgets change.
+
+| 0.79.0 target | Ordinary before → after | Documentation before → after |
+| --- | ---: | ---: |
+| Prelude | 0 → 0 | 122 → 122 |
+| flix-semver2 | 0 → 0 | 0 → 0 |
+| flix-json | 14 → 14 | 39 → 39 |
+| flix-game-engine | 2,709 → 2,709 | 5,680 → 5,680 |
+| qual-effect-system | 137 → 137 | 50 → 50 |
+| datalog-compiler-puzzle | 9 → 9 | 3 → 3 |
+| datalog-dependency-resolution | 14 → 14 | 22 → 22 |
+| datalog-ford-fulkerson | 6 → 8 | 166 → 164 |
+| datalog-railroad-network | 10 → 10 | 12 → 12 |
+
+Apart from provenance, compared with the earlier 0.79.0 snapshot exactly two JSON objects change: the Ford–Fulkerson
+report summary and its one source entry. Each moves two lines from documentation to ordinary
+comments; combined comments and percentages are unchanged. Removing only those two category
+fields from every source/summary object and the report provenance leaves all nine full native
+payloads identical, including declaration/module spans, finding identities, locations and
+rankings. For the eight normal targets, all 220 source/manifest file hashes match the prior
+inputs, and both old and new cache-key digests were reconstructed using their respective
+package SHA-256 values. Eight complete native payload comparisons between 0.77.0 and 0.79.0
+match after removing provenance, eight cross-release warning baselines are empty, and all 1,344
+SARIF finding identities and physical locations agree with native reports. Prelude has no
+normal-project cache, cross-release baseline or SARIF claim. The artifact digest change
+invalidates earlier cached measurements.
+
+The [comment-kind snapshot](../calibration/results/comment-kinds-2026-11-10.json) records source,
+package and input provenance, per-target categories and payload hashes. Report schema 35, wire
+format 14, SDK, capability JSON structure and CLI are unchanged; the bytecode-derived adapter
+contracts now reference the already-available `TokenKind.isCommentNonDoc` method. The default
+test/calibration compiler remains 0.77.0. The first required-suite attempt ended with JVM exit
+137 while a separate scratch mutation run overlapped; it is not counted as passing. All source
+checks passed after serializing the runs.
 
 ## Results after calibration
 
