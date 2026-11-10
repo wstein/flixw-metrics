@@ -9,12 +9,13 @@
 # This only checks that a checkpoint exists. Whether the release passes is decided by
 # `scripts/test-compiler-compatibility.sh` once the checkpoint is added.
 #
-# FLIX_RELEASE_URL overrides the URL that redirects to the newest release tag (for tests).
+# FLIX_RELEASE_URL overrides the URL that redirects to the newest release tag and FLIX_VERIFIED_LIST
+# the list file (both for tests).
 set -eu
 
 # shellcheck disable=SC1007  # Empty CDPATH is scoped to cd, not assigned to root.
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd -P)
-list=plugin/resources/dev/flixw/metrics/verified-flix-versions.txt
+list=${FLIX_VERIFIED_LIST:-$root/plugin/resources/dev/flixw/metrics/verified-flix-versions.txt}
 url=${FLIX_RELEASE_URL:-https://github.com/flix/flix/releases/latest}
 
 # The tag, not the API's JSON body: one redirect, and no rate limit. No pipe: sh has no pipefail,
@@ -30,13 +31,20 @@ case $effective in
     exit 1
     ;;
 esac
+case $v in
+  *"
+"*)
+    echo "check-flix-release: could not resolve a Flix version (got several lines)" >&2
+    exit 1
+    ;;
+esac
 printf '%s\n' "$v" | grep -Eq '^[0-9]+[.][0-9]+[.][0-9]+$' || {
   echo "check-flix-release: could not resolve a Flix version (got '$v')" >&2
   exit 1
 }
 echo "newest Flix release: $v"
-if ! grep -Fxq "$v" "$root/$list"; then
-  echo "::error::Flix $v is not in $list;" \
+if ! grep -Fxq "$v" "$list"; then
+  echo "::error::Flix $v is not in ${list#"$root"/};" \
        "add its checkpoint to scripts/test-compiler-compatibility.sh, the version to that list," \
        "and record docs/compiler-compatibility/flix-$v.md" >&2
   exit 1
