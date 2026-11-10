@@ -7,6 +7,13 @@ output=${1:?usage: sh scripts/calibrate-corpus.sh <empty-output-directory>}
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd -P)
 manifest=${CALIBRATION_MANIFEST:-$root/calibration/corpus.json}
 compiler_jar=${CALIBRATION_COMPILER_JAR:-$root/plugin/lib/flix.jar}
+# flixw announces the version of a jar whose name has none; the pin is Flix $(pin), any other jar is
+# announced only when CALIBRATION_COMPILER_VERSION says so.
+if [ -z "${CALIBRATION_COMPILER_JAR:-}" ]; then
+  compiler_version=$(sh "$root/scripts/sdk-versions.sh" pin)
+else
+  compiler_version=${CALIBRATION_COMPILER_VERSION:-}
+fi
 [ -f "$manifest" ] || {
   echo "calibrate-corpus: no manifest $manifest" >&2
   exit 2
@@ -99,6 +106,7 @@ run_project() {
   FLIXW_ABI_VERSION=1 \
   FLIXW_PROJECT_ROOT=$project \
   FLIXW_COMPILER_JAR=$compiler_jar \
+  FLIXW_COMPILER_VERSION=$compiler_version \
   FLIXW_JAVA_HOME=$java_home \
   FLIXW_PLUGIN_CACHE=$cache \
     "$java_home/bin/java" -jar "$root/dist/plugin.jar" report --format json \
@@ -108,6 +116,7 @@ run_project() {
   FLIXW_ABI_VERSION=1 \
   FLIXW_PROJECT_ROOT=$project \
   FLIXW_COMPILER_JAR=$compiler_jar \
+  FLIXW_COMPILER_VERSION=$compiler_version \
   FLIXW_JAVA_HOME=$java_home \
   FLIXW_PLUGIN_CACHE=$cache \
     "$java_home/bin/java" -jar "$root/dist/plugin.jar" report --format json \

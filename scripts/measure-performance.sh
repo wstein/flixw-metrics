@@ -42,6 +42,7 @@ run() {
   FLIXW_ABI_VERSION=1 \
   FLIXW_PROJECT_ROOT=$project \
   FLIXW_COMPILER_JAR=$compiler \
+  FLIXW_COMPILER_VERSION=$(sh "$root/scripts/sdk-versions.sh" pin) \
   FLIXW_JAVA_HOME=$selected_java_home \
   FLIXW_PLUGIN_CACHE=$cache \
     "$java_home/bin/java" -jar "$plugin" report --format json > "$work/report.json"

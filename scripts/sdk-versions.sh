@@ -2,6 +2,7 @@
 # Print release data from versions.json of the pinned SDK, the one place a Flix release is named.
 #
 # Usage: sh scripts/sdk-versions.sh verified|rejected|all|families|path
+#        sh scripts/sdk-versions.sh pin     the test release of the newest family: plugin/lib/flix.jar
 #        sh scripts/sdk-versions.sh digest|family|floor <release or family>
 #
 # Versions are listed oldest first. The file is read from the guarded SDK checkout
@@ -19,11 +20,12 @@ case ${1-} in
   verified) jq -r '.releases[] | select(.status == "verified") | .version' "$json" ;;
   rejected) jq -r '.releases[] | select(.status == "rejected") | .version' "$json" ;;
   all) jq -r '.releases[].version' "$json" ;;
+  pin) jq -er '.families[0].testVersion' "$json" ;;
   families) jq -r '.families[].id' "$json" ;;
   path) printf '%s\n' "$json" ;;
   digest) jq -er --arg v "${2:?release}" '.releases[] | select(.version == $v) | .sha256' "$json" ;;
   family) jq -er --arg v "${2:?release}" '.releases[] | select(.version == $v) | .family' "$json" ;;
   floor) jq -er --arg f "${2:?family}" '.families[] | select(.id == $f) | .floor' "$json" ;;
-  *) echo 'usage: sh scripts/sdk-versions.sh verified|rejected|all|families|path|digest <v>|family <v>|floor <family>' >&2
+  *) echo 'usage: sh scripts/sdk-versions.sh verified|rejected|all|families|pin|path|digest <v>|family <v>|floor <family>' >&2
      exit 2 ;;
 esac

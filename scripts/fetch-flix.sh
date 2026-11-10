@@ -36,11 +36,11 @@ case ${1-} in
       wanted="$wanted $floor $test_version"
     done
     wanted=$(printf '%s\n' $wanted | sort -u)
-    pin=$(jq -er '.families[0].testVersion' "$(versions path)")
+    pin=$(versions pin)
     ;;
   all)
     wanted=$(versions all)
-    pin=$(jq -er '.families[0].testVersion' "$(versions path)")
+    pin=$(versions pin)
     ;;
   *) wanted=$* ;;
 esac
