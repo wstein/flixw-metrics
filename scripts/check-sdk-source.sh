@@ -16,9 +16,9 @@ property() {
 }
 repository=$(property repository)
 revision=$(property revision)
-module=$(property module)
+modules=$(property modules)
 [ "$repository" = 'https://github.com/wstein/flixw-plugin-sdk' ] || fail 'unsupported repository in pin'
-[ "$module" = kit ] || fail 'unsupported module in pin (expected kit)'
+[ "$modules" = 'kit,flix-bridge' ] || fail 'unsupported modules in pin (expected kit,flix-bridge)'
 [ "${#revision}" -eq 40 ] || fail 'revision must be a full 40-character lowercase commit SHA'
 case $revision in *[!0-9a-f]*) fail 'revision must be a full 40-character lowercase commit SHA' ;; esac
 [ -n "${FLIXW_SDK_SOURCE:-}" ] || fail 'set FLIXW_SDK_SOURCE to the pinned SDK checkout'
@@ -30,12 +30,16 @@ head=$(git -C "$source" rev-parse HEAD) || fail 'cannot read SDK HEAD'
 [ "$head" = "$revision" ] || fail "SDK HEAD is $head, expected $revision"
 status=$(git -C "$source" status --porcelain --untracked-files=all) || fail 'cannot inspect SDK source changes'
 [ -z "$status" ] || fail 'SDK sources have changed (tracked or untracked files); use a clean pinned checkout'
-ignored=$(git -C "$source" ls-files --others --ignored --exclude-standard -- kit/src kit/resources) || fail 'cannot inspect ignored SDK inputs'
-[ -z "$ignored" ] || fail 'SDK inputs contain ignored files under kit/src or kit/resources'
+# Every tree the build consumes: the kit, and the bridge with its adapter sources and version data.
+inputs='kit/src kit/resources flix-bridge/src flix-bridge/resources flix-bridge/adapter'
+# shellcheck disable=SC2086  # $inputs is a list of fixed paths, deliberately split
+ignored=$(git -C "$source" ls-files --others --ignored --exclude-standard -- $inputs) || fail 'cannot inspect ignored SDK inputs'
+[ -z "$ignored" ] || fail "SDK inputs contain ignored files under: $inputs"
 # Status honors assume-unchanged and skip-worktree. Compare consumed bytes to HEAD as well.
 tracked=$(mktemp)
 trap 'rm -f "$tracked"' EXIT INT TERM
-git -C "$source" ls-tree -r HEAD -- kit/src kit/resources > "$tracked" || fail 'cannot read pinned SDK tree'
+# shellcheck disable=SC2086
+git -C "$source" ls-tree -r HEAD -- $inputs > "$tracked" || fail 'cannot read pinned SDK tree'
 while IFS="$(printf '\t')" read -r entry path; do
   expected=${entry##* }
   case $entry in
@@ -49,6 +53,7 @@ while IFS="$(printf '\t')" read -r entry path; do
   actual=$(git -C "$source" hash-object --no-filters -- "$path") || fail "SDK input changed: $path"
   [ "$actual" = "$expected" ] || fail "SDK input bytes have changed: $path"
 done < "$tracked"
-[ -d "$source/kit/src" ] || fail 'SDK kit/src is missing'
-[ -d "$source/kit/resources" ] || fail 'SDK kit/resources is missing'
+for tree in $inputs; do
+  [ -d "$source/$tree" ] || fail "SDK $tree is missing"
+done
 printf '%s\n' "$source"
