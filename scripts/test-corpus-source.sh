@@ -84,6 +84,13 @@ mkdir -p "$work/prefix" "$work/t10-evil"
 ln -s "$work/t10-evil" "$work/prefix/sibling"
 expect_exit 2 'leaves the checkout' "a sibling that shares the copy's name as a prefix" -- \
   sh "$copy" "$work/prefix" "$work/t10"
+# `..` after a link is physical: a/b -> .. makes a/b/../victim/src lie beside the copy, although
+# the text a/victim/src looks like a directory inside it.
+mkdir -p "$work/dd/a/victim/src"
+ln -s .. "$work/dd/a/b"
+ln -s a/b/../victim/src "$work/dd/x"
+expect_exit 2 'leaves the checkout' "a dot-dot after a link" -- sh "$copy" "$work/dd" "$work/t11"
+[ ! -e "$work/t11" ] || fail "a refused copy was left behind"
 # A link to a missing file inside the tree reaches nothing.
 mkdir -p "$work/gone/src"
 ln -s missing.flix "$work/gone/src/dangling.flix"
