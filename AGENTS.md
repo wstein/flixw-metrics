@@ -7,7 +7,7 @@ The analyzer is a mixed Java/Scala Mill build. Compiler-neutral code lives in
 the bytecode-derived ABI check and the version data are not in this repository: they are `flix-bridge`
 (package `dev.flixw.sdk.bridge`) of the SDK repository `wstein/flixw-plugin-sdk`, embedded from the
 exact commit named in `sdk-source.properties` (with the `kit` module). `build.mill` compiles each
-adapter family in isolation, as `adapter.flix0761` through `adapter.flix0600`, from the pinned
+adapter family in isolation, as `adapter.flix0800` through `adapter.flix0600`, from the pinned
 `flix-bridge/adapter/<family>/src` and embeds everything in the one `plugin.jar`;
 `scripts/check-sdk-source.sh` refuses a checkout whose HEAD or consumed bytes differ from the pin.
 Changing an adapter, `CompilerModel` or `versions.json` is an SDK change followed by a new pin. Tests live in `plugin/test/src/` and use the Flix fixture in
