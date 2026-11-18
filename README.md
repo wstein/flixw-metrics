@@ -417,7 +417,7 @@ sources):
 Plugin 0.2.0 already ran on Flix 0.75.3, its pin, but listed only "0.75.x". Plugin 0.6.0 does not
 list Flix 0.78.0, 0.79.0 or 0.80.0. It has no unknown-release warning and no `Flix0761Adapter` position
 compensation for 0.79.0, and it has not been tested on those releases. Everything below
-that mentions 0.78.0, 0.79.0, the warning or the position compensation describes the repository
+that mentions 0.78.0, 0.79.0, 0.80.0, the warning or the position compensation describes the repository
 head, not 0.6.0.
 
 The plugin's own version follows its independent SemVer lifecycle because analyzer behavior,
@@ -455,11 +455,13 @@ lists the cases with their exit codes and the exact warning text. A fork whose b
 verified is not warned about, and its behavior is not checked; detecting a fork is follow-up work in
 [#24](https://github.com/wstein/flixw-metrics/issues/24).
 
-**Definition positions.** On the releases served by `Flix0761Adapter` (0.76.1 through 0.79.0), a
+**Definition positions.** On the releases served by `Flix0761Adapter` (0.76.1 through 0.79.0) and
+`Flix0800Adapter` (0.80.0), a
 definition's `line` is the first line of its doc comment and its span ends after the comments that
 directly follow its last token. Flix 0.79.0 itself starts a documented definition at its `def` line
-and ends it at its last token; the adapter restores the earlier convention, see
-[the Flix 0.79.0 record](https://github.com/wstein/flixw-plugin-sdk/blob/515b8080336bf9f2ab6bc8ec2e87b29858c69eb7/flix-bridge/docs/compatibility/flix-0.79.0.md). The older adapter families use
+and ends it at its last token; the adapters restore the earlier convention (the span comparison in
+`scripts/test-compiler-compatibility.sh` measures one project identically on 0.77.0 through 0.80.0), see
+[the Flix 0.79.0 record](https://github.com/wstein/flixw-plugin-sdk/blob/ac1392d8c1db1f2f13f90f2df6942599a88e311a/flix-bridge/docs/compatibility/flix-0.79.0.md). The older adapter families use
 the location the compiler reports, and their positions were not compared across releases.
 SARIF regions use the same lines: a finding gets a region only when it has a line, `startLine` is
 that line, and `endLine` is the last line of the definition when that line is the definition's
