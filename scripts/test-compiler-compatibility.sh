@@ -128,7 +128,7 @@ jq -e '.hasEngineApi and (.missing | length == 0)' "$work/0.75.3.json" >/dev/nul
   exit 1
 }
 
-for version in 0.76.0 0.76.1 0.77.0 0.78.0 0.79.0; do
+for version in 0.76.0 0.76.1 0.77.0 0.78.0 0.79.0 0.80.0; do
   capabilities "$lib/flix-$version.jar" > "$work/$version.json"
   jq -e '.hasEngineApi and (.missing | length == 0)' "$work/$version.json" >/dev/null || {
     echo "test-compiler-compatibility: Flix $version did not satisfy the adapter ABI" >&2
@@ -164,6 +164,7 @@ integration "$lib/flix-0.76.1.jar"
 integration "$lib/flix-0.77.0.jar"
 integration "$lib/flix-0.78.0.jar"
 integration "$lib/flix-0.79.0.jar"
+integration "$lib/flix-0.80.0.jar"
 
 # Flix 0.79.0 starts a documented definition at its def line instead of its doc comment. The
 # adapter makes up the difference, so one project must measure identically on every release:
@@ -187,11 +188,11 @@ span_report() {
     "$java_home/bin/java" -jar "$root/dist/plugin.jar" report --format json "$@"
 }
 
-for version in 0.76.1 0.77.0 0.78.0 0.79.0; do
+for version in 0.76.1 0.77.0 0.78.0 0.79.0 0.80.0; do
   span_report "$version" > "$work/span-$version.json"
   jq -S 'del(.provenance)' "$work/span-$version.json" > "$work/span-$version.norm.json"
 done
-for version in 0.76.1 0.78.0 0.79.0; do
+for version in 0.76.1 0.78.0 0.79.0 0.80.0; do
   cmp -s "$work/span-0.77.0.norm.json" "$work/span-$version.norm.json" || {
     echo "test-compiler-compatibility: Flix $version measured the definition-span project differently from 0.77.0" >&2
     diff "$work/span-0.77.0.norm.json" "$work/span-$version.norm.json" | head -20 >&2
@@ -213,4 +214,4 @@ printf '%s\n' "$span_gate" | jq -e '
   exit 1
 }
 
-echo "test-compiler-compatibility: 0.59.0 rejected at its AST and 0.66.0 at its Java runtime; 0.60.0 through 0.79.0 passed recorded integration checkpoints"
+echo "test-compiler-compatibility: 0.59.0 rejected at its AST and 0.66.0 at its Java runtime; 0.60.0 through 0.80.0 passed recorded integration checkpoints"

@@ -139,7 +139,7 @@ that is unset or not a release number it reads the compiler jar's file name: `fl
 (`VersionData.flixVersion` in the SDK). A jar renamed to claim another release, or a
 `FLIXW_COMPILER_VERSION` that claims one, is judged by that claim; the contents are still judged by
 the gate. `scripts/test-unknown-flix.sh` covers rows 1, 2 and 5 with
-the 0.79.0 jar under its own name, copied to `flix-0.80.0.jar`, and with a stub jar. Row 3 is covered
+the 0.79.0 jar under its own name, copied to `flix-0.81.0.jar`, and with a stub jar. Row 3 is covered
 as a name check in `CompilerVersionsTest.java` (`flix.jar`, `flix-0.79.0-rc1.jar`, an upper-case
 digest suffix) and, for `flix.jar` with and without an announced version, by
 `scripts/test-unknown-flix.sh`; rows 4 and 6 are not in the suite.
@@ -148,7 +148,7 @@ digest suffix) and, for `flix.jar` with and without an announced version, by
 |---|---|---|---|
 | Verified release: `flix-0.77.0-<sha256>.jar`, `flix-0.77.0.jar` | measured if it links | nothing | 0 |
 | Release not in the list that links: any other `flix-<x.y.z>...` name, older or newer than the verified ones | measured with the newest adapter that links | warning 1 | 0 |
-| Name without a readable version and no `FLIXW_COMPILER_VERSION`: a prerelease (`flix-0.80.0-rc.1-<hex>.jar`), `flix.jar`, a local build, a `FLIX_JAR` override with such a name | measured if it links | warning 2 | 0 |
+| Name without a readable version and no `FLIXW_COMPILER_VERSION`: a prerelease (`flix-0.81.0-rc.1-<hex>.jar`), `flix.jar`, a local build, a `FLIX_JAR` override with such a name | measured if it links | warning 2 | 0 |
 | Fork whose base version is listed (flixw drops `+...` from the name) | measured as the base version | nothing | 0 |
 | Links to no adapter | refused before measurement | the message under exit 2 below | 2 |
 | Links at the gate, fails while the compiler loads | stops | the message under exit 2 below | 2 |
