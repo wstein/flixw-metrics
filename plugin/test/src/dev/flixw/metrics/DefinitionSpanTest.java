@@ -1,6 +1,6 @@
 package dev.flixw.metrics;
 
-import dev.flixw.sdk.bridge.adapter.Flix0761Adapter;
+import dev.flixw.sdk.bridge.Adapters;
 import dev.flixw.sdk.bridge.CompilerModel.DefInfo;
 import dev.flixw.sdk.bridge.CompilerModel.EffectInfo;
 import dev.flixw.sdk.bridge.CompilerModel.Model;
@@ -96,7 +96,7 @@ public final class DefinitionSpanTest {
             List<Expected> expected = new ArrayList<>();
             writeFixture(project, source, expected);
 
-            Model model = new Flix0761Adapter().measure(project);
+            Model model = Adapters.resolve().measure(project);
             Map<String, DefInfo> defs = new TreeMap<>();
             for (DefInfo d : model.defs()) defs.put(d.name(), d);
             require(defs.size() == expected.size() + ADJACENT_DEFS.size(),
