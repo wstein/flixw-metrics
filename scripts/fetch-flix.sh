@@ -11,7 +11,8 @@
 # Which releases exist, and the SHA-256 of each, is versions.json of the pinned SDK
 # (scripts/sdk-versions.sh); nothing is listed here. Each adapter family is compiled against the
 # oldest release of its family (its floor) and tested against its test release. plugin/lib/flix.jar
-# is a copy of the newest family's test release, the pin for the tests and the calibration.
+# is a copy of the pin (the "pin" field of versions.json, else the newest family's test release),
+# the compiler for the tests and the calibration.
 # Which releases these are has to be a fact in the repository, not whatever jar happened to be on
 # the machine -- otherwise "it built here" means nothing. This is the discipline flixw applies to
 # the compiler itself: name the version, name the digest, refuse anything else.
