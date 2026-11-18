@@ -29,7 +29,7 @@ public final class CompilerCapabilitiesTest {
             require(AdapterAbi.contracts().stream().anyMatch(contract -> noApi.missing().containsAll(
                 contract.references().stream().map(AdapterAbi.Reference::display).toList())),
                 "the capability gate reports every reference in its closest adapter contract");
-            require(AdapterAbi.contracts().size() == 7,
+            require(AdapterAbi.contracts().size() == 8,
                 "the capability gate derives a separate contract for each adapter");
             require(linked.stream().anyMatch(r -> r.contains("formatType$default$2:()")),
                 "the bytecode contract includes Scala default-argument accessors");
@@ -108,7 +108,7 @@ public final class CompilerCapabilitiesTest {
             // first, with the SDK version.
             require(fields(empty).isEmpty(), "a compiler that links no adapter yields no cache fields");
             String[] families = {"flix0761", "flix0753", "flix0680", "flix0672", "flix0661", "flix0610",
-                "flix0600"};
+                "flix0600", "flix0800"};
             for (int i = 0; i < args.length && i < families.length; i++) {
                 require(fields(Path.of(args[i])).equals(java.util.Map.of("sdkVersion",
                         Integer.toString(dev.flixw.sdk.bridge.CompilerModel.SDK_VERSION),
@@ -120,9 +120,9 @@ public final class CompilerCapabilitiesTest {
                 CompilerFacade.Capabilities stock = inspect(older);
                 require(stock.hasEngineApi() && stock.missing().isEmpty(),
                     "the older compiler satisfies one bytecode-derived adapter requirement");
-                require(!missing(older, AdapterAbi.contracts().get(0)).isEmpty(),
+                require(!missing(older, AdapterAbi.contracts().get(1)).isEmpty(),
                     "the older compiler does not satisfy the newer adapter contract");
-                require(missing(older, AdapterAbi.contracts().get(1)).isEmpty(),
+                require(missing(older, AdapterAbi.contracts().get(2)).isEmpty(),
                     "the older compiler satisfies its dedicated adapter contract");
             }
             if (args.length >= 3) {
@@ -130,9 +130,9 @@ public final class CompilerCapabilitiesTest {
                 CompilerFacade.Capabilities stock = inspect(oldest);
                 require(stock.hasEngineApi() && stock.missing().isEmpty(),
                     "the oldest compiler satisfies one bytecode-derived adapter requirement");
-                require(!missing(oldest, AdapterAbi.contracts().get(1)).isEmpty(),
+                require(!missing(oldest, AdapterAbi.contracts().get(2)).isEmpty(),
                     "the 0.68 compiler does not satisfy the 0.75.3 adapter contract");
-                require(missing(oldest, AdapterAbi.contracts().get(2)).isEmpty(),
+                require(missing(oldest, AdapterAbi.contracts().get(3)).isEmpty(),
                     "the oldest compiler satisfies its dedicated adapter contract");
             }
             if (args.length >= 4) {
@@ -140,9 +140,9 @@ public final class CompilerCapabilitiesTest {
                 CompilerFacade.Capabilities stock = inspect(earliest);
                 require(stock.hasEngineApi() && stock.missing().isEmpty(),
                     "the earliest compiler satisfies one bytecode-derived adapter requirement");
-                require(!missing(earliest, AdapterAbi.contracts().get(2)).isEmpty(),
+                require(!missing(earliest, AdapterAbi.contracts().get(3)).isEmpty(),
                     "the 0.67.2 compiler does not satisfy the 0.68 adapter contract");
-                require(missing(earliest, AdapterAbi.contracts().get(3)).isEmpty(),
+                require(missing(earliest, AdapterAbi.contracts().get(4)).isEmpty(),
                     "the earliest compiler satisfies its dedicated adapter contract");
             }
             if (args.length >= 5) {
@@ -150,9 +150,9 @@ public final class CompilerCapabilitiesTest {
                 CompilerFacade.Capabilities stock = inspect(resultEra);
                 require(stock.hasEngineApi() && stock.missing().isEmpty(),
                     "the Result-era compiler satisfies an adapter contract");
-                require(!missing(resultEra, AdapterAbi.contracts().get(3)).isEmpty(),
+                require(!missing(resultEra, AdapterAbi.contracts().get(4)).isEmpty(),
                     "the 0.66.1 compiler does not satisfy the 0.67.2 adapter contract");
-                require(missing(resultEra, AdapterAbi.contracts().get(4)).isEmpty(),
+                require(missing(resultEra, AdapterAbi.contracts().get(5)).isEmpty(),
                     "the Result-era compiler satisfies its dedicated adapter contract");
             }
             if (args.length >= 6) {
@@ -160,9 +160,9 @@ public final class CompilerCapabilitiesTest {
                 CompilerFacade.Capabilities stock = inspect(validation);
                 require(stock.hasEngineApi() && stock.missing().isEmpty(),
                     "the Validation-era compiler satisfies an adapter contract");
-                require(!missing(validation, AdapterAbi.contracts().get(4)).isEmpty(),
+                require(!missing(validation, AdapterAbi.contracts().get(5)).isEmpty(),
                     "the Validation-era compiler does not satisfy the Result-era contract");
-                require(missing(validation, AdapterAbi.contracts().get(5)).isEmpty(),
+                require(missing(validation, AdapterAbi.contracts().get(6)).isEmpty(),
                     "the Validation-era compiler satisfies its dedicated contract");
             }
             if (args.length >= 7) {
@@ -170,10 +170,20 @@ public final class CompilerCapabilitiesTest {
                 CompilerFacade.Capabilities stock = inspect(preExtMatch);
                 require(stock.hasEngineApi() && stock.missing().isEmpty(),
                     "the pre-extensible-match compiler satisfies an adapter contract");
-                require(!missing(preExtMatch, AdapterAbi.contracts().get(5)).isEmpty(),
+                require(!missing(preExtMatch, AdapterAbi.contracts().get(6)).isEmpty(),
                     "the pre-extensible-match compiler does not satisfy the 0.61 contract");
-                require(missing(preExtMatch, AdapterAbi.contracts().get(6)).isEmpty(),
+                require(missing(preExtMatch, AdapterAbi.contracts().get(7)).isEmpty(),
                     "the pre-extensible-match compiler satisfies its dedicated contract");
+            }
+            if (args.length >= 8) {
+                Path flix0800 = Path.of(args[7]);
+                CompilerFacade.Capabilities stock = inspect(flix0800);
+                require(stock.hasEngineApi() && stock.missing().isEmpty(),
+                    "Flix 0.80.0 satisfies an adapter contract");
+                require(!missing(flix0800, AdapterAbi.contracts().get(1)).isEmpty(),
+                    "Flix 0.80.0 does not satisfy the 0.76.1 contract");
+                require(missing(flix0800, AdapterAbi.contracts().get(0)).isEmpty(),
+                    "Flix 0.80.0 satisfies its dedicated contract");
             }
         } finally {
             delete(work);

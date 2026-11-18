@@ -17,7 +17,7 @@ public final class CompilerVersionsTest {
     public static void main(String[] args) {
         List<String> verified = VersionData.load().verified();
         require(verified.equals(List.of("0.60.0", "0.61.0", "0.65.0", "0.66.1", "0.67.1", "0.67.2",
-                "0.68.0", "0.75.2", "0.75.3", "0.76.0", "0.76.1", "0.77.0", "0.78.0", "0.79.0")),
+                "0.68.0", "0.75.2", "0.75.3", "0.76.0", "0.76.1", "0.77.0", "0.78.0", "0.79.0", "0.80.0")),
             "the packaged list is the verified releases, oldest first");
         require(!verified.contains("0.59.0") && !verified.contains("0.66.0"),
             "the rejected releases are not verified");
@@ -26,13 +26,13 @@ public final class CompilerVersionsTest {
                 .isEmpty(), "a verified release in flixw's cache naming gets no notice");
         require(warning("flix-0.77.0.jar").isEmpty(), "a verified release by plain name gets no notice");
 
-        String unknown = warning("flix-0.80.0-abcdef0123.jar").orElseThrow();
+        String unknown = warning("flix-0.81.0-abcdef0123.jar").orElseThrow();
         require(unknown.startsWith("metrics: warning: ") && unknown.indexOf('\n') < 0,
             "the notice is a single warning line");
-        require(unknown.contains("0.80.0") && unknown.contains("newest verified: 0.79.0")
+        require(unknown.contains("0.81.0") && unknown.contains("newest verified: 0.80.0")
                 && unknown.contains("flix-bridge/docs/compatibility"),
             "the notice names the release, the newest verified one and where the checkpoints are");
-        require(warning("flix-0.80.0.jar").orElseThrow().equals(unknown.replace("-abcdef0123", "")),
+        require(warning("flix-0.81.0.jar").orElseThrow().equals(unknown.replace("-abcdef0123", "")),
             "the cache suffix does not change the notice");
         require(VersionData.newest(List.of("0.9.0", "0.10.0", "0.2.5")).equals("0.10.0"),
             "the newest release is chosen numerically, not as text");
@@ -61,13 +61,13 @@ public final class CompilerVersionsTest {
         Path pinned = Path.of("/repo/plugin/lib/flix.jar");
         require(CompilerFacade.warning(Map.of("FLIXW_COMPILER_VERSION", "0.77.0"), pinned).isEmpty(),
             "a verified release announced for a jar named flix.jar gets no notice");
-        String announced = CompilerFacade.warning(Map.of("FLIXW_COMPILER_VERSION", "0.80.0"), pinned)
+        String announced = CompilerFacade.warning(Map.of("FLIXW_COMPILER_VERSION", "0.81.0"), pinned)
             .orElseThrow();
-        require(announced.contains("Flix 0.80.0 has no compatibility checkpoint")
+        require(announced.contains("Flix 0.81.0 has no compatibility checkpoint")
                 && !announced.contains("cannot read"),
             "an unverified release announced for a jar named flix.jar is named, not unreadable");
         require(CompilerFacade.warning(Map.of("FLIXW_COMPILER_VERSION", "0.77.0"),
-                Path.of("/cache/flix-0.80.0.jar")).isEmpty(),
+                Path.of("/cache/flix-0.81.0.jar")).isEmpty(),
             "the announced version wins over the jar file name");
         require(CompilerFacade.warning(Map.of("FLIXW_COMPILER_VERSION", "nightly"), pinned).orElseThrow()
                 .contains("cannot read"),

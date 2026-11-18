@@ -27,7 +27,7 @@ case $class in
       "$root/plugin/lib/flix-0.75.3.jar" "$root/plugin/lib/flix-0.68.0.jar" \
       "$root/plugin/lib/flix-0.67.2.jar" \
       "$root/plugin/lib/flix-0.66.1.jar" "$root/plugin/lib/flix-0.61.0.jar" \
-      "$root/plugin/lib/flix-0.60.0.jar"
+      "$root/plugin/lib/flix-0.60.0.jar" "$root/plugin/lib/flix-0.80.0.jar"
     ;;
   dev.flixw.metrics.Flix0600AdapterTest)
     exec java -cp "$classpath:$root/plugin/lib/flix-0.60.0.jar" "$class" \
@@ -55,6 +55,10 @@ case $class in
     ;;
   dev.flixw.metrics.Flix0761AdapterTest)
     exec java -cp "$classpath:$root/plugin/lib/flix.jar" "$class" \
+      "$root/plugin/test/fixtures/semantic"
+    ;;
+  dev.flixw.metrics.Flix0800AdapterTest)
+    exec java -cp "$classpath:$root/plugin/lib/flix-0.80.0.jar" "$class" \
       "$root/plugin/test/fixtures/semantic"
     ;;
   dev.flixw.metrics.DefinitionSpanTest)

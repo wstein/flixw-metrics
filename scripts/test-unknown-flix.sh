@@ -1,6 +1,6 @@
 #!/bin/sh
 # Pin what the plugin does with a Flix release that has no compatibility checkpoint (for example
-# 0.80.0), a decision of the repository owner.
+# 0.81.0), a decision of the repository owner.
 #
 # Admission is the bytecode-derived linkage gate in CompilerFacade (Adapters.select in the
 # bridge JVM repeats it per adapter), never a version string. On top of it:
@@ -9,8 +9,8 @@
 #     one `metrics: warning: ...` line on stderr, also on a cache hit; nothing added to the report;
 #   - a compiler that does not link: exit 2 and the sentence naming the missing members, no warning.
 #
-# No Flix 0.80.0 exists, so the unrecorded case is the verified 0.79.0 jar copied to a file named
-# flix-0.80.0.jar, and the refused case is a stub jar that declares Implementation-Version 0.80.0 but
+# No Flix 0.81.0 exists, so the unrecorded case is the verified 0.79.0 jar copied to a file named
+# flix-0.81.0.jar, and the refused case is a stub jar that declares Implementation-Version 0.81.0 but
 # lacks the compiler classes. The version is the one flixw announces in FLIXW_COMPILER_VERSION, else
 # the one in the jar file name (flixw's cache name is flix-<version>-<sha256>.jar).
 set -eu
@@ -86,22 +86,22 @@ fi
 # 2. An unrecorded release that links: loaded, complete report, exactly one warning on stderr, also
 # when the measurement comes from the cache.
 mkdir -p "$scratch/newer"
-cp "$jar" "$scratch/newer/flix-0.80.0.jar"
-plugin newer-capabilities "$scratch/newer/flix-0.80.0.jar" capabilities
+cp "$jar" "$scratch/newer/flix-0.81.0.jar"
+plugin newer-capabilities "$scratch/newer/flix-0.81.0.jar" capabilities
 [ "$status" -eq 0 ] || fail "capabilities failed for the renamed 0.79.0 jar"
 jq -e '.hasEngineApi and (.missing | length == 0)' "$scratch/newer-capabilities/stdout.txt" >/dev/null \
-  || fail "a linking compiler named 0.80.0 was not accepted by the linkage gate"
+  || fail "a linking compiler named 0.81.0 was not accepted by the linkage gate"
 cache=$scratch/cache
 mkdir -p "$cache"
 for run in newer-report newer-cached; do
-  plugin "$run" "$scratch/newer/flix-0.80.0.jar" report --format json --diagnostics \
+  plugin "$run" "$scratch/newer/flix-0.81.0.jar" report --format json --diagnostics \
     --output "$scratch/$run/report.json"
   [ "$status" -eq 0 ] || fail "report failed for the renamed 0.79.0 jar ($run, exit $status)"
   jq -e '.summary.definitions == 7' "$scratch/$run/report.json" >/dev/null \
     || fail "the renamed 0.79.0 jar did not produce the sample report ($run)"
   [ "$(grep -c '^metrics: warning: ' "$scratch/$run/stderr.txt")" -eq 1 ] \
     || fail "an unrecorded release must produce exactly one warning ($run)"
-  grep -q '^metrics: warning: Flix 0\.80\.0 ' "$scratch/$run/stderr.txt" \
+  grep -q '^metrics: warning: Flix 0\.81\.0 ' "$scratch/$run/stderr.txt" \
     || fail "the warning does not name the release ($run)"
   grep -q 'flix-bridge/docs/compatibility' "$scratch/$run/stderr.txt" \
     || fail "the warning does not point to the compatibility checkpoints ($run)"
@@ -127,11 +127,11 @@ plugin announced-verified "$scratch/verified/flix.jar" report --format json \
 if grep -qi 'warning' "$scratch/announced-verified/stderr.txt"; then
   fail "a verified release announced for flix.jar produced a warning"
 fi
-announced=0.80.0
+announced=0.81.0
 plugin announced-newer "$scratch/verified/flix.jar" report --format json \
   --output "$scratch/announced-newer/report.json"
 [ "$status" -eq 0 ] || fail "report failed for flix.jar with an announced unrecorded release (exit $status)"
-grep -q '^metrics: warning: Flix 0\.80\.0 has no compatibility checkpoint' "$scratch/announced-newer/stderr.txt" \
+grep -q '^metrics: warning: Flix 0\.81\.0 has no compatibility checkpoint' "$scratch/announced-newer/stderr.txt" \
   || fail "an unrecorded release announced for flix.jar is not named in the warning"
 announced=
 plugin unannounced "$scratch/verified/flix.jar" report --format json \
@@ -148,7 +148,7 @@ package ca.uwaterloo.flix.api;
 public final class Flix { }
 JAVA
 javac -d "$stub/classes" "$stub/src/ca/uwaterloo/flix/api/Flix.java"
-printf 'Implementation-Version: 0.80.0\n' > "$stub/manifest.txt"
+printf 'Implementation-Version: 0.81.0\n' > "$stub/manifest.txt"
 jar --create --file "$stub/stub.jar" --manifest "$stub/manifest.txt" -C "$stub/classes" .
 plugin stub-capabilities "$stub/stub.jar" capabilities
 jq -e '(.hasFlixApi == true) and (.hasEngineApi == false) and (.missing | length > 0)' \
