@@ -28,6 +28,7 @@ would put compiler concepts straight back into the callers it exists to protect.
 | `adapter.flix0680`: `dev.flixw.sdk.bridge.adapter.Flix0680Adapter` (SDK `flix-bridge`) | everything | Scala |
 | `adapter.flix0753`: `dev.flixw.sdk.bridge.adapter.Flix0753Adapter` (SDK `flix-bridge`) | everything | Scala |
 | `adapter.flix0761`: `dev.flixw.sdk.bridge.adapter.Flix0761Adapter` (SDK `flix-bridge`) | everything | Scala |
+| `adapter.flix0800`: `dev.flixw.sdk.bridge.adapter.Flix0800Adapter` (SDK `flix-bridge`) | everything | Scala |
 
 The bridge, the adapters and the version data are the SDK repository's `flix-bridge` module
 (`wstein/flixw-plugin-sdk`), embedded from the exact commit in `sdk-source.properties`. This build
@@ -46,9 +47,9 @@ which keys the cache before any adapter is loaded, derives the same family from 
 `Flix0661Adapter`; Flix 0.67.2 via
 `Flix0672Adapter`; Flix 0.68.0 and 0.75.2 via
 `Flix0680Adapter`; Flix 0.75.3 and 0.76.0 via `Flix0753Adapter`; and Flix 0.76.1 through 0.79.0 via
-`Flix0761Adapter`.** Each suffix names the oldest
+`Flix0761Adapter`; and Flix 0.80.0 via `Flix0800Adapter`.** Each suffix names the oldest
 verified release in its family, not a closed range or the current compiler pin. The investigation supporting each release
-is recorded in the SDK under [`flix-bridge/docs/compatibility`](https://github.com/wstein/flixw-plugin-sdk/blob/515b8080336bf9f2ab6bc8ec2e87b29858c69eb7/flix-bridge/docs/compatibility/README.md).
+is recorded in the SDK under [`flix-bridge/docs/compatibility`](https://github.com/wstein/flixw-plugin-sdk/blob/ac1392d8c1db1f2f13f90f2df6942599a88e311a/flix-bridge/docs/compatibility/README.md).
 
 ### Adapters are selected by linkage, not by version string
 
@@ -128,7 +129,7 @@ The list of verified releases has one source, `versions.json` in the SDK's `flix
 the two rejected releases, 0.59.0 and 0.66.0. The packaged plugin reads it, `scripts/fetch-flix.sh`
 fetches and checks the jars from it, and `test-compiler-compatibility.sh` fails unless every verified
 release has a packaged integration checkpoint and every checkpoint is verified. The evidence per
-release is the matrix in the SDK's [compatibility records](https://github.com/wstein/flixw-plugin-sdk/blob/515b8080336bf9f2ab6bc8ec2e87b29858c69eb7/flix-bridge/docs/compatibility/README.md). Other documents link to these two for
+release is the matrix in the SDK's [compatibility records](https://github.com/wstein/flixw-plugin-sdk/blob/ac1392d8c1db1f2f13f90f2df6942599a88e311a/flix-bridge/docs/compatibility/README.md). Other documents link to these two for
 the complete list.
 
 ### What a compiler jar gets
@@ -163,8 +164,8 @@ Both warnings, verbatim, as the plugin prints them (the version and the newest v
 come from the list and change with it):
 
 ```text
-metrics: warning: Flix 0.80.0 has no compatibility checkpoint (newest verified: 0.79.0); results are not verified for it, see flix-bridge/docs/compatibility
-metrics: warning: cannot read the Flix version from the compiler jar name flix.jar; this release has no compatibility checkpoint (newest verified: 0.79.0), see flix-bridge/docs/compatibility
+metrics: warning: Flix 0.81.0 has no compatibility checkpoint (newest verified: 0.80.0); results are not verified for it, see flix-bridge/docs/compatibility
+metrics: warning: cannot read the Flix version from the compiler jar name flix.jar; this release has no compatibility checkpoint (newest verified: 0.80.0), see flix-bridge/docs/compatibility
 ```
 
 Source: `VersionData.java` in the SDK, called by `CompilerFacade.warning`. Each warning is a single line.

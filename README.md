@@ -391,8 +391,8 @@ was not compared.
 
 ## Supported compilers
 
-Flix 0.60.0 through 0.79.0 is verified, with gaps: the releases are listed in the
-[compatibility matrix](https://github.com/wstein/flixw-plugin-sdk/blob/515b8080336bf9f2ab6bc8ec2e87b29858c69eb7/flix-bridge/docs/compatibility/README.md) of the SDK, whose machine-readable source is
+Flix 0.60.0 through 0.80.0 is verified, with gaps: the releases are listed in the
+[compatibility matrix](https://github.com/wstein/flixw-plugin-sdk/blob/ac1392d8c1db1f2f13f90f2df6942599a88e311a/flix-bridge/docs/compatibility/README.md) of the SDK, whose machine-readable source is
 `flix-bridge/resources/dev/flixw/sdk/bridge/versions.json` (the releases, their SHA-256 digests, their
 adapter family and the two rejected releases). Verified means that the
 bytecode-derived gate accepts the release and that a packaged integration checkpoint for it passes in
@@ -412,10 +412,10 @@ sources):
 | 0.60.0, 0.61.0, 0.65.0, 0.66.1, 0.67.1, 0.67.2, 0.68.0, 0.75.2, 0.75.3, 0.76.0 | 0.3.0 |
 | 0.76.1 | 0.5.0 |
 | 0.77.0 | 0.6.0, the release installed above |
-| 0.78.0, 0.79.0 | not yet released: the release after 0.6.0 |
+| 0.78.0, 0.79.0, 0.80.0 | not yet released: the release after 0.6.0 |
 
 Plugin 0.2.0 already ran on Flix 0.75.3, its pin, but listed only "0.75.x". Plugin 0.6.0 does not
-list Flix 0.78.0 or 0.79.0. It has no unknown-release warning and no `Flix0761Adapter` position
+list Flix 0.78.0, 0.79.0 or 0.80.0. It has no unknown-release warning and no `Flix0761Adapter` position
 compensation for 0.79.0, and it has not been tested on those releases. Everything below
 that mentions 0.78.0, 0.79.0, the warning or the position compensation describes the repository
 head, not 0.6.0.
@@ -439,7 +439,7 @@ $ ./flixw metrics capabilities
 
 An unsupported compiler gets a sentence naming what is missing, rather than a wrong number
 or a stack trace. Supporting another Flix generation is one adapter class; release-specific
-evidence lives in the SDK's [compatibility records](https://github.com/wstein/flixw-plugin-sdk/blob/515b8080336bf9f2ab6bc8ec2e87b29858c69eb7/flix-bridge/docs/compatibility/README.md), and the
+evidence lives in the SDK's [compatibility records](https://github.com/wstein/flixw-plugin-sdk/blob/ac1392d8c1db1f2f13f90f2df6942599a88e311a/flix-bridge/docs/compatibility/README.md), and the
 boundary itself is described in [docs/COMPILER-SDK.md](docs/COMPILER-SDK.md).
 
 The full test suite locks the lower boundary by requiring 0.59.0 to fail the derived AST gate. It
