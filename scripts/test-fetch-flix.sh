@@ -70,4 +70,18 @@ status=0; run 7.7.7 || status=$?
 [ "$status" = 1 ] || fail "an unlisted version did not exit 1 (got $status)"
 grep -q '7.7.7 is not in' "$work/err" || fail "the unlisted version was not named"
 ok
+# The pin is the "pin" field when the data has one, else the test release of the newest family. In
+# this data the newest family (famB, test release 2.0.0) differs from the pin (1.1.0).
+pin_of() { FLIXW_VERSIONS_JSON=$1 sh "$root/scripts/sdk-versions.sh" pin; }
+[ "$(pin_of "$work/data.json")" = 2.0.0 ] || fail "without a pin field the pin is not the newest family's test release"
+ok
+jq '. + {pin: "1.1.0"}' "$work/data.json" > "$work/data-pin.json"
+[ "$(pin_of "$work/data-pin.json")" = 1.1.0 ] || fail "the pin field was not read"
+ok
+rm -rf "$work/lib"
+FLIXW_VERSIONS_JSON=$work/data-pin.json FLIXW_PLUGIN_LIB=$work/lib FLIXW_FLIX_BASE_URL=file://$work/src \
+  sh "$root/scripts/fetch-flix.sh" 2>"$work/err" || fail "the default set with a pin field was refused"
+cmp -s "$work/lib/flix.jar" "$work/lib/flix-1.1.0.jar" || fail "flix.jar is not the pinned release"
+ok
+
 printf 'test-fetch-flix: %s passed, 0 failed\n' "$checks"
