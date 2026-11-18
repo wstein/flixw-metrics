@@ -2,7 +2,8 @@
 # Print release data from versions.json of the pinned SDK, the one place a Flix release is named.
 #
 # Usage: sh scripts/sdk-versions.sh verified|rejected|all|families|path
-#        sh scripts/sdk-versions.sh pin     the test release of the newest family: plugin/lib/flix.jar
+#        sh scripts/sdk-versions.sh pin     the calibration pin, plugin/lib/flix.jar: the "pin" field of
+#                                           versions.json, else the test release of the newest family
 #        sh scripts/sdk-versions.sh digest|family|floor <release or family>
 #
 # Versions are listed oldest first. The file is read from the guarded SDK checkout
@@ -20,7 +21,7 @@ case ${1-} in
   verified) jq -r '.releases[] | select(.status == "verified") | .version' "$json" ;;
   rejected) jq -r '.releases[] | select(.status == "rejected") | .version' "$json" ;;
   all) jq -r '.releases[].version' "$json" ;;
-  pin) jq -er '.families[0].testVersion' "$json" ;;
+  pin) jq -er '.pin // .families[0].testVersion' "$json" ;;
   families) jq -r '.families[].id' "$json" ;;
   path) printf '%s\n' "$json" ;;
   digest) jq -er --arg v "${2:?release}" '.releases[] | select(.version == $v) | .sha256' "$json" ;;
